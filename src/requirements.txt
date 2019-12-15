@@ -1,2 +1,10 @@
 wsgidav>=3.0.1
 future>=0.18.2
+Flask>=1.1.1
+#Jinja2>=2.10.3
+#cachelib>=0.1
+#google-auth>=1.6.3
+#requests>=2.22.0
+#CacheControl>=0.12.5
+#google-cloud-datastore>=1.10.0
+#firebase-admin>=3.2.0
