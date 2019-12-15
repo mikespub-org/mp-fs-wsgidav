@@ -17,7 +17,7 @@ def test_auth():
     
     
     
-    from google.appengine.api import users
+    from .auth import users
     from .google_domain_controller import xAppAuth
     
 #    auth = xAppAuth("moogle@wwwendt.de", "test", "clouddav")

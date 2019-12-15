@@ -34,6 +34,7 @@ See `Developers info`_ for more information about the WsgiDAV architecture.
 
 .. _`Developers info`: http://docs.wsgidav.googlecode.com/hg/html/develop.html  
 """
+from __future__ import absolute_import
 from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
@@ -43,8 +44,7 @@ import sys
 import urllib.request, urllib.error, urllib.parse
 import http.cookiejar
 
-from google.appengine.api import users 
-from auth import AuthorizedUser, findAuthUser
+from .auth import AuthorizedUser, findAuthUser, users
 from wsgidav.dc.base_dc import BaseDomainController
 __docformat__ = "reStructuredText"
 

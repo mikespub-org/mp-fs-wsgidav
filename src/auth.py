@@ -5,70 +5,48 @@ Taken from
 import os
 
 from flask import Flask, render_template, request, redirect
-from google.appengine.ext import db
-from google.appengine.api import users
+from btfs.auth import AuthorizedUser, findAuthUser, users
+from functools import wraps
 import logging
 
-class AuthorizedUser(db.Model):
-    """Represents authorized users in the datastore."""
-    user = db.UserProperty()
-    canWrite = db.BooleanProperty(default=True)
-
-
-def findAuthUser(email):
-    """Return AuthorizedUser for `email` or None if not found."""
-    user = users.User(email)
-    auth_user =  AuthorizedUser.gql("where user = :1", user).get()
-    logging.debug("findAuthUser(%r) = %s" % (email, auth_user))
-    return auth_user
-    
 
 app = Flask(__name__)
 app.debug = True
 
 
-class AuthorizedRequestHandler(object):
-    """Authenticate users against a stored list of authorized users. - TO BE ADAPTED
-
-    Base your request handler on this class and check the authorize() method
-    for a True response before processing in get(), post(), etc. methods.
-
-    For example:
-
-    class Test(AuthorizedRequestHandler):
-        def get(self):
-            if self.authorize():
-                return 'You are an authenticated user.'
-    """
-
-    def authorize(self):
-        """Return True if user is authenticated."""
-        user = users.get_current_user()
-        if not user:
-            self.not_logged_in()
-        else:
-            auth_user = AuthorizedUser.gql("where user = :1", user).get()
-            if not auth_user:
-                self.unauthorized_user()
-            else:
-                return True
-
-    def not_logged_in(self):
-        """Action taken when user is not logged in (default: go to login screen)."""
-        return redirect(users.create_login_url(request.url))
-
-    def unauthorized_user(self):
-        """Action taken for unauthenticated  user (default: go to error page)."""
-        return """
-            <html>
-              <body>
-                <div>Unauthorized User</div>
-                <div><a href="%s">Logout</a>
-              </body>
-            </html>""" % users.create_logout_url(request.url)
+def authorize(access):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if access == 'admin':
+                if not users.is_current_user_admin():
+                    output = "You need to login as administrator <a href='%s'>Login</a>" % users.create_login_url(request.url)
+                    return output
+                    #return redirect(users.create_login_url(request.url))
+            elif access in ('auth', 'read', 'write'):
+                # get this from request.remote_user, request.authorization or request.environ
+                # if we already retrieved this in a decorator
+                user = users.get_current_user()
+                if not user:
+                    return redirect(users.create_login_url(request.url))
+                auth_user = AuthorizedUser.gql("where user = :1", user).get()
+                if not auth_user:
+                    output = "You need to login as authorized user <a href='%s'>Logout</a>" % users.create_logout_url(request.url)
+                    return output
+                    #return redirect(users.create_logout_url(request.url))
+                #request.remote_user = auth_user  # read-only property
+                request.environ['AUTH_USER'] = auth_user
+            elif access == 'user':
+                user = users.get_current_user()
+                if not user:
+                    return redirect(users.create_login_url(request.url))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 
 @app.route('/auth/users')
+@authorize('admin')
 def auth_users():
     """Manage list of authorized users through web page.
 
@@ -82,6 +60,7 @@ def auth_users():
 
 
 @app.route('/auth/useradd', methods=['POST'])
+@authorize('admin')
 def user_add():
     """Manage list of authorized users through web page.
 
@@ -102,6 +81,7 @@ def user_add():
 
 
 @app.route('/auth/userdelete', methods=['GET'])
+@authorize('admin')
 def user_delete():
     """Delete an authorized user from the datastore."""
     email = request.args['email']
@@ -111,4 +91,29 @@ def user_delete():
     auth_user = AuthorizedUser.gql("where user = :1", user).get()
     auth_user.delete()
     return redirect('/auth/users?deleted')
+
+
+@app.route('/auth/')
+@authorize('auth')
+def user_home():
+    # get this from request.remote_user, request.authorization or request.environ
+    # if we already retrieved this in a decorator
+    if 'AUTH_USER' not in request.environ:
+        user = users.get_current_user()
+        request.environ['AUTH_USER'] = AuthorizedUser.gql("where user = :1", user).get()
+    auth_user = request.environ['AUTH_USER']
+    access = 'read'
+    if auth_user.canWrite:
+        access = 'write'
+    return 'Welcome %s, you are an authenticated user with %s access.' % (auth_user.user.nickname(), access)
+
+
+@app.route('/auth/login', methods=['GET', 'POST'])
+def user_login():
+    return '(TODO) Hello'
+
+
+@app.route('/auth/logout', methods=['GET', 'POST'])
+def user_logout():
+    return '(TODO) Goodbye'
 

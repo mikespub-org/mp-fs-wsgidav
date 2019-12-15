@@ -3,10 +3,11 @@
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
+from builtins import str
 from flask import Flask, render_template, request
-from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext.db import stats
+from btfs.auth import users
 from btfs.cache import memcache3
 from btfs.model import Path, Dir, File, Chunk
 from pprint import pformat
