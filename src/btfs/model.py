@@ -15,7 +15,6 @@ from google.appengine.ext.db import polymodel
 #from google.appengine.ext.db import GqlQuery
 #from cache import cached_dir, cached_file, cached_content
 from .cache import cached_resource
-#from google.appengine.api import memcache
 
 DO_EXPENSIVE_CHECKS = False
 #DO_EXPENSIVE_CHECKS = True

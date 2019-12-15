@@ -4,9 +4,10 @@
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
 from flask import Flask, render_template, request
-from google.appengine.api import users, memcache
+from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext.db import stats
+from btfs.cache import memcache3
 from btfs.model import Path, Dir, File, Chunk
 from pprint import pformat
 import os
@@ -120,8 +121,8 @@ def admin_view():
         output = "Tests run! <a href='?'>Back</a>"
         return output
     elif qs == "clear_cache":
-        logging.warning("clear_cache: memcache.flush_all()")
-        memcache.flush_all()
+        logging.warning("clear_cache: memcache3.reset()")
+        memcache3.reset()
         output = "Memcache deleted! <a href='?'>Back</a>"
         return output
     elif qs == "clear_datastore":
@@ -133,7 +134,7 @@ def admin_view():
         except Exception as e:
             logging.warning(e)
 #        fs.getdir("/").delete(recursive=True)
-        memcache.flush_all()
+        memcache3.reset()
         fs.initfs()
         output = "Removed '/'. <a href='?'>Back</a>"
         return output
@@ -197,7 +198,7 @@ def admin_view():
         "nickname": user.nickname(),
         "url": url,
         "url_linktext": url_linktext,
-        "memcache_stats": pformat(memcache.get_stats()),
+        "memcache_stats": pformat(memcache3.get_stats()),
         "datastore_stats": pformat(datastore_stats),
         "path_samples": pformat(paths),
         "chunk_samples": pformat(chunks),

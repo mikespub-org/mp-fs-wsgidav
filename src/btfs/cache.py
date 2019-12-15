@@ -11,7 +11,45 @@ import threading
 Implement cache mechanism.
 """
 import logging
-from google.appengine.api import memcache
+#from google.appengine.api import memcache
+from cachelib import MemcachedCache, RedisCache, SimpleCache
+
+"""
+With Python 2.7 this defaults to the standard App Engine Memcache service.
+With Python 3.7 you'll need to specify the Memcache or Redis server(s)...
+
+TODO: make this configurable
+"""
+try:
+    memcache3 = MemcachedCache()
+    #memcache3 = RedisCache()
+except Exception as e:
+    logging.info(e)
+    memcache3 = SimpleCache()
+
+memcache3._stats = {
+    'byte_hits': 0,
+    'bytes': 0,
+    'hits': 0,
+    'items': 0,
+    'misses': 0,
+    'oldest_item_age': 0,
+    # keep track of operations other than get (= hits + misses)
+    'set': 0,
+    'set_multi': 0,
+    'delete': 0
+}
+
+def memcache_reset(mycache=memcache3):
+    for key in list(mycache._stats.keys()):
+        mycache._stats[key] = 0
+    return mycache.clear()
+
+def memcache_get_stats(mycache=memcache3):
+    return mycache._stats
+
+memcache3.reset = memcache_reset
+memcache3.get_stats = memcache_get_stats
 
 CACHED_NONE = "{cached-none}"
 
@@ -145,30 +183,51 @@ class NamespacedCache(object):
     def __del__(self):
         logging.debug("NamespacedCache.__del__, thread=%s", threading._get_ident())
 
-    
+
+    def _add_namespace(self, key):
+        if self.namespace is not None:
+            key = '%s:%s' % (self.namespace, key)
+        return key
+
     def get(self, key):
-        result = memcache.get(key, namespace=self.namespace)
+        key = self._add_namespace(key)
+        result = memcache3.get(key)
         if result is not None:
+            memcache3._stats['hits'] += 1
             logging.debug("Cache HIT: %r.%r" % (self.namespace, key))
         else:
+            memcache3._stats['misses'] += 1
             logging.debug("Cache MISS: %r.%r" % (self.namespace, key))
         return result
 
 
     def set(self, key, value, time=0):
         logging.debug("Cache add: %r.%r = %r" % (self.namespace, key, value))
-        return memcache.set(key, value, namespace=self.namespace, time=time)
+        key = self._add_namespace(key)
+        memcache3._stats['set'] += 1
+        return memcache3.set(key, value, timeout=time)
 
 
     def set_multi(self, mapping, time=0, key_prefix=''):
+        new_mapping = {}
         for key, value in list(mapping.items()):
             logging.debug("Cache add multi: %r.%r = %r" % (self.namespace, key, value))
-        return memcache.set_multi(mapping, namespace=self.namespace, time=time, 
-                                  key_prefix=key_prefix)
+            if key_prefix:
+                key = key_prefix + key
+            key = self._add_namespace(key)
+            new_mapping[key] = value
+        memcache3._stats['set_multi'] += 1
+        # this returns True on success or False on failure, but set_multi expects a list of failed keys back
+        result = memcache3.set_many(new_mapping, timeout=time)
+        if result:
+            return []
+        return ['failed']
 
     def delete(self, key):
         logging.debug("Cache delete: %r.%r" % (self.namespace, key))
-        return memcache.delete(key, namespace=self.namespace)
+        key = self._add_namespace(key)
+        memcache3._stats['delete'] += 1
+        return memcache3.delete(key)
 
 
 #===============================================================================
