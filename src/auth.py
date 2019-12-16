@@ -28,7 +28,9 @@ def authorize(access):
                 # if we already retrieved this in a decorator
                 user = users.get_current_user()
                 if not user:
-                    return redirect(users.create_login_url(request.url))
+                    output = "You need to login as user <a href='%s'>Login</a>" % users.create_login_url(request.url)
+                    return output
+                    #return redirect(users.create_login_url(request.url))
                 auth_user = AuthorizedUser.gql("where user = :1", user).get()
                 if not auth_user:
                     output = "You need to login as authorized user <a href='%s'>Logout</a>" % users.create_logout_url(request.url)
@@ -39,7 +41,9 @@ def authorize(access):
             elif access == 'user':
                 user = users.get_current_user()
                 if not user:
-                    return redirect(users.create_login_url(request.url))
+                    output = "You need to login as user <a href='%s'>Login</a>" % users.create_login_url(request.url)
+                    return output
+                    #return redirect(users.create_login_url(request.url))
             return f(*args, **kwargs)
         return decorated_function
     return decorator

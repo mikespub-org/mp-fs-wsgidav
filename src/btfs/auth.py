@@ -8,9 +8,12 @@ Taken from
 """
 from __future__ import absolute_import
 from builtins import object
-
-from google.appengine.ext import db
 import logging
+
+try:
+    from google.appengine.ext import db
+except:
+    from . import db
 
 try:
     from google.appengine.api import users

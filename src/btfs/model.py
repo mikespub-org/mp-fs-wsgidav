@@ -10,8 +10,12 @@ from builtins import range
 from builtins import object
 import os.path
 import logging
-from google.appengine.ext import db
-from google.appengine.ext.db import polymodel
+try:
+    from google.appengine.ext import db
+    from google.appengine.ext.db import polymodel
+except:
+    from . import db
+    from .db import polymodel
 #from google.appengine.ext.db import GqlQuery
 #from cache import cached_dir, cached_file, cached_content
 from .cache import cached_resource

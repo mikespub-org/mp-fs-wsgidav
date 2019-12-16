@@ -14,8 +14,8 @@ libraries:
 #  version: "2.6"
 - name: flask
   version: "0.12"
-#- name: ssl
-#  version: latest
+- name: ssl
+  version: latest
 
 # Custom administration console pages
 
@@ -39,7 +39,7 @@ handlers:
 # User administration
 - url: /auth/.*
   script: auth.app
-  login: admin
+  #login: admin
   secure: optional
 
 - url: /favicon.ico

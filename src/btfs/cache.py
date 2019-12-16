@@ -175,13 +175,21 @@ CACHED_NONE = "{cached-none}"
 #===============================================================================
 class NamespacedCache(object):
     def __init__(self, namespace):
-        logging.debug("NamespacedCache.__init__, thread=%s", threading._get_ident())
+        if hasattr(threading, 'get_ident'):
+            id = threading.get_ident()
+        else:
+            id = threading._get_ident()
+        logging.debug("NamespacedCache.__init__, thread=%s", id)
         self.namespace = namespace
         return
 
     
     def __del__(self):
-        logging.debug("NamespacedCache.__del__, thread=%s", threading._get_ident())
+        if hasattr(threading, 'get_ident'):
+            id = threading.get_ident()
+        else:
+            id = threading._get_ident()
+        logging.debug("NamespacedCache.__del__, thread=%s", id)
 
 
     def _add_namespace(self, key):

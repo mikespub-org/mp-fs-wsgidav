@@ -11,7 +11,7 @@ standard_library.install_aliases()
 from builtins import str
 from btfs.model import Path, Dir, File
 import logging
-import md5
+import hashlib
 import mimetypes
 from . import fs
 
@@ -76,8 +76,8 @@ class BTFSResource(_DAVResource):
 
     def getEtag(self):
         if self.is_collection:
-            return '"' + md5.new(self.path).hexdigest() +'"'
-        return md5.new(self.path).hexdigest() + '-' + str(self.statresults.st_mtime) + '-' + str(self.statresults.st_size)
+            return '"' + hashlib.md5(self.path).hexdigest() +'"'
+        return hashlib.md5(self.path).hexdigest() + '-' + str(self.statresults.st_mtime) + '-' + str(self.statresults.st_size)
 
     get_etag = getEtag
 

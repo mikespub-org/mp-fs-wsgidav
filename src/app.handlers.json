@@ -1,0 +1,30 @@
+[
+  {
+    "url": "/_admin",
+    "script": "admin_handler.app",
+    "login": "admin",
+    "secure": "optional"
+  },
+  {
+    "url": "/auth/.*",
+    "script": "auth.app",
+    "secure": "optional"
+  },
+  {
+    "url": "/favicon.ico",
+    "static_files": "static/favicon.ico",
+    "upload": "static/favicon.ico",
+    "secure": "optional"
+  },
+  {
+    "url": "/robots.txt",
+    "static_files": "static/robots.txt",
+    "upload": "static/robots.txt",
+    "secure": "optional"
+  },
+  {
+    "url": ".*",
+    "script": "clouddav.app",
+    "secure": "always"
+  }
+]

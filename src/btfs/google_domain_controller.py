@@ -68,16 +68,16 @@ class xAppAuth(object):
     def getAuthtoken(self, refresh=False):
         if self.authtoken is None or refresh:
             self.lastError = (None, None, None)
-            cookiejar = http.cookiejar.LWPCookieJar()
-            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar))
-            urllib.request.install_opener(opener)
+            #cookiejar = http.cookiejar.LWPCookieJar()
+            #opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar))
+            #urllib.request.install_opener(opener)
             auth_uri = "https://www.google.com/accounts/ClientLogin"
             authreq_data = urllib.parse.urlencode({"Email": self.user,
                 "Passwd": self.password,
                 "service": "ah",
                 "source": self.appName,
                 "accountType": "HOSTED_OR_GOOGLE" })
-            auth_req = urllib.request.Request(auth_uri, data=authreq_data)
+            auth_req = urllib.request.Request(auth_uri, data=authreq_data.encode('utf-8'))
             try:
                 auth_resp = urllib.request.urlopen(auth_req)
             except urllib.error.HTTPError as e:

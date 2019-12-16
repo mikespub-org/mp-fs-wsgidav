@@ -69,7 +69,7 @@ class User(object):
 
     if _auth_domain is None:
       _auth_domain = os.environ.get('AUTH_DOMAIN')
-    assert _auth_domain
+    #assert _auth_domain
 
     if email is None:
       email = os.environ.get('USER_EMAIL', email)

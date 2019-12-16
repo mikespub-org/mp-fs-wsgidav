@@ -17,9 +17,9 @@ __version__ = "0.3.0a1"
 
 def create_app():
     logging.debug("real_main")
-    #logger = logging.getLogger("wsgidav")
-    #logger.propagate = True
-    #logger.setLevel(logging.DEBUG)
+    logger = logging.getLogger("wsgidav")
+    logger.propagate = True
+    logger.setLevel(logging.DEBUG)
     provider = BTFSResourceProvider()
     lockstorage = LockStorageMemcache()
     #domainController = GoogleDomainController()
@@ -27,8 +27,8 @@ def create_app():
     config = DEFAULT_CONFIG.copy()
     config.update({
         "provider_mapping": {"/": provider},
-        "verbose": 2,
-        "enable_loggers": [],
+        "verbose": 3,
+        "enable_loggers": ["http_authenticator"],
         "property_manager": False,
         "lock_manager": lockstorage,
 
@@ -42,8 +42,8 @@ def create_app():
             "accept_basic": True,  # Allow basic authentication, True or False
             "accept_digest": False,  # Allow digest authentication, True or False
             "default_to_digest": False,  # True (default digest) or False (default basic)
-            # Name of a header field that will be accepted as authorized user
-            #"trusted_auth_header": None,
+            # Name of a header field that will be accepted as authorized user - set by App Engine for Google Login
+            "trusted_auth_header": "USER_EMAIL",
         },
         "google_dc": {},
         "dir_browser": {
