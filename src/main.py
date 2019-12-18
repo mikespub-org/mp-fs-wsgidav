@@ -10,6 +10,8 @@ from werkzeug.wsgi import pop_path_info, peek_path_info, get_path_info
 from werkzeug.utils import import_string, cached_property
 import json
 import re
+# Import for local testing
+import set_env
 # Import default app here
 from clouddav import app as default_app
 

@@ -22,7 +22,7 @@ from builtins import object
 import os
 
 # TODO: make configurable
-AUTH_URL = '/_ah/'
+AUTH_URL = '/auth/'
 LOGIN_URL = AUTH_URL + 'login'
 LOGOUT_URL = AUTH_URL + 'logout'
 
@@ -33,14 +33,6 @@ class Error(Exception):
 
 class UserNotFoundError(Error):
   """No email argument was specified, and no user is logged in."""
-
-
-class RedirectTooLongError(Error):
-  """The generated redirect URL was too long."""
-
-
-class NotAllowedError(Error):
-  """The requested redirect URL is not allowed."""
 
 
 class User(object):
@@ -69,6 +61,8 @@ class User(object):
 
     if _auth_domain is None:
       _auth_domain = os.environ.get('AUTH_DOMAIN')
+    if _auth_domain is None:
+      _auth_domain = 'gmail.com'
     #assert _auth_domain
 
     if email is None:
@@ -124,6 +118,14 @@ class User(object):
       should not be used by client applications.
     """
     return self.__auth_domain
+
+  def to_dict(self):
+    return {
+      'email': self.email(),
+      'auth_domain': self.auth_domain(),
+      'user_id': self.user_id(),
+      'nickname': self.nickname()
+    }
 
   def __str__(self):
     return str(self.nickname())

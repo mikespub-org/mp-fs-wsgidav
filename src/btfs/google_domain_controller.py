@@ -44,7 +44,7 @@ import sys
 import urllib.request, urllib.error, urllib.parse
 import http.cookiejar
 
-from .auth import AuthorizedUser, findAuthUser, users
+from .auth import find_auth_user, users
 from wsgidav.dc.base_dc import BaseDomainController
 __docformat__ = "reStructuredText"
 
@@ -164,7 +164,7 @@ class GoogleDomainController(BaseDomainController):
         logging.debug("requireAuthentication(%r)" 
                       % (realmname, ))
         # If '*' is in the list of allowed accounts, allow anonymous access
-        if findAuthUser("*"):
+        if find_auth_user("*"):
             logging.debug("Granting access to everyone (*)")
             return False
         return True
@@ -212,7 +212,7 @@ class GoogleDomainController(BaseDomainController):
 
         # Check if user name that was passed with the request is in the list 
         # of allowed accounts        
-        auth_user = findAuthUser(username)
+        auth_user = find_auth_user(username)
         if not auth_user:
             logging.info("User %s is not configured to have access" 
                           % (username, ))

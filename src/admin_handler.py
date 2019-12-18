@@ -5,9 +5,9 @@
 
 from builtins import str
 from flask import Flask, render_template, request
-from google.appengine.ext import db
-from google.appengine.ext.db import stats
-from btfs.auth import users
+from btfs import db
+from btfs.db import stats
+from btfs.auth import users, AuthorizedUser
 from btfs.cache import memcache3
 from btfs.model import Path, Dir, File, Chunk
 from pprint import pformat
@@ -15,15 +15,11 @@ import os
 import logging
 
 
-def db_get_count(model, limit=1000):
-    return model.all(keys_only=True).count(limit)
-
-
 def db_get_stats(model, limit=1000):
     stats = {
         'kind': model.kind(),
         'properties': model.properties(),
-        'count': db_get_count(model, limit)
+        'count': model.get_count(limit)
     }
     for name in stats['properties']:
         proptype = type(stats['properties'][name]).__name__
@@ -34,10 +30,10 @@ def db_get_stats(model, limit=1000):
 
 
 def find_orphans(limit=1000):
-    dir_list = Dir.all().fetch(1000)
+    dir_list = Dir.list_all(1000)
     dir_keys = {}
     for item in dir_list:
-        dir_keys[item.key().id_or_name()] = item
+        dir_keys[item.key()] = item
     output = "Orphan Dirs:\n"
     dir_orphans = []
     for item in dir_list:
@@ -47,8 +43,8 @@ def find_orphans(limit=1000):
                 dir_orphans.append(item.key())
             continue
         try:
-            key = item.parent_path.key().id_or_name()
-        except db.ReferencePropertyResolveError:
+            key = item.parent_path
+        except Exception as e:
             output += 'Invalid Reference: %s\n' % item.path
             dir_orphans.append(item.key())
             continue
@@ -56,15 +52,15 @@ def find_orphans(limit=1000):
             output += 'Unknown Parent: %s\n' % item.path
             dir_orphans.append(item.key())
     del(dir_list)
-    file_list = File.all().fetch(1000)
+    file_list = File.list_all(1000)
     output += "Orphan Files:\n"
     file_keys = {}
     file_orphans = []
     for item in file_list:
-        file_keys[item.key().id_or_name()] = item
+        file_keys[item.key()] = item
         try:
-            key = item.parent_path.key().id_or_name()
-        except db.ReferencePropertyResolveError:
+            key = item.parent_path
+        except Exception as e:
             output += 'Invalid Reference: %s\n' % item.path
             file_orphans.append(item.key())
             continue
@@ -72,21 +68,21 @@ def find_orphans(limit=1000):
             output += 'Unknown Parent: %s\n' % item.path
             file_orphans.append(item.key())
             continue
-        if item.parent_path.key() in dir_orphans:
+        if key in dir_orphans:
             output += 'Orphan Dir: %s\n' % item.path
             file_orphans.append(item.key())
             continue
-        file_keys[item.key().id_or_name()] = item
+        file_keys[item.key()] = item
     del(file_list)
     #chunk_list = Chunk.all().fetch(1000)
-    chunk_list = db.Query(Chunk, projection=('file', 'offset')).fetch(1000)
+    chunk_list = Chunk.list_all(1000, projection=('file', 'offset'))
     output += "Orphan Chunks:\n"
     #chunk_keys = {}
     chunk_orphans = []
     for item in chunk_list:
         try:
-            key = item.file.key().id_or_name()
-        except db.ReferencePropertyResolveError:
+            key = item.file
+        except Exception as e:
             output += 'Invalid Reference: %s\n' % item.key()
             chunk_orphans.append(item.key())
             continue
@@ -94,11 +90,11 @@ def find_orphans(limit=1000):
             output += 'Unknown File: %s %s\n' % (item.file.key(), item.offset)
             chunk_orphans.append(item.key())
             continue
-        if item.file.key() in file_orphans:
+        if key in file_orphans:
             output += 'Orphan File: %s %s\n' % (item.file.key(), item.offset)
             chunk_orphans.append(item.key())
             continue
-        #chunk_keys[item.key().id_or_name()] = item
+        #chunk_keys[item.key()] = item
     del(chunk_list)
     # TODO: resize files & dirs based on chunk_keys?
     return output, dir_orphans, file_orphans, chunk_orphans
@@ -113,7 +109,9 @@ def admin_view():
     if not users.is_current_user_admin():
         output = "You need to login as administrator <a href='%s'>Login</a>" % users.create_login_url(request.url)
         return output
-    qs = os.environ.get("QUERY_STRING", "")
+    qs = request.query_string
+    if not isinstance(qs, str):
+        qs = qs.decode('utf-8')
     logging.warning("AdminHandler.get: %s" % qs)
     # Handle admin commands
     if qs == "run_tests":
@@ -175,26 +173,32 @@ def admin_view():
     for k, v in list(os.environ.items()):
         env.append("%s: '%s'" % (k, v))
     datastore_stats = {}
-    datastore_stats['Stats'] = stats.GlobalStat.all().fetch(1)
-    #datastore_stats['Stats'] = []
-    #for stat in stats.KindPropertyNamePropertyTypeStat.all():
+    #datastore_stats['Stats'] = stats.GlobalStat.list_all(1)
+    datastore_stats['Stats'] = []
+    #for stat in stats.KindPropertyNamePropertyTypeStat.list_all():
     #    datastore_stats['Stats'].append(stat)
     datastore_stats['Path'] = db_get_stats(Path)
     datastore_stats['Dir'] = db_get_stats(Dir)
     datastore_stats['File'] = db_get_stats(File)
     datastore_stats['Chunk'] = db_get_stats(Chunk)
+    datastore_stats['User'] = db_get_stats(AuthorizedUser)
     paths = []
-    for item in Path.all().fetch(10):
-        info = item._entity
+    for item in Path.list_all(10):
+        info = dict(item._entity)
         info['__key__'] = item.key()
         paths.append(info)
     chunks = []
-    for item in Chunk.all().fetch(10):
-        info = item._entity
+    for item in Chunk.list_all(10):
+        info = dict(item._entity)
         if len(info['data']) > 100:
             info['data'] = '%s... (%s bytes)' % (info['data'][:100], len(info['data']))
         info['__key__'] = item.key()
         chunks.append(info)
+    userlist = []
+    for item in AuthorizedUser.list_all(10):
+        info = dict(item._entity)
+        info['__key__'] = item.key()
+        userlist.append(info)
     template_values = {
         "nickname": user.nickname(),
         "url": url,
@@ -203,6 +207,7 @@ def admin_view():
         "datastore_stats": pformat(datastore_stats),
         "path_samples": pformat(paths),
         "chunk_samples": pformat(chunks),
+        "user_samples": pformat(userlist),
         "environment_dump": "\n".join(env),
         }
 

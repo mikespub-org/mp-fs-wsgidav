@@ -33,7 +33,7 @@ def test():
     fs.mkdir(rootpath)
     assert fs.isdir(rootpath)
     
-    data = "file content"
+    data = b"file content"
     fs.mkdir(rootpath+"/dir1")
     assert fs.isdir(rootpath+"/dir1")
     f1 = fs.btopen(rootpath+"/dir1/file1.txt", "w")
@@ -63,7 +63,7 @@ def test():
     assert not fs.isdir(rootpath+"/folder1/file_empty.txt")
     assert fs.isfile(rootpath+"/folder1/file_empty.txt")
     # write
-    data = "x" * 1024
+    data = b"x" * 1024
     res = resChild.create_empty_resource("file2.txt")
     f = res.begin_write()
     f.write(data)
@@ -81,7 +81,7 @@ def test():
     
     lock = provider.lock_manager.acquire(rootpath+"/folder1",
                                         "write", "exclusive", "infinity", 
-                                        "test_owner", timeout=100, 
+                                        b"test_owner", timeout=100, 
                                         principal="martin", token_list=[])
     assert lock["root"] == rootpath+"/folder1"
     lock = provider.lock_manager.get_lock(lock["token"])

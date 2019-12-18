@@ -10,13 +10,10 @@ from builtins import range
 from builtins import object
 import os.path
 import logging
-try:
-    from google.appengine.ext import db
-    from google.appengine.ext.db import polymodel
-except:
-    from . import db
-    from .db import polymodel
-#from google.appengine.ext.db import GqlQuery
+import datetime
+import hashlib
+from . import db
+from .db import polymodel
 #from cache import cached_dir, cached_file, cached_content
 from .cache import cached_resource
 
@@ -36,15 +33,38 @@ class UnmappedPath(object):
 #class Path(db.Model):
 class Path(polymodel.PolyModel):
     """Derived from PolyModel, so we can perform queries on objects of the parent class"""
-    path = db.StringProperty(required=True)
-    size = db.IntegerProperty(required=True, default=0) # cache the size of content, 0 for dir
-    create_time = db.DateTimeProperty(required=True, auto_now_add = True)
-    modify_time = db.DateTimeProperty(required=True, auto_now = True)
+    #path = db.StringProperty(required=True)
+    #size = db.IntegerProperty(required=True, default=0) # cache the size of content, 0 for dir
+    #create_time = db.DateTimeProperty(required=True, auto_now_add = True)
+    #modify_time = db.DateTimeProperty(required=True, auto_now = True)
+    _kind = 'Path'
+    _exclude_from_indexes = None
+    _auto_now_add = ['create_time']
+    _auto_now = ['modify_time']
 
     cache = cached_resource
      
+    def _init_entity(self, **kwargs):
+        super(Path, self)._init_entity(**kwargs)
+        template = {
+            'path': '',
+            'size': 0,
+            'create_time': datetime.datetime.utcnow(),
+            'modify_time': datetime.datetime.utcnow()
+        }
+        for key in template:
+            self._entity.setdefault(key, template[key])
+
+    def set_key(self):
+        if len(self.path) > 128:
+            self._entity.key = self._entity.key.completed_key(hashlib.md5(self.path.encode('utf-8')).hexdigest())
+        else:
+            self._entity.key = self._entity.key.completed_key(self.path)
+
     def put(self):
         logging.debug("Path.put(%r)" % (self.path))
+        if not self.is_saved():
+            self.set_key()
         db.Model.put(self)
         self.cache.set(self.path, self)
         return 
@@ -55,6 +75,33 @@ class Path(polymodel.PolyModel):
             raise RuntimeError("Though shalt not delete root")
         self.cache.delete(self.path)
         return db.Model.delete(self)
+
+    @classmethod
+    def list_by_path(cls, path):
+        #result = list(cls.gql("WHERE path = :1", path))
+        query = db.get_client().query(kind=cls._kind)
+        query.add_filter('path', '=', path)
+        result = []
+        for entity in query.fetch():
+            instance = cls.from_entity(entity)
+            result.append(instance)
+        return result
+
+    # CHECKME: always calling Path here (to avoid asking once for Dir and once for File)
+    @classmethod
+    def list_by_parent_path(cls, parent_path):
+        #result = list(Path.gql("WHERE parent_path=:1", self))
+        #query = db.get_client().query(kind=cls._kind)
+        query = db.get_client().query(kind='Path')
+        if isinstance(parent_path, db.Model):
+            query.add_filter('parent_path', '=', parent_path.key())
+        else:
+            query.add_filter('parent_path', '=', parent_path)
+        result = []
+        for entity in query.fetch():
+            instance = cls.from_entity(entity)
+            result.append(instance)
+        return result
 
     @classmethod
     def normalize(cls, p):
@@ -114,7 +161,8 @@ class Path(polymodel.PolyModel):
         if result:
             #logging.debug('Cached result: %s' % result)
             return result
-        result = list(cls.gql("WHERE path = :1", path))
+        #result = list(cls.gql("WHERE path = :1", path))
+        result = cls.list_by_path(path)
         if len(result) == 1:
             result = result[0]
 #            assert type(result) in (Path, cls)
@@ -145,7 +193,13 @@ class Path(polymodel.PolyModel):
         if DO_EXPENSIVE_CHECKS:
             if Path.retrieve(path):
                 raise RuntimeError("Path exists: %r" % path)
-        result = cls(path=path, parent_path=parent_path)
+        if isinstance(parent_path, db.Model):
+            result = cls(path=path, parent_path=parent_path.key())
+        else:
+            result = cls(path=path, parent_path=parent_path)
+        if not result.is_saved():
+            logging.error('No complete key available yet')
+            result.set_key()
         result.put()
         return result
 
@@ -154,14 +208,23 @@ class Path(polymodel.PolyModel):
 # Dir
 #===============================================================================
 class Dir(Path):
-    parent_path = db.ReferenceProperty(Path)
+    #parent_path = db.ReferenceProperty(Path)
+    #_kind = 'Dir'
+    #_exclude_from_indexes = None
+    #_auto_now_add = ['create_time']
+    #_auto_now = ['modify_time']
 #    cache = cached_dir
-   
+
+    def _init_entity(self, **kwargs):
+        super(Dir, self)._init_entity(**kwargs)
+        self._entity.setdefault('parent_path', None)
+
     def get_content(self):
 #        result = list(self.dir_set) + list(self.file_set)
 #        logging.debug("Dir.get_content: %r" % result)
         # TODO: ORDER BY
-        result = list(Path.gql("WHERE parent_path=:1", self))
+        #result = list(Path.gql("WHERE parent_path=:1", self))
+        result = Path.list_by_parent_path(self)
         logging.debug("Dir.get_content: %r" % result)
         
         return result    
@@ -196,17 +259,25 @@ class Dir(Path):
 class File(Path):
     ChunkSize = 800*1024 # split file to chunks at most 800K
 
-    parent_path = db.ReferenceProperty(Path)
+    #parent_path = db.ReferenceProperty(Path)
     #content = db.BlobProperty(default='')
     #content = db.ListProperty(db.Blob)
+    #_kind = 'File'
+    #_exclude_from_indexes = None
+    #_auto_now_add = ['create_time']
+    #_auto_now = ['modify_time']
 
 #    cache = cached_file
+
+    def _init_entity(self, **kwargs):
+        super(File, self)._init_entity(**kwargs)
+        self._entity.setdefault('parent_path', None)
 
     def put(self):
         if self.is_saved():
             # CHECKME: this doesn't return the chunks yet
             if self.size == 0:
-                self.size = sum(len(chunk) for chunk in self.chunk_set)
+                self.size = sum(len(chunk['data']) for chunk in Chunk.fetch_entities_by_file(self))  # use ancestor instead?
         else:
             self.size = 0
         Path.put(self)
@@ -217,10 +288,11 @@ class File(Path):
         Join chunks together.
         """
         if self.is_saved():
-            chunks = Chunk.gql("WHERE file=:1 ORDER BY offset ASC", self)
+            #chunks = Chunk.gql("WHERE file=:1 ORDER BY offset ASC", self)
+            chunks = Chunk.fetch_entities_by_file(self)
         else:
             chunks = []
-        result = b''.join(chunk.data for chunk in chunks)
+        result = b''.join(chunk['data'] for chunk in chunks)
         #logging.debug('Content: %s' % repr(result))
         return result
     
@@ -231,15 +303,23 @@ class File(Path):
         """
         size = len(s)
         #self.content = []
-        # clear old chunks
-        for chunk in self.chunk_set:
-            chunk.delete()
+        if not self.is_saved():
+            logging.error('No complete key available yet')
+            self.set_key()
+            #raise Exception
+        else:
+            # clear old chunks
+            #for chunk in self.chunk_set:  # use ancestor instead?
+            #    chunk.delete()
+            chunk_keys = Chunk.list_keys_by_file(self)
+            if chunk_keys and len(chunk_keys) > 0:
+                db.get_client().delete_multi(chunk_keys)
 
         # put new datas
         for i in range(0, size, self.ChunkSize):
             logging.debug("File.put_content putting the chunk with offset = %d" % i)
             data = s[i:i+self.ChunkSize]
-            ck = Chunk(file=self, offset=i, data=data)
+            ck = Chunk(file=self.key(), offset=i, data=data, parent=self.key())  # use parent here?
             ck.put()
         self.size = size
         self.put()
@@ -250,8 +330,11 @@ class File(Path):
         Also delete chunks.
         """
         logging.debug("File.delete %s" % repr(self.path))
-        for chunk in self.chunk_set:
-            chunk.delete()
+        #for chunk in self.chunk_set:  # use ancestor instead?
+        #    chunk.delete()
+        chunk_keys = Chunk.list_keys_by_file(self)
+        if chunk_keys and len(chunk_keys) > 0:
+            db.get_client().delete_multi(chunk_keys)
         Path.delete(self)
         return
 
@@ -259,10 +342,43 @@ class File(Path):
 # Chunk
 #===============================================================================
 class Chunk(db.Model):
-    file = db.ReferenceProperty(File)
-    offset = db.IntegerProperty(required=True)
-    data = db.BlobProperty(default=b'')
+    #file = db.ReferenceProperty(File)
+    #offset = db.IntegerProperty(required=True)
+    #data = db.BlobProperty(default=b'')
+    _kind = 'Chunk'
+    _exclude_from_indexes = ['data']
+    _auto_now_add = None
+    _auto_now = None
+
+    def _init_entity(self, **kwargs):
+        super(Chunk, self)._init_entity(**kwargs)
+        template = {
+            'file': None,
+            'offset': 0,
+            'data': b''
+        }
+        for key in template:
+            self._entity.setdefault(key, template[key])
 
     def __len__(self):
         return len(self.data)
+
+    @classmethod
+    def fetch_entities_by_file(cls, file):
+        #chunks = Chunk.gql("WHERE file=:1 ORDER BY offset ASC", self)
+        query = db.get_client().query(kind=cls._kind)  # use ancestor instead?
+        query.add_filter('file', '=', file.key())
+        query.order = ['offset']
+        return query.fetch()
+
+    @classmethod
+    def list_keys_by_file(cls, file):
+        #chunks = Chunk.gql("WHERE file=:1 ORDER BY offset ASC", self)
+        query = db.get_client().query(kind=cls._kind)  # use ancestor instead?
+        query.keys_only()
+        query.add_filter('file', '=', file.key())
+        result = []
+        for entity in query.fetch():
+            result.append(entity.key)
+        return result
 

@@ -13,7 +13,6 @@ import logging
 
 
 def test_auth():
-#    from google.appengine.tools.appengine_rpc import AbstractRpcServer
     
     
     

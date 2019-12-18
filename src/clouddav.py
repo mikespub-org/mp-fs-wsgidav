@@ -48,7 +48,7 @@ def create_app():
         "google_dc": {},
         "dir_browser": {
             "enable": True,          # Render HTML listing for GET requests on collections
-            "response_trailer": "<a href='http://clouddav.googlecode.com/'>CloudDAV/%s</a> ${version} - ${time}" % __version__,
+            "response_trailer": "<a href='https://github.com/mar10/clouddav'>CloudDAV/%s</a> ${version} - ${time}" % __version__,
             "davmount": True,       # Send <dm:mount> response if request URL contains '?davmount'
             "msmount": True,        # Add an 'open as webfolder' link (requires Windows)
             },

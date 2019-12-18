@@ -178,7 +178,8 @@ def btopen(s, mode='r'):
 
 def listdir(s):
     p = getdir(s)
-    path_str = [c.basename(c.path).encode('utf-8') for c in p.get_content()]
+    #path_str = [c.basename(c.path).encode('utf-8') for c in p.get_content()]
+    path_str = [c.basename(c.path) for c in p.get_content()]
     return path_str
 
 

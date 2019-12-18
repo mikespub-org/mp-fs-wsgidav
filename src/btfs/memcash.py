@@ -1,7 +1,6 @@
 from builtins import str
 from builtins import map
 import time, os, random
-#from google.appengine.api import memcache
 from .cache import memcache3
 CURRENT_VERSION_ID = os.environ.get('CURRENT_VERSION_ID','0')
 local_cache = {}

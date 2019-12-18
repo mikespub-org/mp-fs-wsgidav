@@ -11,7 +11,6 @@ import threading
 Implement cache mechanism.
 """
 import logging
-#from google.appengine.api import memcache
 from cachelib import MemcachedCache, RedisCache, SimpleCache
 
 """
