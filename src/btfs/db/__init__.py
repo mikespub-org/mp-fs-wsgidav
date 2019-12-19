@@ -106,6 +106,11 @@ class Model(with_metaclass(ModelType, object)):
     def delete(self):
         return get_client().delete(self._entity.key)
 
+    def to_dict(self):
+        info = dict(self._entity)
+        info['__key__'] = self.key()
+        return info
+
     @classmethod
     def from_entity(cls, entity):
         return cls(_from_entity=entity)

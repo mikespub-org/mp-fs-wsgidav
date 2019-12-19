@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}CloudDAV User Info{% endblock %}
+
+{% block header %}CloudDAV User Info{% endblock %}
+
+{% block content %}
+	{% if auth_user %}
+		Welcome {{ auth_user.nickname }}, you are an authenticated user with {{ access }} access.
+	{% else %}
+		Hello stranger, nice to meet you...
+	{% endif %}
+	{% if user_claims %}
+	<ul>
+		{% for key, value in user_claims.items() %}
+		<li>{{ key }}: {{ value }}</li>
+		{% endfor %}
+	</ul>
+	{% endif %}
+{% endblock %}
+

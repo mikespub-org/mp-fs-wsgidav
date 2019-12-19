@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}User Authentication via Google Cloud Identity Platform{% endblock %}
+{% block title %}User Authentication via Google Cloud Identity Platform (Firebase Auth){% endblock %}
 
 {% block styles %}
   <!-- See https://github.com/firebase/firebaseui-web. -->
@@ -30,7 +30,7 @@
   <!-- [END gae_python37_auth_init_firebase] -->
   <script>
     if (typeof firebase === 'undefined') {
-      const msg = "Please paste the Firebase initialization snippet into index.html. See https://console.firebase.google.com > Overview > Add Firebase to your web app.";
+      const msg = "Please set the Firebase project ID and API key as environment variables in app.yaml. See the application setup details at https://console.cloud.google.com > Identity Platform > Providers, or the initialization snippet at https://console.firebase.google.com > Overview > Add Firebase to your web app.";
       console.log(msg);
       alert(msg);
     }
@@ -54,16 +54,16 @@
 
 <div id="login-info" hidden=true>
   <h2>Login info:</h2>
-  {% if user_data %}
-    <dl>
-      <dt>Name</dt><dd>{{ user_data['name'] }}</dd>
-      <dt>Email</dt><dd>{{ user_data['email'] }}</dd>
+  {% if user_claims %}
+    <div>
+      <p>Name: {{ user_claims['name'] }}</p>
+      <p>Email: {{ user_claims['email'] }}</p>
 	  <!--
-      {% for key, value in user_data.items() %}
-      <dt>{{ key }}</dt><dd>{{ value }}</dd>
+      {% for key, value in user_claims.items() %}
+      <p>{{ key }}: {{ value }}</p>
       {% endfor %}
 	  -->
-    </dl>
+    </div>
   {% endif %}
 </div>
 

@@ -2,10 +2,6 @@
 #
 # See also https://github.com/mar10/wsgidav/issues/109
 #
-"""
-Taken from 
-  http://appengine-cookbook.appspot.com/recipe/restrict-application-to-an-authorized-set-of-users/
-"""
 from __future__ import absolute_import
 from builtins import object
 import logging
@@ -53,9 +49,8 @@ def get_user_claims(id_token):
     return claims, error_message
 
 
-def check_user_role(id_token, role='admin'):
-    claims, error_message = get_user_claims(id_token)
-    if not claims or error_message:
+def check_user_role(claims, role='admin'):
+    if not claims:
         return False
     if claims.get('admin'):
         return True
@@ -103,13 +98,17 @@ class AuthorizedUser(db.Model):
             'user_id': '',
             'nickname': '',
             'user': None,
-            'canWrite': False
+            'canWrite': False,
+            'roles': '',
+            'claims': None
         }
         for key in template:
             self._entity.setdefault(key, template[key])
 
     @classmethod
     def get_by_user(cls, user):
+        if not user or not user.email():
+            return
         #return cls.gql("where user = :1", user).get()
         query = db.get_client().query(kind=cls._kind)
         query.add_filter('email', '=', user.email())

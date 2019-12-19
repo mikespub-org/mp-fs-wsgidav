@@ -183,20 +183,17 @@ def admin_view():
     datastore_stats['User'] = db_get_stats(AuthorizedUser)
     paths = []
     for item in Path.list_all(10):
-        info = dict(item._entity)
-        info['__key__'] = item.key()
+        info = item.to_dict()
         paths.append(info)
     chunks = []
     for item in Chunk.list_all(10):
-        info = dict(item._entity)
+        info = item.to_dict()
         if len(info['data']) > 100:
             info['data'] = '%s... (%s bytes)' % (info['data'][:100], len(info['data']))
-        info['__key__'] = item.key()
         chunks.append(info)
     userlist = []
     for item in AuthorizedUser.list_all(10):
-        info = dict(item._entity)
-        info['__key__'] = item.key()
+        info = item.to_dict()
         userlist.append(info)
     template_values = {
         "nickname": user.nickname(),

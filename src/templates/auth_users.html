@@ -22,7 +22,7 @@
     </p>
     <ul>
         {% for auth_user in authorized_users %}
-        <li>'{{ auth_user.nickname }}' (email: {{ auth_user.email }}) -
+        <li>[{{ auth_user.roles }}] '{{ auth_user.nickname }}' (email: {{ auth_user.email }}) -
 		    {% if auth_user.canWrite %}
                 <b>Read/Write access</b>
    	        {% else %}
@@ -35,6 +35,15 @@
 
     <form action="/auth/useradd" method="post">
         <div><input type="text" name="email" id="email"/> (Email Address)</div>
+		<div>
+			<select name="roles" id="roles">
+				<option value=""></option>
+				<option value="reader">reader</option>
+				<option value="editor">editor</option>
+				<option value="admin">admin</option>
+			</select>
+			(Roles)
+		</div>
         <div><input type="checkbox" name="write" id="write" value="1"/> (Write Access)</div>
         <div><input type="submit" value="Add User"/></div>
     </form>
