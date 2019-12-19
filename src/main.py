@@ -28,9 +28,9 @@ class PathDispatcher(object):
     def find_handler(self, path):
         if self.handlers is None:
             return
-        # let static_app handle static files
-        #if path.startswith('/static/'):
-        #    return 'static_app'
+        # let auth.app handle static files
+        if path.startswith('/static/'):
+            return 'auth.app'
         for handler in self.handlers:
             if 'script' not in handler:
                 continue

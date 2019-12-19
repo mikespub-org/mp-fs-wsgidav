@@ -1,0 +1,14 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+  <head>
+    <title>{% block title %}Base Title{% endblock %}</title>
+	{% block styles %}<!-- base styles and scripts -->{% endblock %}
+  </head>
+
+  <body>
+    <h2>{% block header %}Base Header{% endblock %}</h2>
+    {% block content %}
+      Base Content
+    {% endblock %}
+  </body>
+</html>

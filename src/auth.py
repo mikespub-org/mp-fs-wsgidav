@@ -6,6 +6,7 @@ import os
 
 from flask import Flask, render_template, request, redirect
 from btfs.auth import AuthorizedUser, find_auth_user, users
+from btfs.auth import get_id_token, get_user_claims
 from functools import wraps
 import logging
 
@@ -55,7 +56,7 @@ def auth_users():
     template_values = {
         'authorized_users': AuthorizedUser.list_all()
     }
-    return render_template('auth.html', **template_values)
+    return render_template('auth_users.html', **template_values)
 
 
 @app.route('/auth/useradd', methods=['POST'])
@@ -127,4 +128,16 @@ def user_login():
 @app.route('/auth/logout', methods=['GET', 'POST'])
 def user_logout():
     return '(TODO) Goodbye'
+
+
+@app.route('/auth/token', methods=['GET', 'POST'])
+def user_token():
+    id_token = get_id_token(request)
+    claims, error_message = get_user_claims(id_token)
+
+    return render_template(
+        'auth_token.html',
+        user_data=claims, error_message=error_message,
+        FIREBASE_PROJECT_ID=request.environ['FIREBASE_PROJECT_ID'],
+        FIREBASE_API_KEY=request.environ['FIREBASE_API_KEY'])
 

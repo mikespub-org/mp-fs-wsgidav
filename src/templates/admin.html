@@ -1,9 +1,10 @@
-<html>
-	<head>
-        <title>CloudDAV Administration</title>
-	</head>
-	<body>
-	<h1>CloudDAV Administration</h1>
+{% extends "base.html" %}
+
+{% block title %}CloudDAV Administration{% endblock %}
+
+{% block header %}CloudDAV Administration<{% endblock %}
+
+{% block content %}
 	Hello {{ nickname }}.
 	<ul>
 		<li><a href="?run_tests">Run tests</a></li>
@@ -30,5 +31,5 @@
     <hr />
     Environment:
     <pre>{{ environment_dump }}</pre>
-	</body>
-</html>
+{% endblock %}
+

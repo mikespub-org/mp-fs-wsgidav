@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}User Authentication via Google Cloud Identity Platform{% endblock %}
+
+{% block styles %}
+  <!-- See https://github.com/firebase/firebaseui-web. -->
+  <!-- [START gae_python37_auth_init_firebase] -->
+  <!-- *******************************************************************************************
+       * TODO(DEVELOPER): Paste the initialization snippet from:
+       * http://console.firebase.google.com > Overview > Add Firebase to your web app.
+       ***************************************************************************************** -->
+
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/7.5.2/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/7.5.2/firebase-auth.js"></script>
+
+<script>
+  // Your web app's Firebase configuration
+  var firebaseConfig = {
+    apiKey: "{{ FIREBASE_API_KEY }}",
+    authDomain: "{{ FIREBASE_PROJECT_ID }}.firebaseapp.com",
+  };
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+</script>
+
+  <!-- [END gae_python37_auth_init_firebase] -->
+  <script>
+    if (typeof firebase === 'undefined') {
+      const msg = "Please paste the Firebase initialization snippet into index.html. See https://console.firebase.google.com > Overview > Add Firebase to your web app.";
+      console.log(msg);
+      alert(msg);
+    }
+  </script>
+  <!-- [START gae_python37_auth_include_firebaseui] -->
+  <!-- updated from https://github.com/firebase/firebaseui-web -->
+  <script src="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.js"></script>
+  <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.css" />
+  <!-- [END gae_python37_auth_include_firebaseui] -->
+  <script src="/static/auth_script.js"></script>
+  <link type="text/css" rel="stylesheet" href="/static/auth_style.css">
+{% endblock %}
+
+{% block header %}Google Cloud Identity Platform{% endblock %}
+
+{% block content %}
+<!-- [START gae_python37_auth_firebase_html] -->
+<div id="firebaseui-auth-container"></div>
+
+<button id="sign-out" hidden=true>Sign Out</button>
+
+<div id="login-info" hidden=true>
+  <h2>Login info:</h2>
+  {% if user_data %}
+    <dl>
+      <dt>Name</dt><dd>{{ user_data['name'] }}</dd>
+      <dt>Email</dt><dd>{{ user_data['email'] }}</dd>
+	  <!--
+      {% for key, value in user_data.items() %}
+      <dt>{{ key }}</dt><dd>{{ value }}</dd>
+      {% endfor %}
+	  -->
+    </dl>
+  {% endif %}
+</div>
+
+<div id="error-msg">
+  {% if error_message %}
+    <p>Error: {{ error_message }}</p>
+  {% endif %}
+</div>
+<!-- [END gae_python37_auth_firebase_html] -->
+{% endblock %}
+

@@ -23,6 +23,10 @@
     "secure": "optional"
   },
   {
+    "url": "/static",
+    "static_dir": "static"
+  },
+  {
     "url": ".*",
     "script": "clouddav.app",
     "secure": "always"

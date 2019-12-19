@@ -1,11 +1,10 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html>
-  <head>
-    <title>Authorized CloudDAV Users</title>
-  </head>
+{% extends "base.html" %}
 
-  <body>
-    <h2>Authorized CloudDAV Users</h2>
+{% block title %}Authorized CloudDAV Users{% endblock %}
+
+{% block header %}Authorized CloudDAV Users{% endblock %}
+
+{% block content %}
     <p>
         <strong>Note:</strong>
         <ul>
@@ -39,5 +38,5 @@
         <div><input type="checkbox" name="write" id="write" value="1"/> (Write Access)</div>
         <div><input type="submit" value="Add User"/></div>
     </form>
-  </body>
-</html>
+{% endblock %}
+
