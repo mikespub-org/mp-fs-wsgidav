@@ -93,6 +93,7 @@ class Path(polymodel.PolyModel):
         #result = list(Path.gql("WHERE parent_path=:1", self))
         #query = db.get_client().query(kind=cls._kind)
         query = db.get_client().query(kind='Path')
+        # CHECKME: don't use parent here - ancestor queries return all descendants (at all levels)
         if isinstance(parent_path, db.Model):
             query.add_filter('parent_path', '=', parent_path.key())
         else:
@@ -193,6 +194,7 @@ class Path(polymodel.PolyModel):
         if DO_EXPENSIVE_CHECKS:
             if Path.retrieve(path):
                 raise RuntimeError("Path exists: %r" % path)
+        # CHECKME: don't use parent here - ancestor queries return all descendants (at all levels)
         if isinstance(parent_path, db.Model):
             result = cls(path=path, parent_path=parent_path.key())
         else:
@@ -319,7 +321,8 @@ class File(Path):
         for i in range(0, size, self.ChunkSize):
             logging.debug("File.put_content putting the chunk with offset = %d" % i)
             data = s[i:i+self.ChunkSize]
-            ck = Chunk(file=self.key(), offset=i, data=data, parent=self.key())  # use parent here?
+            #ck = Chunk(file=self.key(), offset=i, data=data, parent=self.key())  # use parent here?
+            ck = Chunk(offset=i, data=data, parent=self.key())
             ck.put()
         self.size = size
         self.put()
@@ -353,7 +356,7 @@ class Chunk(db.Model):
     def _init_entity(self, **kwargs):
         super(Chunk, self)._init_entity(**kwargs)
         template = {
-            'file': None,
+            #'file': None,
             'offset': 0,
             'data': b''
         }
@@ -366,17 +369,19 @@ class Chunk(db.Model):
     @classmethod
     def fetch_entities_by_file(cls, file):
         #chunks = Chunk.gql("WHERE file=:1 ORDER BY offset ASC", self)
-        query = db.get_client().query(kind=cls._kind)  # use ancestor instead?
-        query.add_filter('file', '=', file.key())
+        #query = db.get_client().query(kind=cls._kind)  # use ancestor instead?
+        query = db.get_client().query(kind=cls._kind, ancestor=file.key())
+        #query.add_filter('file', '=', file.key())
         query.order = ['offset']
         return query.fetch()
 
     @classmethod
     def list_keys_by_file(cls, file):
         #chunks = Chunk.gql("WHERE file=:1 ORDER BY offset ASC", self)
-        query = db.get_client().query(kind=cls._kind)  # use ancestor instead?
+        #query = db.get_client().query(kind=cls._kind)  # use ancestor instead?
+        query = db.get_client().query(kind=cls._kind, ancestor=file.key())
         query.keys_only()
-        query.add_filter('file', '=', file.key())
+        #query.add_filter('file', '=', file.key())
         result = []
         for entity in query.fetch():
             result.append(entity.key)

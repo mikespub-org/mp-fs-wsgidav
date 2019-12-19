@@ -74,24 +74,23 @@ def find_orphans(limit=1000):
             continue
         file_keys[item.key()] = item
     del(file_list)
-    #chunk_list = Chunk.all().fetch(1000)
-    chunk_list = Chunk.list_all(1000, projection=('file', 'offset'))
+    chunk_list = Chunk.list_all(1000, projection=['offset'])
     output += "Orphan Chunks:\n"
     #chunk_keys = {}
     chunk_orphans = []
     for item in chunk_list:
         try:
-            key = item.file
+            key = item.key().parent
         except Exception as e:
             output += 'Invalid Reference: %s\n' % item.key()
             chunk_orphans.append(item.key())
             continue
         if key not in file_keys:
-            output += 'Unknown File: %s %s\n' % (item.file.key(), item.offset)
+            output += 'Unknown File: %s %s\n' % (item.key().parent, item.offset)
             chunk_orphans.append(item.key())
             continue
         if key in file_orphans:
-            output += 'Orphan File: %s %s\n' % (item.file.key(), item.offset)
+            output += 'Orphan File: %s %s\n' % (item.key().parent, item.offset)
             chunk_orphans.append(item.key())
             continue
         #chunk_keys[item.key()] = item
