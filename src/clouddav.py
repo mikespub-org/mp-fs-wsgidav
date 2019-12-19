@@ -10,7 +10,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 from wsgidav.wsgidav_app import WsgiDAVApp, DEFAULT_CONFIG
 from btfs.btfs_dav_provider import BTFSResourceProvider
 from btfs.memcache_lock_storage import LockStorageMemcache
-from btfs.google_domain_controller import GoogleDomainController
+from btfs.google_dc import GoogleDomainController
 
 __version__ = "0.3.0a1"
 

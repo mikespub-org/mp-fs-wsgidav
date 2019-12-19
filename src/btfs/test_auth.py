@@ -17,7 +17,7 @@ def test_auth():
     
     
     from .auth import users
-    from .google_domain_controller import xAppAuth
+    from .google_dc import xAppAuth
     
 #    auth = xAppAuth("moogle@wwwendt.de", "test", "clouddav")
 #    print auth.getAuthtoken()
