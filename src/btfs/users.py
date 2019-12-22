@@ -16,10 +16,10 @@
 #
 
 """The User Python datastore class to be used as a datastore data type."""
-from builtins import str
-from past.builtins import cmp
-from builtins import object
 import os
+from builtins import object, str
+
+from past.builtins import cmp
 
 # TODO: make configurable
 AUTH_URL = '/auth/'
@@ -206,4 +206,3 @@ def is_current_user_admin():
     `True` if the user is an administrator; all other user types return `False`.
   """
   return (os.environ.get('USER_IS_ADMIN', '0')) == '1'
-

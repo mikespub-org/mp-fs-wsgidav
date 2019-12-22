@@ -6,14 +6,18 @@ Implementation of a WsgiDAV provider that implements a virtual file system based
 on Googles datastore (Bigtable). 
 """
 from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
-from btfs.memcache_lock_storage import LockStorageMemcache
-from wsgidav.lock_manager import LockManager, lock_string
+
 import logging
-from btfs.btfs_dav_provider import BTFSResourceProvider
-from btfs import fs
 import os
+
+from future import standard_library
+from wsgidav.lock_manager import LockManager, lock_string
+
+from btfs import fs
+from btfs.btfs_dav_provider import BTFSResourceProvider
+from btfs.memcache_lock_storage import LockStorageMemcache
+
+standard_library.install_aliases()
 
 count = 0
 

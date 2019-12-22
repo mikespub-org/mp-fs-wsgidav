@@ -3,13 +3,15 @@
 # Central dispatcher for flask & webapp2 apps
 #
 # Application Dispatching - https://flask.palletsprojects.com/en/1.1.x/patterns/appdispatch/
-from builtins import object
-from threading import RLock
-from werkzeug.wsgi import pop_path_info, peek_path_info, get_path_info
-# Lazy Loading - https://flask.palletsprojects.com/en/1.1.x/patterns/lazyloading/
-from werkzeug.utils import import_string, cached_property
 import json
 import re
+from builtins import object
+from threading import RLock
+
+# Lazy Loading - https://flask.palletsprojects.com/en/1.1.x/patterns/lazyloading/
+from werkzeug.utils import cached_property, import_string
+from werkzeug.wsgi import get_path_info, peek_path_info, pop_path_info
+
 # Import for local testing
 #import set_env
 # Import default app here + preset TRUSTED_AUTH_HEADER in environ for non-wsgidav applications too
@@ -117,4 +119,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

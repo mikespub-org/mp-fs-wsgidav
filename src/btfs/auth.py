@@ -3,16 +3,17 @@
 # See also https://github.com/mar10/wsgidav/issues/109
 #
 from __future__ import absolute_import
-from builtins import object
+
 #import pickle
 import logging
+from builtins import object
 
-from . import db
-
-import requests
 import cachecontrol
 import google.auth.transport.requests
 import google.oauth2.id_token
+import requests
+
+from . import db
 
 # See https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.id_token.html
 #firebase_request_adapter = requests.Request()
@@ -167,4 +168,3 @@ def find_auth_user(email):
     auth_user = AuthorizedUser.get_by_property('email', email.lower())
     #logging.debug("find_auth_user(%r) = %s" % (email, auth_user))
     return auth_user
-

@@ -6,23 +6,27 @@ Implementation of a WsgiDAV provider that implements a virtual file system based
 on Google's Big Table.
 """
 from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from btfs.model import Path, Dir, File
-import logging
+
 import hashlib
+import logging
 import mimetypes
-from . import fs
-from . import sessions
+from builtins import str
+
+from future import standard_library
+from wsgidav import util
+from wsgidav.dav_error import HTTP_FORBIDDEN, DAVError
+from wsgidav.dav_provider import DAVProvider, _DAVResource
+
+from btfs.model import Dir, File, Path
+
+from . import fs, sessions
+
+standard_library.install_aliases()
 
 try:
     from io import StringIO
 except ImportError:
     from io import StringIO #@UnusedImport
-from wsgidav.dav_provider import DAVProvider, _DAVResource
-from wsgidav import util
-from wsgidav.dav_error import DAVError, HTTP_FORBIDDEN
 
 __docformat__ = "reStructuredText en"
 
@@ -406,4 +410,3 @@ class BTFSResourceProvider(DAVProvider):
     #    #return default_handler(environ, start_response)
     #    logging.debug('Custom: %r %r' % (start_response, default_handler))
     #    return super(BTFSResourceProvider, self).custom_request_handler(environ, start_response, default_handler)
-

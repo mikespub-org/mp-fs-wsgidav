@@ -1,6 +1,9 @@
 # -*- coding: iso-8859-1 -*-
-from builtins import object
+import logging
 import threading
+from builtins import object
+
+from cachelib import MemcachedCache, RedisCache, SimpleCache
 
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
@@ -10,8 +13,6 @@ import threading
 """
 Implement cache mechanism.
 """
-import logging
-from cachelib import MemcachedCache, RedisCache, SimpleCache
 
 """
 With Python 2.7 this defaults to the standard App Engine Memcache service.

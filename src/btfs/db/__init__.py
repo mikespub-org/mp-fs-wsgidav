@@ -1,9 +1,11 @@
-from google.cloud import datastore
-import os.path
+import datetime
 import json
 import logging
-import datetime
+import os.path
+
 from future.utils import with_metaclass
+from google.cloud import datastore
+
 from ..cache import cached_model
 
 _client = None

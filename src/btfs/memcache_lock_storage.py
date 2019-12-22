@@ -21,13 +21,17 @@ See `Developers info`_ for more information about the WsgiDAV architecture.
 .. _`Developers info`: http://docs.wsgidav.googlecode.com/hg/html/develop.html  
 """
 from __future__ import absolute_import
-from builtins import object
+
 import logging
-from wsgidav import util
-from wsgidav.lock_manager import normalize_lock_root, lock_string,\
-    validate_lock, generate_lock_token
 import time
+from builtins import object
+
+from wsgidav import util
+from wsgidav.lock_manager import (generate_lock_token, lock_string,
+                                  normalize_lock_root, validate_lock)
+
 from .cache import cached_lock
+
 _logger = util.get_module_logger(__name__)
 
 __docformat__ = "reStructuredText"
@@ -228,4 +232,3 @@ class LockStorageMemcache(object):
         return lockList
 
     get_lock_list = getLockList
-

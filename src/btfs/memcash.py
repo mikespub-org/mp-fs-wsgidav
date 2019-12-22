@@ -1,12 +1,15 @@
-from builtins import str
-from builtins import map
-import time, os, random
+import logging
+import os
+import random
+import time
+from builtins import map, str
+
 from .cache import memcache3
+
 CURRENT_VERSION_ID = os.environ.get('CURRENT_VERSION_ID','0')
 local_cache = {}
 DOG_PILE_WINDOW = 10 # seconds
  
-import logging
 
  
 def cash(ttl=60, key=None, ver=CURRENT_VERSION_ID, pre='', off=False):

@@ -34,18 +34,23 @@ See `Developers info`_ for more information about the WsgiDAV architecture.
 
 .. _`Developers info`: http://docs.wsgidav.googlecode.com/hg/html/develop.html  
 """
-from __future__ import absolute_import
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
-from builtins import object
-import logging 
-import sys
-import urllib.request, urllib.error, urllib.parse
+from __future__ import absolute_import, print_function
+
 import http.cookiejar
+import logging
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from builtins import object
+
+from future import standard_library
+from wsgidav.dc.base_dc import BaseDomainController
 
 from .auth import find_auth_user, users
-from wsgidav.dc.base_dc import BaseDomainController
+
+standard_library.install_aliases()
+
 __docformat__ = "reStructuredText"
 
 
@@ -240,4 +245,3 @@ class GoogleDomainController(BaseDomainController):
     def supports_http_digest_auth(self):
         # We don't have access to a plaintext password (or stored hash)
         return False
-

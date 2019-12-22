@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, make_response
-from btfs.auth import AuthorizedUser, find_auth_user
-from btfs import sessions
-from functools import wraps
 import logging
+from functools import wraps
 
+from flask import Flask, make_response, redirect, render_template, request
+
+from btfs import sessions
+from btfs.auth import AuthorizedUser, find_auth_user
 
 app = Flask(__name__)
 app.debug = True
@@ -146,4 +147,3 @@ def user_token():
         FIREBASE_PROJECT_ID=request.environ['FIREBASE_PROJECT_ID'],
         FIREBASE_API_KEY=request.environ['FIREBASE_API_KEY'],
         FIREBASE_ID_TOKEN=sessions.get_cookie_name('id_token'))
-

@@ -6,16 +6,17 @@
 # (c) 2009 Haoyu Bai (http://gaedav.google.com/).
 
 from __future__ import absolute_import
-from builtins import range
-from builtins import object
-import os.path
-import logging
+
 import datetime
 import hashlib
+import logging
+import os.path
+from builtins import object, range
+
 from . import db
-from .db import polymodel
 #from cache import cached_dir, cached_file, cached_content
 from .cache import cached_resource
+from .db import polymodel
 
 DO_EXPENSIVE_CHECKS = False
 #DO_EXPENSIVE_CHECKS = True
@@ -399,4 +400,3 @@ class Chunk(db.Model):
         for entity in query.fetch():
             result.append(entity.key)
         return result
-

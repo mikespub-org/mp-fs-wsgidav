@@ -1,5 +1,6 @@
-from .. import db
 import logging
+
+from .. import db
 
 _CLASS_KEY_PROPERTY = 'class'
 
@@ -34,4 +35,3 @@ class PolyModel(db.Model):
             #logging.debug('Extra filter for class = %s' % cls.class_name())
             query.add_filter(_CLASS_KEY_PROPERTY, '=', cls.class_name())
         return query
-

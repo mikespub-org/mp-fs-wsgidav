@@ -10,10 +10,11 @@ Used by HTTPAuthenticator. Only for web-based access or behind an identity-aware
 See https://wsgidav.readthedocs.io/en/latest/user_guide_configure.html
 """
 from __future__ import print_function
+
 from wsgidav import util
 from wsgidav.dc.base_dc import BaseDomainController
-from .sessions import get_current_session
 
+from .sessions import get_current_session
 
 __docformat__ = "reStructuredText"
 _logger = util.get_module_logger(__name__)
@@ -106,4 +107,3 @@ class FirebaseDomainController(BaseDomainController):
     def supports_http_digest_auth(self):
         # We don't have access to a plaintext password (or stored hash)
         return False
-

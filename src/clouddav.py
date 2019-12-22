@@ -3,16 +3,19 @@
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
-from future import standard_library
-standard_library.install_aliases()
-import os
 import logging
-logging.getLogger().setLevel(logging.DEBUG)
-from wsgidav.wsgidav_app import WsgiDAVApp, DEFAULT_CONFIG
+import os
+
+from future import standard_library
+from wsgidav.wsgidav_app import DEFAULT_CONFIG, WsgiDAVApp
+
 from btfs.btfs_dav_provider import BTFSResourceProvider
-from btfs.memcache_lock_storage import LockStorageMemcache
 #from btfs.google_dc import GoogleDomainController
 from btfs.firebase_dc import FirebaseDomainController
+from btfs.memcache_lock_storage import LockStorageMemcache
+
+standard_library.install_aliases()
+logging.getLogger().setLevel(logging.DEBUG)
 
 __version__ = "0.3.0a1"
 
@@ -60,7 +63,7 @@ def get_config():
         },
         "dir_browser": {
             "enable": True,          # Render HTML listing for GET requests on collections
-            "response_trailer": "<a href='https://github.com/mar10/clouddav'>CloudDAV/%s</a> ${version} - ${time}" % __version__,
+            "response_trailer": "<a href='https://github.com/mikespub-org/mar10-clouddav'>CloudDAV/%s</a> ${version} - ${time}" % __version__,
             "davmount": True,       # Send <dm:mount> response if request URL contains '?davmount'
             "msmount": True,        # Add an 'open as webfolder' link (requires Windows)
             },
@@ -85,4 +88,3 @@ def create_app():
 
 # Using WSGI - https://cloud.google.com/appengine/docs/standard/python/migrate27#wsgi
 app = create_app()
-

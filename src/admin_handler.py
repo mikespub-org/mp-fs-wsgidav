@@ -3,17 +3,18 @@
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
-from builtins import str
-from flask import Flask, render_template, request
-from btfs import db
-from btfs.db import stats
-from btfs.auth import AuthorizedUser
-from btfs import sessions
-from btfs.cache import memcache3
-from btfs.model import Path, Dir, File, Chunk
-from pprint import pformat
-import os
 import logging
+import os
+from builtins import str
+from pprint import pformat
+
+from flask import Flask, render_template, request
+
+from btfs import db, sessions
+from btfs.auth import AuthorizedUser
+from btfs.cache import memcache3
+from btfs.db import stats
+from btfs.model import Chunk, Dir, File, Path
 
 
 def db_get_stats(model, limit=1000):
@@ -245,4 +246,3 @@ def delete_orphans():
         db.delete(chunk_orphans)
     output = "Deleted %s orphans. <a href='?'>Back</a>" % total
     return output
-

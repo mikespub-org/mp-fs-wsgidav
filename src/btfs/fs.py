@@ -8,13 +8,16 @@ File system operations.
 """
 from __future__ import absolute_import
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import map
-import time
 import io
 import logging
+import time
+from builtins import map
+
+from future import standard_library
+
 from .model import Dir, File, Path
+
+standard_library.install_aliases()
 #from btfs import memcash
 
 def initfs(backend='datastore', readonly=False):

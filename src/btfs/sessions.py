@@ -2,12 +2,13 @@
 #
 # See also session cookies at https://firebase.google.com/docs/auth/admin/manage-cookies
 #
-import os
 import datetime
+import logging
+import os
 import uuid
+
 from . import db
 from .auth import get_user_claims, verify_user_session
-import logging
 
 # TODO: make configurable
 AUTH_URL = '/auth/'
@@ -218,4 +219,3 @@ class AuthSession(db.CachedModel):
         if len(result) > 0:
             db.get_client().delete_multi(result)
         return len(result)
-
