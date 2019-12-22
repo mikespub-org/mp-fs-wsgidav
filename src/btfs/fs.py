@@ -17,12 +17,14 @@ import logging
 from .model import Dir, File, Path
 #from btfs import memcash
 
-def initfs():
+def initfs(backend='datastore', readonly=False):
     """
     Make sure fs already inited.
     (e.g. there's a '/' and '/dav' collection in db).
     """
     logging.debug("fs.initfs")
+    if backend not in ('datastore'):
+        raise NotImplementedError("Backend '%s' is not supported." % backend)
     if not isdir('/'):
         logging.info("fs.initfs: mkdir '/'")
         mkdir('/')

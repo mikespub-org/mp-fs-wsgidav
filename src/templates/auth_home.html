@@ -5,10 +5,12 @@
 {% block header %}CloudDAV User Info{% endblock %}
 
 {% block content %}
-	{% if auth_user %}
+	{% if auth_user.user_id %}
 		Welcome {{ auth_user.nickname }}, you are an authenticated user with {{ access }} access.
+		<a href="{{ logout_url }}">Logout</a>
 	{% else %}
 		Hello stranger, nice to meet you...
+		<a href="{{ login_url }}">Login</a>
 	{% endif %}
 	{% if user_claims %}
 	<ul>

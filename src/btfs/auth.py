@@ -4,10 +4,10 @@
 #
 from __future__ import absolute_import
 from builtins import object
+#import pickle
 import logging
 
 from . import db
-from . import users
 
 import requests
 import cachecontrol
@@ -19,11 +19,6 @@ import google.oauth2.id_token
 session = requests.session()
 cached_session = cachecontrol.CacheControl(session)
 firebase_request_adapter = google.auth.transport.requests.Request(session=cached_session)
-
-
-# See also session cookies at https://firebase.google.com/docs/auth/admin/manage-cookies
-def get_id_token(request, cookie_name='id_token'):
-    return request.cookies.get(cookie_name)
 
 
 def get_user_claims(id_token):
@@ -49,6 +44,44 @@ def get_user_claims(id_token):
     return claims, error_message
 
 
+def verify_user_session(session):
+    if not session.user_id:
+        return
+    #logging.debug('Session: %r' % session.to_dict())
+    auth_user = find_auth_user(session.user_id)
+    if not auth_user:
+        logging.debug('Create AuthorizedUser(%s)' % session.user_id)
+        auth_user = AuthorizedUser()
+        auth_user.email = session.user_id
+        auth_user.nickname = session.nickname
+        auth_user.roles = session.roles
+        # CHECKME: assign admin rights to first created user!?
+        if AuthorizedUser.get_count() < 1:
+            logging.debug('Assign admin rights to first AuthorizedUser(%s)' % auth_user.email)
+            auth_user.roles = 'admin'
+            auth_user.canWrite = True
+        #auth_user.put()
+    if session.claims and not auth_user.claims:
+        logging.debug('Update AuthorizedUser(%s).claims' % auth_user.email)
+        if 'user_id' in session.claims:
+            auth_user.user_id = session.claims['user_id']
+        if 'firebase' in session.claims and 'sign_in_provider' in session.claims['firebase']:
+            auth_user.auth_domain = 'Firebase(%s)' % session.claims['firebase']['sign_in_provider']
+        else:
+            auth_user.auth_domain = 'Firebase()'
+        auth_user.claims = session.claims
+        auth_user.put()
+    if not auth_user.is_saved():
+        logging.debug('Save AuthorizedUser(%s)' % auth_user.email)
+        auth_user.put()
+    if auth_user.roles and not session.roles:
+        logging.debug('Update AuthSession(%s).roles: %s' % (session.session_id, auth_user.roles))
+        session.roles = auth_user.roles
+        session.put()
+    #logging.debug('Auth: %r' % auth_user.to_dict())
+    return
+
+
 def check_user_role(claims, role='admin'):
     if not claims:
         return False
@@ -58,10 +91,10 @@ def check_user_role(claims, role='admin'):
 
 
 # Quickly check if an id_token is about a particular sub(ject)
-def check_token_subject(id_token, auth):
+def check_token_subject(id_token, claims):
     import base64
     import json
-    if not id_token or not auth:
+    if not id_token or not claims:
         return False
     header, payload, signature = id_token.split('.')
     if len(payload) % 4 != 0:
@@ -74,10 +107,10 @@ def check_token_subject(id_token, auth):
         return False
     if not isinstance(payload, dict) or 'sub' not in payload:
         return False
-    return payload['sub'] == auth['sub']
+    return payload['sub'] == claims['sub']
 
 
-class AuthorizedUser(db.Model):
+class AuthorizedUser(db.CachedModel):
     """Represents authorized users in the datastore."""
     ##user = db.UserProperty()
     #email = db.StringProperty()
@@ -86,7 +119,7 @@ class AuthorizedUser(db.Model):
     #nickname = db.StringProperty()
     #canWrite = db.BooleanProperty(default=True)
     _kind = 'AuthorizedUser'
-    _exclude_from_indexes = None
+    _exclude_from_indexes = ['claims']
     _auto_now_add = None
     _auto_now = None
 
@@ -105,27 +138,33 @@ class AuthorizedUser(db.Model):
         for key in template:
             self._entity.setdefault(key, template[key])
 
-    @classmethod
-    def get_by_user(cls, user):
-        if not user or not user.email():
-            return
-        #return cls.gql("where user = :1", user).get()
-        query = db.get_client().query(kind=cls._kind)
-        query.add_filter('email', '=', user.email())
-        #query.add_filter('auth_domain', '=', user.auth_domain())
-        entities = list(query.fetch(1))
-        if entities and len(entities) > 0:
-            return cls.from_entity(entities[0])
+    def set_key(self):
+        #if not self.user_id:
+        #    self.user_id = uuid.uuid4().hex
+        #self._entity.key = self._entity.key.completed_key(self.user_id)
+        pass
+
+    #def to_dict(self):
+    #    result = super(AuthorizedUser, self).to_dict()
+    #    if 'claims' in result and result['claims']:
+    #        try:
+    #            result['claims'] = pickle.loads(result['claims'])
+    #        except Exception as e:
+    #            logging.debug('Claims: %r' % result['claims'])
+    #            logging.error(e)
+    #    return result
 
     @classmethod
-    def get_by_email(cls, email):
-        user = users.User(email)
-        return cls.get_by_user(user)
+    def get_by_user(cls, user):
+        if not user:
+            return
+        #return cls.gql("where user = :1", user).get()
+        return cls.get_by_property('email', user.email().lower())
 
 
 def find_auth_user(email):
     """Return AuthorizedUser for `email` or None if not found."""
-    auth_user = AuthorizedUser.get_by_email(email)
-    logging.debug("find_auth_user(%r) = %s" % (email, auth_user))
+    auth_user = AuthorizedUser.get_by_property('email', email.lower())
+    #logging.debug("find_auth_user(%r) = %s" % (email, auth_user))
     return auth_user
 

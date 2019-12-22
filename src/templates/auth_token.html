@@ -25,6 +25,8 @@
   };
   // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
+  // Set cookie name of Firebase id token for use in static/auth_script.js
+  const FIREBASE_ID_TOKEN = "{{ FIREBASE_ID_TOKEN }}";
 </script>
 
   <!-- [END gae_python37_auth_init_firebase] -->
@@ -53,16 +55,18 @@
 <button id="sign-out" hidden=true>Sign Out</button>
 
 <div id="login-info" hidden=true>
-  <h2>Login info:</h2>
+</div>
+
+<div id="session-info" {% if user_claims %}{% else %}hidden=true{% endif %}>
+  <h2>Session Info:</h2>
   {% if user_claims %}
     <div>
       <p>Name: {{ user_claims['name'] }}</p>
       <p>Email: {{ user_claims['email'] }}</p>
-	  <!--
-      {% for key, value in user_claims.items() %}
-      <p>{{ key }}: {{ value }}</p>
-      {% endfor %}
-	  -->
+    </div>
+    <div>
+      <a href="{{ auth_url }}">Back</a>
+      <a href="{{ logout_url }}">Logout</a>
     </div>
   {% endif %}
 </div>

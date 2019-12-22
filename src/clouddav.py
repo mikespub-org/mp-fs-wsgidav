@@ -5,22 +5,21 @@
 
 from future import standard_library
 standard_library.install_aliases()
+import os
 import logging
 logging.getLogger().setLevel(logging.DEBUG)
 from wsgidav.wsgidav_app import WsgiDAVApp, DEFAULT_CONFIG
 from btfs.btfs_dav_provider import BTFSResourceProvider
 from btfs.memcache_lock_storage import LockStorageMemcache
-from btfs.google_dc import GoogleDomainController
+#from btfs.google_dc import GoogleDomainController
+from btfs.firebase_dc import FirebaseDomainController
 
 __version__ = "0.3.0a1"
 
 
-def create_app():
-    logging.debug("real_main")
-    logger = logging.getLogger("wsgidav")
-    logger.propagate = True
-    logger.setLevel(logging.DEBUG)
+def get_config():
     provider = BTFSResourceProvider()
+    #provider = BTFSResourceProvider(backend='datastore', readonly=False)
     lockstorage = LockStorageMemcache()
     #domainController = GoogleDomainController()
 
@@ -38,7 +37,8 @@ def create_app():
         "http_authenticator": {
             # None: dc.simple_dc.SimpleDomainController(user_mapping)
             #"domain_controller": None,
-            "domain_controller": GoogleDomainController,
+            #"domain_controller": GoogleDomainController,
+            "domain_controller": FirebaseDomainController,
             "accept_basic": True,  # Allow basic authentication, True or False
             "accept_digest": False,  # Allow digest authentication, True or False
             "default_to_digest": False,  # True (default digest) or False (default basic)
@@ -46,6 +46,13 @@ def create_app():
             "trusted_auth_header": "USER_EMAIL",
         },
         "google_dc": {},
+        "firebase_dc": {
+            "project_id": os.environ.get("FIREBASE_PROJECT_ID", "MY_PROJECT_ID"),  # set in app.yaml
+            "api_key": os.environ.get("FIREBASE_API_KEY", "MY_API_KEY"),  # set in app.yaml
+            "id_token": os.environ.get("FIREBASE_ID_TOKEN", "id_token"),  # set in app.yaml (optional)
+            "user_role": "editor",  # default role for authenticated users, unless overridden in /auth/users
+            "anon_role": "browser",  # default role for anonymous visitors ("none", "browser" or "reader" typically)
+        },
         "dir_browser": {
             "enable": True,          # Render HTML listing for GET requests on collections
             "response_trailer": "<a href='https://github.com/mar10/clouddav'>CloudDAV/%s</a> ${version} - ${time}" % __version__,
@@ -53,6 +60,17 @@ def create_app():
             "msmount": True,        # Add an 'open as webfolder' link (requires Windows)
             },
         })
+    return config
+
+
+def create_app():
+    logging.debug("real_main")
+    logger = logging.getLogger("wsgidav")
+    logger.propagate = True
+    logger.setLevel(logging.DEBUG)
+
+    config = get_config()
+
     return WsgiDAVApp(config)
 
 # Using WSGI - https://cloud.google.com/appengine/docs/standard/python/migrate27#wsgi

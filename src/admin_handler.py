@@ -7,7 +7,8 @@ from builtins import str
 from flask import Flask, render_template, request
 from btfs import db
 from btfs.db import stats
-from btfs.auth import users, AuthorizedUser
+from btfs.auth import AuthorizedUser
+from btfs import sessions
 from btfs.cache import memcache3
 from btfs.model import Path, Dir, File, Chunk
 from pprint import pformat
@@ -105,8 +106,9 @@ app.debug = True
 
 @app.route('/_admin')
 def admin_view():
-    if not users.is_current_user_admin():
-        output = "You need to login as administrator <a href='%s'>Login</a>" % users.create_login_url(request.url)
+    session = sessions.get_current_session(request.environ)
+    if not session.has_role('admin'):
+        output = "You need to login as administrator <a href='%s'>Login</a>" % sessions.LOGIN_URL
         return output
     qs = request.query_string
     if not isinstance(qs, str):
@@ -161,12 +163,11 @@ def admin_view():
     elif qs != "":
         raise NotImplementedError("Invalid command: %s" % qs)
     # Show admin page
-    user = users.get_current_user()
-    if user:
-        url = users.create_logout_url(request.url)
+    if session.is_user():
+        url = sessions.LOGOUT_URL
         url_linktext = 'Logout'
     else:
-        url = users.create_login_url(request.url)
+        url = sessions.LOGIN_URL
         url_linktext = 'Login'
     env = []
     for k, v in list(os.environ.items()):
@@ -181,22 +182,30 @@ def admin_view():
     datastore_stats['File'] = db_get_stats(File)
     datastore_stats['Chunk'] = db_get_stats(Chunk)
     datastore_stats['User'] = db_get_stats(AuthorizedUser)
+    datastore_stats['Session'] = db_get_stats(sessions.AuthSession)
     paths = []
     for item in Path.list_all(10):
-        info = item.to_dict()
+        info = item.to_dict(True)
         paths.append(info)
     chunks = []
     for item in Chunk.list_all(10):
-        info = item.to_dict()
+        info = item.to_dict(True)
         if len(info['data']) > 100:
             info['data'] = '%s... (%s bytes)' % (info['data'][:100], len(info['data']))
         chunks.append(info)
     userlist = []
     for item in AuthorizedUser.list_all(10):
-        info = item.to_dict()
+        info = item.to_dict(True)
         userlist.append(info)
+    sessionlist = []
+    for item in sessions.AuthSession.list_all(10):
+        info = item.to_dict(True)
+        sessionlist.append(info)
+    nickname = 'stranger'
+    if session.is_user():
+        nickname = session.nickname
     template_values = {
-        "nickname": user.nickname(),
+        "nickname": nickname,
         "url": url,
         "url_linktext": url_linktext,
         "memcache_stats": pformat(memcache3.get_stats()),
@@ -204,6 +213,7 @@ def admin_view():
         "path_samples": pformat(paths),
         "chunk_samples": pformat(chunks),
         "user_samples": pformat(userlist),
+        "session_samples": pformat(sessionlist),
         "environment_dump": "\n".join(env),
         }
 

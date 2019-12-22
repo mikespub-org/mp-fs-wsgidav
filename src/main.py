@@ -11,7 +11,7 @@ from werkzeug.utils import import_string, cached_property
 import json
 import re
 # Import for local testing
-import set_env
+#import set_env
 # Import default app here
 from clouddav import app as default_app
 

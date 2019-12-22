@@ -4,6 +4,7 @@ import json
 import logging
 import datetime
 from future.utils import with_metaclass
+from ..cache import cached_model
 
 _client = None
 
@@ -106,10 +107,14 @@ class Model(with_metaclass(ModelType, object)):
     def delete(self):
         return get_client().delete(self._entity.key)
 
-    def to_dict(self):
+    def to_dict(self, include_key=False):
         info = dict(self._entity)
-        info['__key__'] = self.key()
+        if include_key:
+            info['__key__'] = self.key()
         return info
+
+    def __str__(self):
+        return str(self.to_dict(True))
 
     @classmethod
     def from_entity(cls, entity):
@@ -131,6 +136,8 @@ class Model(with_metaclass(ModelType, object)):
 
     @classmethod
     def get(cls, key):
+        if isinstance(key, str):
+            key = get_client().key(cls._kind, key)
         entity = get_client().get(key)
         if entity:
             return cls.from_entity(entity)
@@ -152,6 +159,17 @@ class Model(with_metaclass(ModelType, object)):
         return result
 
     @classmethod
+    def get_by_property(cls, prop_name, value, **kwargs):
+        # assume we always need a value here
+        if not value:
+            return
+        query = cls.query(**kwargs)
+        query.add_filter(prop_name, '=', value)
+        entities = list(query.fetch(1))
+        if entities and len(entities) > 0:
+            return cls.from_entity(entities[0])
+
+    @classmethod
     def properties(cls):
         return []
 
@@ -159,6 +177,59 @@ class Model(with_metaclass(ModelType, object)):
     def kind(cls):
         return cls._kind
 
+
+class CachedModel(Model):
+    _kind = 'CachedModel'
+
+    cache = cached_model
+
+    def get_key_name(self):
+        return self.key().id_or_name
+
+    def set_key(self):
+        raise NotImplementedError
+
+    def put(self):
+        if not self.is_saved():
+            self.set_key()
+        super(CachedModel, self).put()
+        cache_key = self._kind + '.' + str(self.get_key_name())
+        self.cache.set(cache_key, self)
+        return
+
+    def delete(self):
+        cache_key = self._kind + '.' + str(self.get_key_name())
+        self.cache.delete(cache_key)
+        return super(CachedModel, self).delete()
+
+    @classmethod
+    def get(cls, key):
+        if isinstance(key, str):
+            key_name = key
+        else:
+            key_name = key.id_or_name
+        cache_key = cls._kind + '.' + str(key_name)
+        result = cls.cache.get(cache_key)
+        if result:
+            return result
+        result = super(CachedModel, cls).get(key)
+        if result:
+            if result.get_key_name() != key_name:
+                logging.warning('Key name mismatch: %s != %s' % (result.get_key_name(), key_name))
+            cls.cache.set(cache_key, result)
+        return result
+
+    @classmethod
+    def get_by_property(cls, prop_name, value, **kwargs):
+        # assume we always need a value here
+        cache_key = cls._kind + '.' + str(prop_name) + '=' + str(value)
+        result = cls.cache.get(cache_key)
+        if result:
+            return result
+        result = super(CachedModel, cls).get_by_property(prop_name, value, **kwargs)
+        if result:
+            cls.cache.set(cache_key, result)
+        return result
 
 #class GqlQuery(list):
 #

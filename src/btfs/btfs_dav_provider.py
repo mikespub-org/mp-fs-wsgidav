@@ -21,6 +21,7 @@ except ImportError:
     from io import StringIO #@UnusedImport
 from wsgidav.dav_provider import DAVProvider, _DAVResource
 from wsgidav import util
+from wsgidav.dav_error import DAVError, HTTP_FORBIDDEN
 
 __docformat__ = "reStructuredText en"
 
@@ -42,7 +43,38 @@ class BTFSResource(_DAVResource):
         is_collection = ( type(self.pathEntity) is Dir )
         logging.debug("BTFSResource(%r): %r" % (path, is_collection))
         super(BTFSResource, self).__init__(path, is_collection, environ)
+        # check access based on user roles in environ
+        self._get_user_roles(environ)
         self.statresults = fs.stat(self.pathEntity)
+
+    def _get_user_roles(self, environ):
+        self._roles = []
+        if environ is None or not environ.get("wsgidav.auth.user_name"):
+            self._roles.append(self.provider.anon_role)
+        else:
+            if environ.get("wsgidav.auth.roles"):
+                for role in environ.get("wsgidav.auth.roles"):
+                    if role in self.provider.known_roles and role not in self._roles:
+                        self._roles.append(role)
+            if len(self._roles) < 1:
+                self._roles.append(self.provider.user_role)
+        logging.debug("Roles: %s" % self._roles)
+
+    def _check_write_access(self):
+        """Raise HTTP_FORBIDDEN, if resource is unwritable."""
+        if self.provider.is_readonly():
+            raise DAVError(HTTP_FORBIDDEN)
+        for role in ('admin', 'editor'):
+            if role in self._roles:
+                return
+        raise DAVError(HTTP_FORBIDDEN)
+
+    def _check_read_access(self):
+        """Raise HTTP_FORBIDDEN, if resource is unreadable."""
+        for role in ('admin', 'editor', 'reader'):
+            if role in self._roles:
+                return
+        raise DAVError(HTTP_FORBIDDEN)
 
     def getContentLength(self):
         if self.is_collection:
@@ -96,6 +128,7 @@ class BTFSResource(_DAVResource):
         
         See _DAVResource.getMemberList()
         """
+        #self._check_browse_access()
         return fs.listdir(self.pathEntity)
 
     get_member_names = getMemberNames
@@ -106,6 +139,7 @@ class BTFSResource(_DAVResource):
         See _DAVResource.getMemberList()
         """
         #logging.debug('%r + %r' % (self.path, name))
+        #self._check_browse_access()
         res = BTFSResource(util.join_uri(self.path, name), self.environ)
         return res
 
@@ -128,6 +162,7 @@ class BTFSResource(_DAVResource):
         """
         assert self.is_collection
         assert not "/" in name
+        self._check_write_access()
         path = util.join_uri(self.path, name)
         f = fs.btopen(path, "wb")
         # FIXME: should be length-0
@@ -143,6 +178,7 @@ class BTFSResource(_DAVResource):
         See _DAVResource.createCollection()
         """
         assert self.is_collection
+        self._check_write_access()
         path = util.join_uri(self.path, name)
         fs.mkdir(path)
 
@@ -154,6 +190,7 @@ class BTFSResource(_DAVResource):
         See _DAVResource.getContent()
         """
         assert not self.is_collection
+        self._check_read_access()
 #        return fs.btopen(self.path, "rb")
         return fs.btopen(self.pathEntity, "rb")
 
@@ -165,6 +202,7 @@ class BTFSResource(_DAVResource):
         See _DAVResource.beginWrite()
         """
         assert not self.is_collection
+        self._check_write_access()
 #        return fs.btopen(self.path, "wb")
         return fs.btopen(self.pathEntity, "wb")
 
@@ -187,6 +225,7 @@ class BTFSResource(_DAVResource):
         
         See _DAVResource.delete()
         """
+        self._check_write_access()
         if self.is_collection:
 #            fs.rmtree(self.path)
             fs.rmtree(self.pathEntity)
@@ -199,6 +238,7 @@ class BTFSResource(_DAVResource):
     def copyMoveSingle(self, dest_path, is_move):
         """See _DAVResource.copyMoveSingle() """
         assert not util.is_equal_or_child_uri(self.path, dest_path)
+        self._check_write_access()
         if self.is_collection:
             # Create destination collection, if not exists
             if not fs.exists(dest_path):
@@ -307,10 +347,25 @@ class BTFSResource(_DAVResource):
 class BTFSResourceProvider(DAVProvider):
     """
     WsgiDAV provider that implements a virtual filesystem based on Googles Big Table.
+    Update: actually, it used the old App Engine Datastore, which has now been upgraded
+    to Cloud Firestore in Datastore mode. Firestore in Native mode is not supported yet.
     """
-    def __init__(self):
+    known_roles = ("admin", "editor", "reader", "browser", "none")
+
+    def __init__(self, *args, **kwargs):
         super(BTFSResourceProvider, self).__init__()
+        # TODO: make provider configurable
+        self._readonly = kwargs.pop("readonly", False)
+        # TODO: support firestore in native mode
+        self._backend = kwargs.pop("backend", "datastore")
+        # default role for authenticated users, unless specified in DC config or /auth/users
+        self.user_role = kwargs.pop("user_role", "reader")
+        # default role for anonymous visitors, unless specified in DC config
+        self.anon_role = kwargs.pop("anon_role", "browser")
         fs.initfs()
+
+    def is_readonly(self):
+        return self._readonly
 
     def getResourceInst(self, path, environ):
         self._count_get_resource_inst += 1

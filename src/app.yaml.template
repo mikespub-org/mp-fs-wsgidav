@@ -13,6 +13,8 @@ env_variables:
   # Replace with your Firebase API key - see application setup details at
   # https://console.cloud.google.com/customer-identity/providers or in Firebase Auth console
   FIREBASE_API_KEY: 'MY_API_KEY'
+  # Change the cookie name for the id_token if you already use it for something else (optional)
+  FIREBASE_ID_TOKEN: 'id_token'
   # For local admin testing using trusted_auth_header
   # USER_EMAIL: 'test@example.com'
   # USER_IS_ADMIN: '1'

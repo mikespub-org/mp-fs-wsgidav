@@ -15,6 +15,9 @@
 
 'use strict';
 
+// Set in templates/auth_token.html based on environment variable in app.yaml
+// const FIREBASE_ID_TOKEN = 'id_token';
+
 window.addEventListener('load', function () {
   
   // [START gae_python37_auth_signout]
@@ -54,7 +57,7 @@ window.addEventListener('load', function () {
         // SECURITY NOTE: As cookies can easily be modified, only put the
         // token (which is verified server-side) in a cookie; do not add other
         // user information.
-        document.cookie = "id_token=" + token;
+        document.cookie = FIREBASE_ID_TOKEN + "=" + token + "; path=/";
       });
     } else {
       // User is signed out.
@@ -70,7 +73,7 @@ window.addEventListener('load', function () {
       document.getElementById('sign-out').hidden = true;
       document.getElementById('login-info').hidden = true;
       // Clear the token cookie.
-      document.cookie = "id_token=";
+      document.cookie = FIREBASE_ID_TOKEN + "=" + "; path=/";
     }
   }, function (error) {
     console.log(error);
