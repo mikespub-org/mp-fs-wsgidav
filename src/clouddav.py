@@ -47,11 +47,16 @@ def get_config():
         },
         "google_dc": {},
         "firebase_dc": {
-            "project_id": os.environ.get("FIREBASE_PROJECT_ID", "MY_PROJECT_ID"),  # set in app.yaml
-            "api_key": os.environ.get("FIREBASE_API_KEY", "MY_API_KEY"),  # set in app.yaml
-            "id_token": os.environ.get("FIREBASE_ID_TOKEN", "id_token"),  # set in app.yaml (optional)
-            "user_role": "editor",  # default role for authenticated users, unless overridden in /auth/users
-            "anon_role": "browser",  # default role for anonymous visitors ("none", "browser" or "reader" typically)
+            # set in app.yaml
+            "project_id": os.environ.get("FIREBASE_PROJECT_ID", "MY_PROJECT_ID"),
+            # set in app.yaml
+            "api_key": os.environ.get("FIREBASE_API_KEY", "MY_API_KEY"),
+            # set in app.yaml (optional)
+            "id_token": os.environ.get("FIREBASE_ID_TOKEN", "id_token"),
+            # default role for authenticated users, unless overridden in /auth/users
+            "user_role": os.environ.get("FIREBASE_USER_ROLE", "editor"),
+            # default role for anonymous visitors ("none", "browser" or "reader" typically)
+            "anon_role": os.environ.get("FIREBASE_ANON_ROLE", "browser"),
         },
         "dir_browser": {
             "enable": True,          # Render HTML listing for GET requests on collections

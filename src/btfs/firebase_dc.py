@@ -96,7 +96,7 @@ class FirebaseDomainController(BaseDomainController):
         _logger.debug("Realm: %s" % realm)
         _logger.debug("User: %s" % user_name)
         #_logger.debug("Pass: %s" % password)
-        import json
+        #import json
         #_logger.debug("Environ: %s" % json.dumps(environ, indent=2, default=lambda o: repr(o)))
         if "Microsoft-WebDAV-MiniRedir" in environ.get("HTTP_USER_AGENT", ""):
             # TODO: verify persistent cookie or use basic auth with e-mail & access token?

@@ -14,6 +14,7 @@ import logging
 import hashlib
 import mimetypes
 from . import fs
+from . import sessions
 
 try:
     from io import StringIO
@@ -46,17 +47,23 @@ class BTFSResource(_DAVResource):
         # check access based on user roles in environ
         self._get_user_roles(environ)
         self.statresults = fs.stat(self.pathEntity)
+        self._etag = None
+        self._content_type = None
 
     def _get_user_roles(self, environ):
         self._roles = []
-        if environ is None or not environ.get("wsgidav.auth.user_name"):
+        if environ is None or not environ.get("wsgidav.auth.roles"):
             self._roles.append(self.provider.anon_role)
-        else:
-            if environ.get("wsgidav.auth.roles"):
-                for role in environ.get("wsgidav.auth.roles"):
-                    if role in self.provider.known_roles and role not in self._roles:
-                        self._roles.append(role)
-            if len(self._roles) < 1:
+            return
+        # set by Firebase DC based on wsgidav config, custom claims or user database
+        if environ.get("wsgidav.auth.roles"):
+            for role in environ.get("wsgidav.auth.roles"):
+                if role in self.provider.known_roles and role not in self._roles:
+                    self._roles.append(role)
+        if len(self._roles) < 1:
+            if not environ.get("wsgidav.auth.user_name"):
+                self._roles.append(self.provider.anon_role)
+            else:
                 self._roles.append(self.provider.user_role)
         logging.debug("Roles: %s" % self._roles)
 
@@ -87,11 +94,14 @@ class BTFSResource(_DAVResource):
         if self.is_collection:
             # TODO: should be None?
             return "httpd/unix-directory" 
+        if self._content_type:
+            return self._content_type
         (mimetype, _mimeencoding) = mimetypes.guess_type(self.path, strict=False)
         logging.debug("Guess type of %s is %s", repr(self.path), mimetype)
         if mimetype == '' or mimetype is None:
             mimetype = 'application/octet-stream' 
 #        mimetype = 'application/octet-stream'
+        self._content_type = mimetype
         return mimetype
 
     get_content_type = getContentType
@@ -107,9 +117,13 @@ class BTFSResource(_DAVResource):
     get_display_name = getDisplayName
 
     def getEtag(self):
+        if self._etag:
+            return self._etag
         if self.is_collection:
-            return '"' + hashlib.md5(self.path.encode('utf-8')).hexdigest() +'"'
-        return hashlib.md5(self.path.encode('utf-8')).hexdigest() + '-' + str(self.statresults.st_mtime) + '-' + str(self.statresults.st_size)
+            self._etag = '"' + hashlib.md5(self.path.encode('utf-8')).hexdigest() +'"'
+        else:
+            self._etag = hashlib.md5(self.path.encode('utf-8')).hexdigest() + '-' + str(self.statresults.st_mtime) + '-' + str(self.statresults.st_size)
+        return self._etag
 
     get_etag = getEtag
 
@@ -337,9 +351,12 @@ class BTFSResource(_DAVResource):
 #        # Write OK
 #        return  
               
+    # called by wsgidav.request_server for do_GET and do_HEAD methods
+    def finalize_headers(self, environ, response_headers):
+        sessions.finalize_headers(environ, response_headers)
+        return super(BTFSResource, self).finalize_headers(environ, response_headers)
 
-        
-         
+
 #===============================================================================
 # BTFSResourceProvider
 #===============================================================================
@@ -362,12 +379,17 @@ class BTFSResourceProvider(DAVProvider):
         self.user_role = kwargs.pop("user_role", "reader")
         # default role for anonymous visitors, unless specified in DC config
         self.anon_role = kwargs.pop("anon_role", "browser")
+        # return (no) desktop.ini for Microsoft-WebDAV-MiniRedir
+        self.desktop_ini = kwargs.pop("desktop_ini", False)
         fs.initfs()
 
     def is_readonly(self):
         return self._readonly
 
     def getResourceInst(self, path, environ):
+        # return (no) desktop.ini for Microsoft-WebDAV-MiniRedir
+        if not self.desktop_ini and path.endswith('/desktop.ini'):
+            return
         self._count_get_resource_inst += 1
         try:
             res = BTFSResource(path, environ)
@@ -378,4 +400,10 @@ class BTFSResourceProvider(DAVProvider):
         return res
 
     get_resource_inst = getResourceInst
+
+    # called by wsgidav.request_server to handle all do_* methods
+    #def custom_request_handler(self, environ, start_response, default_handler):
+    #    #return default_handler(environ, start_response)
+    #    logging.debug('Custom: %r %r' % (start_response, default_handler))
+    #    return super(BTFSResourceProvider, self).custom_request_handler(environ, start_response, default_handler)
 

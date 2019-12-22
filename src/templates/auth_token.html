@@ -58,7 +58,7 @@
 </div>
 
 <div id="session-info" {% if user_claims %}{% else %}hidden=true{% endif %}>
-  <h2>Session Info:</h2>
+  <h2>Current Session Info:</h2>
   {% if user_claims %}
     <div>
       <p>Name: {{ user_claims['name'] }}</p>

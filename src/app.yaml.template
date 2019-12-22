@@ -15,8 +15,13 @@ env_variables:
   FIREBASE_API_KEY: 'MY_API_KEY'
   # Change the cookie name for the id_token if you already use it for something else (optional)
   FIREBASE_ID_TOKEN: 'id_token'
+  # Default role for authenticated users, unless overridden in /auth/users
+  FIREBASE_USER_ROLE: 'editor'
+  # Default role for anonymous visitors ("none", "browser" or "reader" typically)
+  FIREBASE_ANON_ROLE: 'browser'
   # For local admin testing using trusted_auth_header
   # USER_EMAIL: 'test@example.com'
+  # No longer relevant for python 3
   # USER_IS_ADMIN: '1'
 
 # Request handlers

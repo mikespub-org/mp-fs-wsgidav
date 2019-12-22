@@ -112,7 +112,7 @@ def user_home():
     # set persistent session cookie corresponding to the id_token
     key = sessions.get_cookie_name('session_id')
     value = session.session_id
-    max_age = 1 * 24 * 60 * 60  # set to 1 day here (id_token expires in 1 hour)
+    max_age = sessions.EXPIRE_DAYS * 24 * 60 * 60  # set to EXPIRE_DAYS days here (id_token expires in 1 hour)
     resp.set_cookie(key, value, max_age=max_age, path='/')
     key = sessions.get_cookie_name('id_token')
     resp.set_cookie(key, '', max_age=None, path='/')

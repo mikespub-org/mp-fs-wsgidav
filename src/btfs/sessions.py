@@ -18,14 +18,15 @@ COOKIE_NAMES = {}
 COOKIE_NAMES['id_token'] = os.environ.get('FIREBASE_ID_TOKEN', 'id_token')
 COOKIE_NAMES['session_id'] = '_s_' + COOKIE_NAMES['id_token']
 
+EXPIRE_DAYS = 1
+
 
 def get_current_session(environ):
     # 1. refuse bots
+    agent = 'Unidentified bot'
     if environ.get('HTTP_USER_AGENT'):
         agent = environ.get('HTTP_USER_AGENT')
-    else:
-        agent = 'Unidentified bot'
-    # agent = str(request.user_agent)
+        # agent = str(request.user_agent)
     if agent and 'bot' in agent.lower():
         logging.error('Bot agent: %s' % agent)
         raise ConnectionRefusedError
@@ -33,13 +34,13 @@ def get_current_session(environ):
     if environ.get('CURRENT_SESSION'):
         return environ.get('CURRENT_SESSION')
     # 3. check session_id and id_token cookies
+    session_id = None
+    id_token = None
     if environ.get('HTTP_COOKIE'):
         cookies = environ.get('HTTP_COOKIE')
-    else:
-        cookies = None
-    # cookies = dict(request.cookies)
-    session_id = get_session_id(cookies)
-    id_token = get_id_token(cookies)
+        # cookies = dict(request.cookies)
+        session_id = get_session_id(cookies)
+        id_token = get_id_token(cookies)
     # 4. get/create session based on session_id
     session = None
     if session_id:
@@ -73,11 +74,32 @@ def get_current_session(environ):
     verify_user_session(session)
     # 8. save session if needed
     if not session.is_saved():
-        if "Microsoft-WebDAV-MiniRedir" not in session.agent:
+        # TODO: recognize CalDAV/CardDAV requests and ignore too?
+        #if "Microsoft-WebDAV-MiniRedir" not in session.agent:
+        if environ.get('REQUEST_METHOD', '') in ('GET', 'HEAD'):
             session.put()
     # 9. put current session in environ
     environ['CURRENT_SESSION'] = session
     return session
+
+
+# called from btfs_dav_provider by wsgidav.request_server for do_GET and do_HEAD methods
+# we should also send cookies for 401, but basic auth is handled earlier in wsgidav.http_authenticator
+def finalize_headers(environ, response_headers):
+    if not environ.get('CURRENT_SESSION'):
+        return
+    session = environ.get('CURRENT_SESSION')
+    if not session.session_id:
+        return
+    logging.debug('Headers: %r' % response_headers)
+    header = 'Set-Cookie'
+    key = get_cookie_name('session_id')
+    val = session.session_id
+    max_age = EXPIRE_DAYS * 24 * 60 * 60  # set to EXPIRE_DAYS days here (id_token expires in 1 hour)
+    path = '/'
+    value = '%s=%s; Max-Age=%s; Path=%s' % (key, val, max_age, path)
+    response_headers.append((header, value))
+    return
 
 
 def get_cookie_name(cookie_type):
@@ -166,7 +188,7 @@ class AuthSession(db.CachedModel):
         return get_current_session(environ)
 
     @classmethod
-    def gc(cls, days=10, limit=1000, offset=0, **kwargs):
+    def gc(cls, days=EXPIRE_DAYS, limit=1000, offset=0, **kwargs):
         query = cls.query(**kwargs)
         query.keys_only()
         expired = datetime.datetime.utcnow() - datetime.timedelta(days=days)
@@ -177,4 +199,5 @@ class AuthSession(db.CachedModel):
         logging.debug('GC: %s' % len(result))
         if len(result) > 0:
             db.get_client().delete_multi(result)
+        return len(result)
 
