@@ -59,7 +59,7 @@ class FirebaseDomainController(BaseDomainController):
         auth_conf = config.get("http_authenticator", {})
         trusted_auth_header = auth_conf.get("trusted_auth_header", None)
         if trusted_auth_header and environ.get(trusted_auth_header):
-            environ["wsgidav.auth.user_name"] = environ.get(self.trusted_auth_header)
+            environ["wsgidav.auth.user_name"] = environ.get(trusted_auth_header)
             if not environ.get("wsgidav.auth.roles"):
                 environ["wsgidav.auth.roles"] = [self.user_role]
             _logger.debug("Trusted: %s" % environ.get("wsgidav.auth.user_name"))

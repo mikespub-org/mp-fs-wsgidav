@@ -40,9 +40,6 @@ def get_current_session(environ):
     # cookies = dict(request.cookies)
     session_id = get_session_id(cookies)
     id_token = get_id_token(cookies)
-    # TODO: check for conflicts + create/update if needed
-    if session_id and id_token:
-        pass
     # 4. get/create session based on session_id
     session = None
     if session_id:
@@ -50,12 +47,16 @@ def get_current_session(environ):
     if not session:
         session = AuthSession()
     session.agent = agent
+    # 5. verify trusted auth header (if any - preset from config in clouddav.py)
     #config = environ.get("wsgidav.config", {})
     #auth_conf = config.get("http_authenticator", {})
     #trusted_auth_header = auth_conf.get("trusted_auth_header", None)
-    #if trusted_auth_header and environ.get(trusted_auth_header):
-    #    session.user_id = environ.get(self.trusted_auth_header)
-    # 5. update session based on id_token
+    trusted_auth_header = environ.get("TRUSTED_AUTH_HEADER", None)
+    if trusted_auth_header and environ.get(trusted_auth_header):
+        session.user_id = environ.get(trusted_auth_header)
+        session.nickname = session.user_id.split('@')[0]
+        logging.debug('Trusted: %s' % session.user_id)
+    # 6. update session based on id_token
     if id_token:
         claims, error_message = get_user_claims(id_token)
         if claims and claims.get('email') and claims.get('email_verified'):
@@ -68,12 +69,13 @@ def get_current_session(environ):
         if error_message:
             logging.warning('Token: %s' % error_message)
             environ['ID_TOKEN_ERROR'] = error_message
-    # 6. check session against AuthorizedUser database
+    # 7. check session against AuthorizedUser database
     verify_user_session(session)
-    # 7. save session if needed
+    # 8. save session if needed
     if not session.is_saved():
-        session.put()
-    # 8. put current session in environ
+        if "Microsoft-WebDAV-MiniRedir" not in session.agent:
+            session.put()
+    # 9. put current session in environ
     environ['CURRENT_SESSION'] = session
     return session
 

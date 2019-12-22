@@ -12,7 +12,7 @@ import json
 import re
 # Import for local testing
 #import set_env
-# Import default app here
+# Import default app here + preset TRUSTED_AUTH_HEADER in environ for non-wsgidav applications too
 from clouddav import app as default_app
 
 

@@ -70,6 +70,11 @@ def create_app():
     logger.setLevel(logging.DEBUG)
 
     config = get_config()
+    # Preset trusted_auth_header in environ for non-wsgidav applications too
+    auth_conf = config.get("http_authenticator", {})
+    trusted_auth_header = auth_conf.get("trusted_auth_header", None)
+    if trusted_auth_header:
+        os.environ["TRUSTED_AUTH_HEADER"] = trusted_auth_header
 
     return WsgiDAVApp(config)
 
