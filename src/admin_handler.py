@@ -114,52 +114,17 @@ def admin_view():
     if not isinstance(qs, str):
         qs = qs.decode('utf-8')
     logging.warning("AdminHandler.get: %s" % qs)
+    actions = {
+        "run_tests": run_tests,
+        "clear_cache": clear_cache,
+        "clear_datastore": clear_datastore,
+        "expired_sessions": expired_sessions,
+        "check_orphans": check_orphans,
+        "delete_orphans": delete_orphans
+    }
     # Handle admin commands
-    if qs == "run_tests":
-        from btfs.test import test
-        test()
-        output = "Tests run! <a href='?'>Back</a>"
-        return output
-    elif qs == "clear_cache":
-        logging.warning("clear_cache: memcache3.reset()")
-        memcache3.reset()
-        output = "Memcache deleted! <a href='?'>Back</a>"
-        return output
-    elif qs == "clear_datastore":
-        logging.warning("clear_datastore: fs.rmtree('/')")
-        from btfs import fs
-        # cannot use rmtree("/"), because it prohibits '/'
-        try:
-            fs.rmtree("/")
-        except Exception as e:
-            logging.warning(e)
-#        fs.getdir("/").delete(recursive=True)
-        memcache3.reset()
-        fs.initfs()
-        output = "Removed '/'. <a href='?'>Back</a>"
-        return output
-    elif qs == "check_orphans":
-        output = "Checking orphans. <a href='?'>Back</a><pre>"
-        result, dir_orphans, file_orphans, chunk_orphans = find_orphans()
-        output += result
-        output += "</pre>Total orphans: %s dirs, %s files, %s chunks" % (len(dir_orphans), len(file_orphans), len(chunk_orphans))
-        if len(dir_orphans) + len(file_orphans) + len(chunk_orphans) > 0:
-            output += " - <a href='?delete_orphans'>Delete orphans?</a>"
-        return output
-    elif qs == "delete_orphans":
-        output, dir_orphans, file_orphans, chunk_orphans = find_orphans()
-        total = 0
-        if len(dir_orphans) > 0:
-            total += len(dir_orphans)
-            db.delete(dir_orphans)
-        if len(file_orphans) > 0:
-            total += len(file_orphans)
-            db.delete(file_orphans)
-        if len(chunk_orphans) > 0:
-            total += len(chunk_orphans)
-            db.delete(chunk_orphans)
-        output = "Deleted %s orphans. <a href='?'>Back</a>" % total
-        return output
+    if qs in actions:
+        return actions[qs]()
     elif qs != "":
         raise NotImplementedError("Invalid command: %s" % qs)
     # Show admin page
@@ -218,4 +183,66 @@ def admin_view():
         }
 
     return render_template('admin.html', **template_values)
- 
+
+
+def run_tests():
+    from btfs.test import test
+    test()
+    output = "Tests run! <a href='?'>Back</a>"
+    return output
+
+
+def clear_cache():
+    logging.warning("clear_cache: memcache3.reset()")
+    memcache3.reset()
+    output = "Memcache deleted! <a href='?'>Back</a>"
+    return output
+
+
+def clear_datastore():
+    logging.warning("clear_datastore: fs.rmtree('/')")
+    from btfs import fs
+    # cannot use rmtree("/"), because it prohibits '/'
+    try:
+        fs.rmtree("/")
+    except Exception as e:
+        logging.warning(e)
+#        fs.getdir("/").delete(recursive=True)
+    memcache3.reset()
+    fs.initfs()
+    output = "Removed '/'. <a href='?'>Back</a>"
+    return output
+
+
+def expired_sessions():
+    logging.warning("expired_sessions: AuthSession.gc()")
+    result = sessions.AuthSession.gc()
+    output = "Found %s expired sessions to clear (more than %s day old). <a href='?'>Back</a>" % (result, sessions.EXPIRE_DAYS)
+    return output
+
+
+def check_orphans():
+    output = "Checking orphans. <a href='?'>Back</a><pre>"
+    result, dir_orphans, file_orphans, chunk_orphans = find_orphans()
+    output += result
+    output += "</pre>Total orphans: %s dirs, %s files, %s chunks" % (len(dir_orphans), len(file_orphans), len(chunk_orphans))
+    if len(dir_orphans) + len(file_orphans) + len(chunk_orphans) > 0:
+        output += " - <a href='?delete_orphans'>Delete orphans?</a>"
+    return output
+
+
+def delete_orphans():
+    output, dir_orphans, file_orphans, chunk_orphans = find_orphans()
+    total = 0
+    if len(dir_orphans) > 0:
+        total += len(dir_orphans)
+        db.delete(dir_orphans)
+    if len(file_orphans) > 0:
+        total += len(file_orphans)
+        db.delete(file_orphans)
+    if len(chunk_orphans) > 0:
+        total += len(chunk_orphans)
+        db.delete(chunk_orphans)
+    output = "Deleted %s orphans. <a href='?'>Back</a>" % total
+    return output
+
