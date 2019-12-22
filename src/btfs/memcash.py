@@ -6,13 +6,12 @@ from builtins import map, str
 
 from .cache import memcache3
 
-CURRENT_VERSION_ID = os.environ.get('CURRENT_VERSION_ID','0')
+CURRENT_VERSION_ID = os.environ.get("CURRENT_VERSION_ID", "0")
 local_cache = {}
-DOG_PILE_WINDOW = 10 # seconds
- 
+DOG_PILE_WINDOW = 10  # seconds
 
- 
-def cash(ttl=60, key=None, ver=CURRENT_VERSION_ID, pre='', off=False):
+
+def cash(ttl=60, key=None, ver=CURRENT_VERSION_ID, pre="", off=False):
     """
     Copyright (C)  2009  twitter.com/rcb
     
@@ -111,9 +110,10 @@ def cash(ttl=60, key=None, ver=CURRENT_VERSION_ID, pre='', off=False):
     :param pre: A Key prefix that will be applied to every key.
     :param off: Caching will be disabled if off is set to True.
     """
-    
+
     ttl = int(ttl)
-    keytmpl = 'cash(v=%s,k=%s:%%s)' % (ver,pre)
+    keytmpl = "cash(v=%s,k=%s:%%s)" % (ver, pre)
+
     def decorator(wrapped):
         if off:
             return wrapped
@@ -123,15 +123,16 @@ def cash(ttl=60, key=None, ver=CURRENT_VERSION_ID, pre='', off=False):
             if key:
                 kee = str(key)
             else:
-                name = getattr(wrapped, '__name__', 'wrapper')
-                if name == 'wrapper':
-                    raise ValueError('cash(key=?) needs a key')
-                kee = '__name__:%s' % name
-            count = kee.count('%')
+                name = getattr(wrapped, "__name__", "wrapper")
+                if name == "wrapper":
+                    raise ValueError("cash(key=?) needs a key")
+                kee = "__name__:%s" % name
+            count = kee.count("%")
             if count:
                 make_key = lambda *a, **k: kee % a[:count]
             else:
-                make_key = lambda *a, **k: '%s(%s)'%(kee,','.join(map(str,a)))
+                make_key = lambda *a, **k: "%s(%s)" % (kee, ",".join(map(str, a)))
+
         def wrapper(*args, **kwargs):
             now = int(time.time())
             keystr = keytmpl % make_key(*args, **kwargs)
@@ -152,14 +153,18 @@ def cash(ttl=60, key=None, ver=CURRENT_VERSION_ID, pre='', off=False):
                             cached = None
             if cached is None:
                 if ttl == 0:
-                    expire = now + 60*60*24*28 # 28 days
+                    expire = now + 60 * 60 * 24 * 28  # 28 days
                 else:
                     expire = now + ttl
                 val = wrapped(*args, **kwargs)
                 logging.info("@cash: set %r" % keystr)
-                memcache.set(keystr, (expire, val), ttl)    
+                memcache.set(keystr, (expire, val), ttl)
             local_cache[keystr] = (expire, val)
-            return val       
+            return val
+
         return wrapper
+
     return decorator
-cache=cash
+
+
+cache = cash

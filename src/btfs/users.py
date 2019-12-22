@@ -22,21 +22,21 @@ from builtins import object, str
 from past.builtins import cmp
 
 # TODO: make configurable
-AUTH_URL = '/auth/'
-LOGIN_URL = AUTH_URL + 'login'
-LOGOUT_URL = AUTH_URL + 'logout'
+AUTH_URL = "/auth/"
+LOGIN_URL = AUTH_URL + "login"
+LOGOUT_URL = AUTH_URL + "logout"
 
 
 class Error(Exception):
-  """Base User error type."""
+    """Base User error type."""
 
 
 class UserNotFoundError(Error):
-  """No email argument was specified, and no user is logged in."""
+    """No email argument was specified, and no user is logged in."""
 
 
 class User(object):
-  """Provides the email address, nickname, and ID for a user.
+    """Provides the email address, nickname, and ID for a user.
 
   A nickname is a human-readable string that uniquely identifies a Google user,
   akin to a username. For some users, this nickname is an email address, but for
@@ -45,11 +45,10 @@ class User(object):
   A user is a Google Accounts user.
   """
 
-  __user_id = None
+    __user_id = None
 
-  def __init__(self, email=None, _auth_domain=None,
-               _user_id=None, _strict_mode=True):
-    """Constructor.
+    def __init__(self, email=None, _auth_domain=None, _user_id=None, _strict_mode=True):
+        """Constructor.
 
     Args:
       email: An optional string of the user's email address. It defaults to
@@ -59,29 +58,28 @@ class User(object):
       UserNotFoundError: If the user is not logged in and `email` is empty
     """
 
-    if _auth_domain is None:
-      _auth_domain = os.environ.get('AUTH_DOMAIN')
-    if _auth_domain is None:
-      _auth_domain = 'gmail.com'
-    #assert _auth_domain
+        if _auth_domain is None:
+            _auth_domain = os.environ.get("AUTH_DOMAIN")
+        if _auth_domain is None:
+            _auth_domain = "gmail.com"
+        # assert _auth_domain
 
-    if email is None:
-      email = os.environ.get('USER_EMAIL', email)
-      _user_id = os.environ.get('USER_ID', _user_id)
+        if email is None:
+            email = os.environ.get("USER_EMAIL", email)
+            _user_id = os.environ.get("USER_ID", _user_id)
 
-    if email is None:
-      email = ''
+        if email is None:
+            email = ""
 
-    if not email and _strict_mode:
-      raise UserNotFoundError
+        if not email and _strict_mode:
+            raise UserNotFoundError
 
-    self.__email = email
-    self.__auth_domain = _auth_domain
-    self.__user_id = _user_id or None
+        self.__email = email
+        self.__auth_domain = _auth_domain
+        self.__user_id = _user_id or None
 
-
-  def nickname(self):
-    """Returns the user's nickname.
+    def nickname(self):
+        """Returns the user's nickname.
 
     The nickname will be a unique, human readable identifier for this user with
     respect to this application. It will be an email address for some users,
@@ -90,66 +88,70 @@ class User(object):
     Returns:
       The nickname of the user as a string.
     """
-    if (self.__email and self.__auth_domain and
-        self.__email.endswith('@' + self.__auth_domain)):
-      suffix_len = len(self.__auth_domain) + 1
-      return self.__email[:-suffix_len]
-    else:
-      return self.__email
+        if (
+            self.__email
+            and self.__auth_domain
+            and self.__email.endswith("@" + self.__auth_domain)
+        ):
+            suffix_len = len(self.__auth_domain) + 1
+            return self.__email[:-suffix_len]
+        else:
+            return self.__email
 
-  def email(self):
-    """Returns the user's email address."""
-    return self.__email
+    def email(self):
+        """Returns the user's email address."""
+        return self.__email
 
-  def user_id(self):
-    """Obtains the user ID of the user.
+    def user_id(self):
+        """Obtains the user ID of the user.
 
     Returns:
       A permanent unique identifying string or `None`. If the email address was
       set explicitly, this will return `None`.
     """
-    return self.__user_id
+        return self.__user_id
 
-  def auth_domain(self):
-    """Obtains the user's authentication domain.
+    def auth_domain(self):
+        """Obtains the user's authentication domain.
 
     Returns:
       A string containing the authentication domain. This method is internal and
       should not be used by client applications.
     """
-    return self.__auth_domain
+        return self.__auth_domain
 
-  def to_dict(self):
-    return {
-      'email': self.email(),
-      'auth_domain': self.auth_domain(),
-      'user_id': self.user_id(),
-      'nickname': self.nickname()
-    }
+    def to_dict(self):
+        return {
+            "email": self.email(),
+            "auth_domain": self.auth_domain(),
+            "user_id": self.user_id(),
+            "nickname": self.nickname(),
+        }
 
-  def __str__(self):
-    return str(self.nickname())
+    def __str__(self):
+        return str(self.nickname())
 
-  def __repr__(self):
-    values = []
-    if self.__email:
-      values.append("email='%s'" % self.__email)
-    if self.__user_id:
-      values.append("_user_id='%s'" % self.__user_id)
-    return 'users.User(%s)' % ','.join(values)
+    def __repr__(self):
+        values = []
+        if self.__email:
+            values.append("email='%s'" % self.__email)
+        if self.__user_id:
+            values.append("_user_id='%s'" % self.__user_id)
+        return "users.User(%s)" % ",".join(values)
 
-  def __hash__(self):
-    return hash((self.__email, self.__auth_domain))
+    def __hash__(self):
+        return hash((self.__email, self.__auth_domain))
 
-  def __cmp__(self, other):
-    if not isinstance(other, User):
-      return NotImplemented
-    return cmp((self.__email, self.__auth_domain),
-               (other.__email, other.__auth_domain))
+    def __cmp__(self, other):
+        if not isinstance(other, User):
+            return NotImplemented
+        return cmp(
+            (self.__email, self.__auth_domain), (other.__email, other.__auth_domain)
+        )
 
 
 def create_login_url(dest_url=None, _auth_domain=None):
-  """Computes the login URL for redirection.
+    """Computes the login URL for redirection.
 
   Args:
     dest_url: String that is the desired final destination URL for the user
@@ -159,13 +161,13 @@ def create_login_url(dest_url=None, _auth_domain=None):
   Returns:
        Login URL as a string. The login URL will use Google Accounts.
   """
-  if dest_url:
-    return LOGIN_URL + '?continue=%s' % dest_url
-  return LOGIN_URL
+    if dest_url:
+        return LOGIN_URL + "?continue=%s" % dest_url
+    return LOGIN_URL
 
 
 def create_logout_url(dest_url, _auth_domain=None):
-  """Computes the logout URL and specified destination URL for the request.
+    """Computes the logout URL and specified destination URL for the request.
 
   This function works for Google Accounts applications.
 
@@ -177,25 +179,25 @@ def create_logout_url(dest_url, _auth_domain=None):
   Returns:
     Logout URL as a string.
   """
-  if dest_url:
-    return LOGOUT_URL + '?continue=%s' % dest_url
-  return LOGOUT_URL
+    if dest_url:
+        return LOGOUT_URL + "?continue=%s" % dest_url
+    return LOGOUT_URL
 
 
 def get_current_user():
-  """Retrieves information associated with the user that is making a request.
+    """Retrieves information associated with the user that is making a request.
 
   Returns:
 
   """
-  try:
-    return User()
-  except UserNotFoundError:
-    return None
+    try:
+        return User()
+    except UserNotFoundError:
+        return None
 
 
 def is_current_user_admin():
-  """Specifies whether the user making a request is an application admin.
+    """Specifies whether the user making a request is an application admin.
 
   Because administrator status is not persisted in the datastore,
   `is_current_user_admin()` is a separate function rather than a member function
@@ -205,4 +207,4 @@ def is_current_user_admin():
   Returns:
     `True` if the user is an administrator; all other user types return `False`.
   """
-  return (os.environ.get('USER_IS_ADMIN', '0')) == '1'
+    return (os.environ.get("USER_IS_ADMIN", "0")) == "1"

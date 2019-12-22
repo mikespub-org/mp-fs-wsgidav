@@ -42,11 +42,11 @@ class FirebaseDomainController(BaseDomainController):
 
     def require_authentication(self, realm, environ):
         # TODO: check id_token or trusted_auth_header
-        #environ["wsgidav.auth.user_name"] = ""
+        # environ["wsgidav.auth.user_name"] = ""
         # The domain controller MAY set those values depending on user's
         # authorization:
-        #environ["wsgidav.auth.roles"] = None
-        #environ["wsgidav.auth.permissions"] = None
+        # environ["wsgidav.auth.roles"] = None
+        # environ["wsgidav.auth.permissions"] = None
         # "wsgidav.auth.realm": "Firebase(...)"
         if not environ:
             return True
@@ -72,7 +72,10 @@ class FirebaseDomainController(BaseDomainController):
             if not environ.get("wsgidav.auth.roles"):
                 environ["wsgidav.auth.roles"] = []
             for role in session.get_roles():
-                if role in self.known_roles and role not in environ["wsgidav.auth.roles"]:
+                if (
+                    role in self.known_roles
+                    and role not in environ["wsgidav.auth.roles"]
+                ):
                     environ["wsgidav.auth.roles"].append(role)
             if len(environ["wsgidav.auth.roles"]) < 1:
                 environ["wsgidav.auth.roles"].append(self.user_role)
@@ -81,7 +84,7 @@ class FirebaseDomainController(BaseDomainController):
         # "wsgidav.auth.permissions": null
         if not environ.get("wsgidav.auth.roles"):
             environ["wsgidav.auth.roles"] = [self.anon_role]
-            if self.anon_role in ('browser', 'reader', 'editor'):
+            if self.anon_role in ("browser", "reader", "editor"):
                 return False
         # "HTTP_USER_AGENT": "Microsoft-WebDAV-MiniRedir/10.0.17134"
         if "Microsoft-WebDAV-MiniRedir" in environ.get("HTTP_USER_AGENT", ""):
@@ -96,9 +99,9 @@ class FirebaseDomainController(BaseDomainController):
         # We don't have access to a plaintext password (or stored hash)
         _logger.debug("Realm: %s" % realm)
         _logger.debug("User: %s" % user_name)
-        #_logger.debug("Pass: %s" % password)
-        #import json
-        #_logger.debug("Environ: %s" % json.dumps(environ, indent=2, default=lambda o: repr(o)))
+        # _logger.debug("Pass: %s" % password)
+        # import json
+        # _logger.debug("Environ: %s" % json.dumps(environ, indent=2, default=lambda o: repr(o)))
         if "Microsoft-WebDAV-MiniRedir" in environ.get("HTTP_USER_AGENT", ""):
             # TODO: verify persistent cookie or use basic auth with e-mail & access token?
             return True

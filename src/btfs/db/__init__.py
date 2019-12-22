@@ -37,7 +37,6 @@ _class_map = {}
 
 # Register Model classes so we can convert an entity to the right class again
 class ModelType(type):
-
     def __init__(cls, name, bases, dct):
         super(ModelType, cls).__init__(name, bases, dct)
         _class_map[cls.__name__] = cls
@@ -45,28 +44,28 @@ class ModelType(type):
 
 # https://python-future.org/compatible_idioms.html#metaclasses
 class Model(with_metaclass(ModelType, object)):
-    #__metaclass__ = ModelType
-    #_client = get_client()
-    _kind = 'DummyModel'
+    # __metaclass__ = ModelType
+    # _client = get_client()
+    _kind = "DummyModel"
     _exclude_from_indexes = None
     _auto_now_add = None
     _auto_now = None
     _entity = None
 
-    #def __init__(self, parent=None, key_name=None, _app=None, _from_entity=False, **kwargs):
+    # def __init__(self, parent=None, key_name=None, _app=None, _from_entity=False, **kwargs):
     def __init__(self, _from_entity=False, **kwargs):
-        #_from_entity = kwargs.pop('_from_entity', False)
+        # _from_entity = kwargs.pop('_from_entity', False)
         if _from_entity:
             self._entity = _from_entity
         else:
             self._init_entity(**kwargs)
-        #for key in list(kwargs.keys()):
+        # for key in list(kwargs.keys()):
         #    self._entity[key] = kwargs[key]
 
     def _init_entity(self, **kwargs):
-        parent = kwargs.pop('parent', None)
-        key_name = kwargs.pop('key_name', None)
-        _app = kwargs.pop('_app', None)
+        parent = kwargs.pop("parent", None)
+        key_name = kwargs.pop("key_name", None)
+        _app = kwargs.pop("_app", None)
         # CHECKME: this is expected to be the model.key() already
         if parent:
             if key_name:
@@ -80,20 +79,20 @@ class Model(with_metaclass(ModelType, object)):
         self._entity = make_entity(key, self._exclude_from_indexes, **kwargs)
 
     def __setattr__(self, key, value):
-        if key != '_entity' and self._entity:
+        if key != "_entity" and self._entity:
             self._entity[key] = value
             return
         super(Model, self).__setattr__(key, value)
 
     def __getattribute__(self, key):
-        if key != '_entity' and self._entity and key in self._entity:
+        if key != "_entity" and self._entity and key in self._entity:
             return self._entity[key]
         return super(Model, self).__getattribute__(key)
 
     def key(self):
-        if self._entity and hasattr(self._entity, 'key'):
+        if self._entity and hasattr(self._entity, "key"):
             return self._entity.key
-        logging.warning('No key for %s' % self)
+        logging.warning("No key for %s" % self)
 
     def is_saved(self):
         if not self.key() or self.key().is_partial:
@@ -112,7 +111,7 @@ class Model(with_metaclass(ModelType, object)):
     def to_dict(self, include_key=False):
         info = dict(self._entity)
         if include_key:
-            info['__key__'] = self.key()
+            info["__key__"] = self.key()
         return info
 
     def __str__(self):
@@ -126,8 +125,8 @@ class Model(with_metaclass(ModelType, object)):
     def class_name(cls):
         return cls.__name__
 
-    #@classmethod
-    #def gql(cls, *args, **kwargs):
+    # @classmethod
+    # def gql(cls, *args, **kwargs):
     #    return GqlQuery(*args, **kwargs)
 
     @classmethod
@@ -166,7 +165,7 @@ class Model(with_metaclass(ModelType, object)):
         if not value:
             return
         query = cls.query(**kwargs)
-        query.add_filter(prop_name, '=', value)
+        query.add_filter(prop_name, "=", value)
         entities = list(query.fetch(1))
         if entities and len(entities) > 0:
             return cls.from_entity(entities[0])
@@ -181,7 +180,7 @@ class Model(with_metaclass(ModelType, object)):
 
 
 class CachedModel(Model):
-    _kind = 'CachedModel'
+    _kind = "CachedModel"
 
     cache = cached_model
 
@@ -195,12 +194,12 @@ class CachedModel(Model):
         if not self.is_saved():
             self.set_key()
         super(CachedModel, self).put()
-        cache_key = self._kind + '.' + str(self.get_key_name())
+        cache_key = self._kind + "." + str(self.get_key_name())
         self.cache.set(cache_key, self)
         return
 
     def delete(self):
-        cache_key = self._kind + '.' + str(self.get_key_name())
+        cache_key = self._kind + "." + str(self.get_key_name())
         self.cache.delete(cache_key)
         return super(CachedModel, self).delete()
 
@@ -210,21 +209,23 @@ class CachedModel(Model):
             key_name = key
         else:
             key_name = key.id_or_name
-        cache_key = cls._kind + '.' + str(key_name)
+        cache_key = cls._kind + "." + str(key_name)
         result = cls.cache.get(cache_key)
         if result:
             return result
         result = super(CachedModel, cls).get(key)
         if result:
             if result.get_key_name() != key_name:
-                logging.warning('Key name mismatch: %s != %s' % (result.get_key_name(), key_name))
+                logging.warning(
+                    "Key name mismatch: %s != %s" % (result.get_key_name(), key_name)
+                )
             cls.cache.set(cache_key, result)
         return result
 
     @classmethod
     def get_by_property(cls, prop_name, value, **kwargs):
         # assume we always need a value here
-        cache_key = cls._kind + '.' + str(prop_name) + '=' + str(value)
+        cache_key = cls._kind + "." + str(prop_name) + "=" + str(value)
         result = cls.cache.get(cache_key)
         if result:
             return result
@@ -233,7 +234,8 @@ class CachedModel(Model):
             cls.cache.set(cache_key, result)
         return result
 
-#class GqlQuery(list):
+
+# class GqlQuery(list):
 #
 #    def __init__(self, query_string=None, *args, **kwargs):
 #        print(query_string, args, kwargs)
@@ -243,7 +245,7 @@ class CachedModel(Model):
 #        pass
 
 
-#class DummyProperty(object):
+# class DummyProperty(object):
 #
 #    def __init__(self, *args, **kwargs):
 #        pass
@@ -253,15 +255,15 @@ class CachedModel(Model):
 #            return self.path
 
 
-#StringProperty = DummyProperty
-#IntegerProperty = DummyProperty
-#DateTimeProperty = DummyProperty
-#ReferenceProperty = DummyProperty
-#BlobProperty = DummyProperty
-#UserProperty = DummyProperty
-#BooleanProperty = DummyProperty
+# StringProperty = DummyProperty
+# IntegerProperty = DummyProperty
+# DateTimeProperty = DummyProperty
+# ReferenceProperty = DummyProperty
+# BlobProperty = DummyProperty
+# UserProperty = DummyProperty
+# BooleanProperty = DummyProperty
 
 
-#class ReferencePropertyResolveError(Exception):
+# class ReferencePropertyResolveError(Exception):
 #    pass
 #

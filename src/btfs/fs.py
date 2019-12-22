@@ -18,25 +18,27 @@ from future import standard_library
 from .model import Dir, File, Path
 
 standard_library.install_aliases()
-#from btfs import memcash
+# from btfs import memcash
 
-def initfs(backend='datastore', readonly=False):
+
+def initfs(backend="datastore", readonly=False):
     """
     Make sure fs already inited.
     (e.g. there's a '/' and '/dav' collection in db).
     """
     logging.debug("fs.initfs")
-    if backend not in ('datastore'):
+    if backend not in ("datastore"):
         raise NotImplementedError("Backend '%s' is not supported." % backend)
-    if not isdir('/'):
+    if not isdir("/"):
         logging.info("fs.initfs: mkdir '/'")
-        mkdir('/')
-    if not isdir('/dav'):
+        mkdir("/")
+    if not isdir("/dav"):
         logging.info("fs.initfs: mkdir '/dav'")
-        mkdir('/dav')
+        mkdir("/dav")
     return
 
-#@memcash.cache(ttl=10)  # cache function result for 10 seconds
+
+# @memcash.cache(ttl=10)  # cache function result for 10 seconds
 def _getresource(path):
     """Return a model.Dir or model.File object for `path`.
     
@@ -52,10 +54,11 @@ def _getresource(path):
     if type(path) in (Dir, File):
         logging.debug("_getresource(%r): request cache HIT" % path.path)
         return path
-#    logging.info("_getresource(%r)" % path)
+    #    logging.info("_getresource(%r)" % path)
     p = Path.retrieve(path)
     assert p is None or type(p) in (Dir, File)
     return p
+
 
 def getdir(s):
     p = _getresource(s)
@@ -63,27 +66,32 @@ def getdir(s):
         return p
     return None
 
+
 def getfile(s):
     p = _getresource(s)
     if type(p) is File:
         return p
     return None
 
+
 def isdir(s):
     p = getdir(s)
     return p is not None
+
 
 def isfile(s):
     p = getfile(s)
     return p is not None
 
+
 def exists(s):
     return _getresource(s) is not None
 
+
 def stat(s):
- 
     def epoch(tm):
         return time.mktime(tm.utctimetuple())
+
     p = _getresource(s)
     size = p.size
     atime = epoch(p.modify_time)
@@ -92,44 +100,51 @@ def stat(s):
 
     def itemgetter(n):
         return lambda self: self[n]
+
     # run
     #   collections.namedtuple('stat_result', 'st_size st_atime st_mtime st_ctime', verbose=True)
     # to get the following class
-    class stat_result(tuple):                                                                         
-        'stat_result(st_size, st_atime, st_mtime, st_ctime)'                                      
+    class stat_result(tuple):
+        "stat_result(st_size, st_atime, st_mtime, st_ctime)"
 
-        __slots__ = () 
+        __slots__ = ()
 
-        _fields = ('st_size', 'st_atime', 'st_mtime', 'st_ctime') 
+        _fields = ("st_size", "st_atime", "st_mtime", "st_ctime")
 
         def __new__(cls, st_size, st_atime, st_mtime, st_ctime):
             return tuple.__new__(cls, (st_size, st_atime, st_mtime, st_ctime))
 
         @classmethod
         def _make(cls, iterable, new=tuple.__new__, len=len):
-            'Make a new stat_result object from a sequence or iterable'
+            "Make a new stat_result object from a sequence or iterable"
             result = new(cls, iterable)
             if len(result) != 4:
-                raise TypeError('Expected 4 arguments, got %d' % len(result))
+                raise TypeError("Expected 4 arguments, got %d" % len(result))
             return result
 
         def __repr__(self):
-            return 'stat_result(st_size=%r, st_atime=%r, st_mtime=%r, st_ctime=%r)' % self
+            return (
+                "stat_result(st_size=%r, st_atime=%r, st_mtime=%r, st_ctime=%r)" % self
+            )
 
-#        def _asdict(t):
-#            'Return a new dict which maps field names to their values'
-#            return {'st_size': t[0], 'st_atime': t[1], 'st_mtime': t[2], 'st_ctime': t[3]}
+        #        def _asdict(t):
+        #            'Return a new dict which maps field names to their values'
+        #            return {'st_size': t[0], 'st_atime': t[1], 'st_mtime': t[2], 'st_ctime': t[3]}
 
         def _replace(self, **kwds):
-            'Return a new stat_result object replacing specified fields with new values'
-            result = self._make(list(map(kwds.pop, ('st_size', 'st_atime', 'st_mtime', 'st_ctime'), self)))
+            "Return a new stat_result object replacing specified fields with new values"
+            result = self._make(
+                list(
+                    map(kwds.pop, ("st_size", "st_atime", "st_mtime", "st_ctime"), self)
+                )
+            )
             if kwds:
-                raise ValueError('Got unexpected field names: %r' % list(kwds.keys()))
+                raise ValueError("Got unexpected field names: %r" % list(kwds.keys()))
             return result
 
         def __getnewargs__(self):
-            return tuple(self)        
-        
+            return tuple(self)
+
         st_size = property(itemgetter(0))
         st_atime = property(itemgetter(1))
         st_mtime = property(itemgetter(2))
@@ -137,27 +152,31 @@ def stat(s):
 
     return stat_result(size, atime, mtime, ctime)
 
+
 def mkdir(s):
     p = Dir.new(s)
     return p
+
 
 def rmdir(s):
     p = getdir(s)
     p.delete(recursive=False)
     return
 
+
 def rmtree(s):
     p = getdir(s)
     p.delete(recursive=True)
     return
 
+
 def copyfile(s, d):
     # raise, if not exists:
-    sio = btopen(s, 'rb')
+    sio = btopen(s, "rb")
     # overwrite destination, if exists:
-    dio = btopen(d, 'wb')
+    dio = btopen(d, "wb")
     while True:
-        buf = sio.read(8*1024)
+        buf = sio.read(8 * 1024)
         if not buf:
             break
         dio.write(buf)
@@ -165,36 +184,40 @@ def copyfile(s, d):
     sio.close()
     return
 
+
 def unlink(s):
     f = getfile(s)
     f.delete()
     return
 
-def btopen(s, mode='r'):
+
+def btopen(s, mode="r"):
     """Open the file (eg. return a BtIO object)"""
     f = getfile(s)
     if f is None:
         # Create targtet file, but only in write mode
-        if not 'w' in mode:
+        if not "w" in mode:
             raise ValueError("source not found %r" % s)
         f = File.new(path=s)
     io = BtIO(f, mode)
     return io
 
+
 def listdir(s):
     p = getdir(s)
-    #path_str = [c.basename(c.path).encode('utf-8') for c in p.get_content()]
+    # path_str = [c.basename(c.path).encode('utf-8') for c in p.get_content()]
     path_str = [c.basename(c.path) for c in p.get_content()]
     return path_str
 
 
-#===============================================================================
+# ===============================================================================
 # BtIO
-#===============================================================================
+# ===============================================================================
 class BtIO(io.BytesIO):
     """
     Bigtable file IO object
     """
+
     def __init__(self, btfile, mode):
         self.btfile = btfile
         self.mode = mode
@@ -202,7 +225,7 @@ class BtIO(io.BytesIO):
         return
 
     def is_readonly(self):
-        return 'w' not in self.mode
+        return "w" not in self.mode
 
     def flush(self):
         io.BytesIO.flush(self)
