@@ -67,6 +67,24 @@ def get_current_session(environ):
                 session.roles = claims.get('roles')
             session.claims = dict(claims)
             session.put()
+        elif claims:
+            """ Example of anonymous claim:
+            {
+                "provider_id": "anonymous",
+                "iss": "https://securetoken.google.com/MY_PROJECT_ID",
+                "aud": "MY_PROJECT_ID",
+                "auth_time": 1577036411,
+                "user_id": "86UkBQY...",
+                "sub": "86UkBQY...",
+                "iat": 1577036411,
+                "exp": 1577040011,
+                "firebase": {
+                    "identities": {},
+                    "sign_in_provider": "anonymous"
+                }
+            }
+            """
+            logging.debug('Claims: %r' % claims)
         if error_message:
             logging.warning('Token: %s' % error_message)
             environ['ID_TOKEN_ERROR'] = error_message

@@ -67,6 +67,7 @@ class Path(polymodel.PolyModel):
             self.set_key()
         db.Model.put(self)
         self.cache.set(self.path, self)
+        self.cache.del_list(os.path.dirname(self.path))
         return 
 
     def delete(self):
@@ -74,7 +75,11 @@ class Path(polymodel.PolyModel):
         if self.path == "/":
             raise RuntimeError("Though shalt not delete root")
         self.cache.delete(self.path)
+        self.cache.del_list(os.path.dirname(self.path))
         return db.Model.delete(self)
+
+    def __repr__(self):
+        return "%s('%s')" % (type(self).class_name(), self.path)
 
     @classmethod
     def list_by_path(cls, path):
@@ -226,10 +231,18 @@ class Dir(Path):
 #        logging.debug("Dir.get_content: %r" % result)
         # TODO: ORDER BY
         #result = list(Path.gql("WHERE parent_path=:1", self))
+        result = self.cache.get_list(self.path)
+        if result:
+            logging.debug("Dir.get_content: HIT %r" % result)
+            return result
         result = Path.list_by_parent_path(self)
-        logging.debug("Dir.get_content: %r" % result)
-        
-        return result    
+        logging.debug("Dir.get_content: MISS %r" % result)
+        self.cache.set_list(self.path, result)
+        # preset items in cache since we will probably need them right after this
+        if isinstance(result, list) and len(result) > 0 and isinstance(result[0], Path):
+            for item in result:
+                self.cache.set(item.path, item)
+        return result
 
     def delete(self, recursive=False):
         logging.debug("Dir.delete(%s): %r" % (recursive, self.path))

@@ -36,7 +36,10 @@ memcache3._stats = {
     # keep track of operations other than get (= hits + misses)
     'set': 0,
     'set_multi': 0,
-    'delete': 0
+    'delete': 0,
+    'get_list': 0,
+    'set_list': 0,
+    'del_list': 0
 }
 
 def memcache_reset(mycache=memcache3):
@@ -234,6 +237,26 @@ class NamespacedCache(object):
         logging.debug("Cache delete: %r.%r" % (self.namespace, key))
         key = self._add_namespace(key)
         memcache3._stats['delete'] += 1
+        return memcache3.delete(key)
+
+    def get_list(self, key):
+        key = 'list:' + self._add_namespace(key)
+        memcache3._stats['get_list'] += 1
+        result = memcache3.get(key)
+        if result is not None:
+            memcache3._stats['hits'] += len(result)
+        return result
+
+    def set_list(self, key, value, time=0):
+        key = 'list:' + self._add_namespace(key)
+        memcache3._stats['set_list'] += 1
+        if value is not None:
+            memcache3._stats['misses'] += len(value)
+        return memcache3.set(key, value, timeout=time)
+
+    def del_list(self, key):
+        key = 'list:' + self._add_namespace(key)
+        memcache3._stats['del_list'] += 1
         return memcache3.delete(key)
 
 

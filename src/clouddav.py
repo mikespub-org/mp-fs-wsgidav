@@ -45,7 +45,7 @@ def get_config():
             # Name of a header field that will be accepted as authorized user - set by App Engine for Google Login
             "trusted_auth_header": "USER_EMAIL",
         },
-        "google_dc": {},
+        #"google_dc": {},
         "firebase_dc": {
             # set in app.yaml
             "project_id": os.environ.get("FIREBASE_PROJECT_ID", "MY_PROJECT_ID"),
