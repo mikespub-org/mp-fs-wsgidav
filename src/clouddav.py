@@ -47,7 +47,8 @@ def get_config():
                 "accept_digest": False,  # Allow digest authentication, True or False
                 "default_to_digest": False,  # True (default digest) or False (default basic)
                 # Name of a header field that will be accepted as authorized user - set by App Engine for Google Login
-                "trusted_auth_header": "USER_EMAIL",
+                # "trusted_auth_header": "USER_EMAIL",
+                "trusted_auth_header": None,
             },
             # "google_dc": {},
             "firebase_dc": {

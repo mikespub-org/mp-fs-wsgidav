@@ -1,4 +1,5 @@
 import logging
+import os
 from functools import wraps
 
 from flask import Flask, make_response, redirect, render_template, request
@@ -162,7 +163,7 @@ def user_token():
         error_message=error_message,
         auth_url=sessions.AUTH_URL,
         logout_url=sessions.LOGOUT_URL,
-        FIREBASE_PROJECT_ID=request.environ["FIREBASE_PROJECT_ID"],
-        FIREBASE_API_KEY=request.environ["FIREBASE_API_KEY"],
+        FIREBASE_PROJECT_ID=os.environ.get("FIREBASE_PROJECT_ID", "MY_PROJECT_ID"),
+        FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY", "MY_API_KEY"),
         FIREBASE_ID_TOKEN=sessions.get_cookie_name("id_token"),
     )
