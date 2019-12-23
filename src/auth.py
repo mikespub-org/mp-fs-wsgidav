@@ -11,44 +11,8 @@ app = Flask(__name__)
 app.debug = True
 
 
-def authorize(access):
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            session = sessions.get_current_session(request.environ)
-            if session.has_role("admin"):
-                return f(*args, **kwargs)
-            if access == "admin":
-                output = (
-                    "You need to login as administrator <a href='%s'>Login</a>"
-                    % sessions.LOGIN_URL
-                )
-                return output
-                # return redirect(users.create_login_url(request.url))
-            # if we already retrieved this in a decorator
-            if not session.is_user() and access in ("browser", "reader", "editor"):
-                output = (
-                    "You need to login as user <a href='%s'>Login</a>"
-                    % sessions.LOGIN_URL
-                )
-                return output
-                # return redirect(users.create_login_url(request.url))
-            if access in ("reader", "editor"):
-                if access == "editor" and "editor" not in session.get_roles():
-                    output = (
-                        "You need to login as editor <a href='%s'>Logout</a>"
-                        % sessions.LOGOUT_URL
-                    )
-                    return output
-            return f(*args, **kwargs)
-
-        return decorated_function
-
-    return decorator
-
-
 @app.route("/auth/users")
-@authorize("admin")
+@sessions.flask_authorize("admin")
 def auth_users():
     """Manage list of authorized users through web page.
 
@@ -60,7 +24,7 @@ def auth_users():
 
 
 @app.route("/auth/useradd", methods=["POST"])
-@authorize("admin")
+@sessions.flask_authorize("admin")
 def user_add():
     """Manage list of authorized users through web page.
 
@@ -93,7 +57,7 @@ def user_add():
 
 
 @app.route("/auth/userdelete", methods=["GET"])
-@authorize("admin")
+@sessions.flask_authorize("admin")
 def user_delete():
     """Delete an authorized user from the datastore."""
     email = request.args["email"]

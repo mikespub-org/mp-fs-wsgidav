@@ -6,6 +6,7 @@ import datetime
 import logging
 import os
 import uuid
+from functools import wraps
 
 from . import db
 from .auth import get_user_claims, verify_user_session
@@ -29,7 +30,7 @@ def get_current_session(environ):
         agent = environ.get("HTTP_USER_AGENT")
         # agent = str(request.user_agent)
     if agent and "bot" in agent.lower():
-        logging.error("Bot agent: %s" % agent)
+        logging.debug("Bot agent: %s" % agent)
         raise ConnectionRefusedError
     # 2. get current session from environ
     if environ.get("CURRENT_SESSION"):
@@ -87,7 +88,7 @@ def get_current_session(environ):
             """
             logging.debug("Claims: %r" % claims)
         if error_message:
-            logging.warning("Token: %s" % error_message)
+            logging.info("Token: %s" % error_message)
             environ["ID_TOKEN_ERROR"] = error_message
     # 7. check session against AuthorizedUser database
     verify_user_session(session)
@@ -110,7 +111,7 @@ def finalize_headers(environ, response_headers):
     session = environ.get("CURRENT_SESSION")
     if not session.session_id:
         return
-    logging.debug("Headers: %r" % response_headers)
+    # logging.debug("Headers: %r" % response_headers)
     header = "Set-Cookie"
     key = get_cookie_name("session_id")
     val = session.session_id
@@ -196,6 +197,7 @@ class AuthSession(db.CachedModel):
     def has_access(self, access):
         allowed = {
             "admin": ("admin"),
+            "delete": ("admin", "editor"),
             "write": ("admin", "editor"),
             "read": ("admin", "editor", "reader"),
             "browse": ("admin", "editor", "reader", "browser"),
@@ -222,3 +224,70 @@ class AuthSession(db.CachedModel):
         if len(result) > 0:
             db.get_client().delete_multi(result)
         return len(result)
+
+
+def flask_authorize(role, do_redirect=False):
+    """ Decorator to authorize access to Flask view functions based on user roles.
+
+    The authorization is based on the highest role the current user has:
+        admin > editor > reader > browser > none
+
+    @app.route("/admin/")
+    @sessions.flask_authorize("admin")
+    def admin_view():
+        return "Congratulations, you have the 'admin' role..."
+
+    @app.route("/editor/")
+    @sessions.flask_authorize("editor")
+    def editor_view():
+        return "Congratulations, you have (at least) the 'editor' role..."
+
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            from flask import request, redirect
+
+            session = get_current_session(request.environ)
+            # always provide access to admin role
+            if session.has_role("admin"):
+                return f(*args, **kwargs)
+            elif role == "admin":
+                if do_redirect:
+                    return redirect(LOGIN_URL)
+                output = (
+                    "You need to login as administrator <a href='%s'>Login</a>"
+                    % LOGIN_URL
+                )
+                return output
+            # this will raise an error if the role is unknown (which is a good thing)
+            min_access_required = {
+                "editor": "write",
+                "reader": "read",
+                "browser": "browse",
+                # "none": "*"
+            }
+            access = min_access_required[role]
+            # any access control requires an authenticated user, at least for view functions
+            if role in min_access_required and not session.is_user():
+                if do_redirect:
+                    return redirect(LOGIN_URL)
+                output = "You need to login as user <a href='%s'>Login</a>" % LOGIN_URL
+                return output
+            # check if the user has the right access or not
+            if not session.has_access(access):
+                if do_redirect:
+                    return redirect(LOGOUT_URL)
+                output = (
+                    "You need to login as '%s' <a href='%s'>Logout</a>"
+                    % role
+                    % LOGOUT_URL
+                )
+                return output
+            # run the view function
+            return f(*args, **kwargs)
+
+        return decorated_function
+
+    return decorator

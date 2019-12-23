@@ -13,6 +13,7 @@
 		<li><a href="?check_orphans">Check orphans</a></li>
 		<li><a href="?expired_sessions">Expired sessions</a></li>
     </ul>
+	<a href="/">Home</a>
 	<a href="{{ url }}">{{ url_linktext }}</a>
 	<hr />
 	Memcache stats:
@@ -33,7 +34,10 @@
 	Session samples:
 	<pre>{{ session_samples }}</pre>
     <hr />
-    Environment:
+    OS Environment:
     <pre>{{ environment_dump }}</pre>
+    <hr />
+    Request Environment:
+    <pre>{{ request_env_dump }}</pre>
 {% endblock %}
 

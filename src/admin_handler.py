@@ -106,14 +106,15 @@ app.debug = True
 
 
 @app.route("/_admin")
+@sessions.flask_authorize("admin")
 def admin_view():
     session = sessions.get_current_session(request.environ)
-    if not session.has_role("admin"):
-        output = (
-            "You need to login as administrator <a href='%s'>Login</a>"
-            % sessions.LOGIN_URL
-        )
-        return output
+    # if not session.has_role("admin"):
+    #     output = (
+    #         "You need to login as administrator <a href='%s'>Login</a>"
+    #         % sessions.LOGIN_URL
+    #     )
+    #     return output
     qs = request.query_string
     if not isinstance(qs, str):
         qs = qs.decode("utf-8")
@@ -184,6 +185,7 @@ def admin_view():
         "user_samples": pformat(userlist),
         "session_samples": pformat(sessionlist),
         "environment_dump": "\n".join(env),
+        "request_env_dump": pformat(request.environ),
     }
 
     return render_template("admin.html", **template_values)
