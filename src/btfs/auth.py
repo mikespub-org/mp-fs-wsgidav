@@ -6,7 +6,6 @@ from __future__ import absolute_import
 
 # import pickle
 import logging
-from builtins import object
 
 import cachecontrol
 import google.auth.transport.requests

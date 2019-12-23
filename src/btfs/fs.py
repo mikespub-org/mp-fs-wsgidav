@@ -41,14 +41,14 @@ def initfs(backend="datastore", readonly=False):
 # @memcash.cache(ttl=10)  # cache function result for 10 seconds
 def _getresource(path):
     """Return a model.Dir or model.File object for `path`.
-    
-    `path` may be an existing Dir/File entity. 
-    Since _getresource is called by most other functions in the `fs` module, 
-    this allows the DAV provider to pass a cached resource, thus implementing 
+
+    `path` may be an existing Dir/File entity.
+    Since _getresource is called by most other functions in the `fs` module,
+    this allows the DAV provider to pass a cached resource, thus implementing
     a simple per-request caching, like in::
-    
+
         statresults = fs.stat(self.pathEntity)
-    
+
     Return None, if path does not exist.
     """
     if type(path) in (Dir, File):
@@ -196,7 +196,7 @@ def btopen(s, mode="r"):
     f = getfile(s)
     if f is None:
         # Create targtet file, but only in write mode
-        if not "w" in mode:
+        if "w" not in mode:
             raise ValueError("source not found %r" % s)
         f = File.new(path=s)
     io = BtIO(f, mode)

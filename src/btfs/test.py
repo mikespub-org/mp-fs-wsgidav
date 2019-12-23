@@ -3,7 +3,7 @@
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 """
 Implementation of a WsgiDAV provider that implements a virtual file system based
-on Googles datastore (Bigtable). 
+on Googles datastore (Bigtable).
 """
 from __future__ import print_function
 

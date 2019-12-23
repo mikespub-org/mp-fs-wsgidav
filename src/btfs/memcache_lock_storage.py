@@ -4,21 +4,21 @@
 Implementation of a lock manager using Memcache.
 
 Note (http://code.google.com/appengine/docs/python/memcache/overview.html):
-    "Values can expire from the memcache at any time, and may be expired prior 
-    to the expiration deadline set for the value." 
+    "Values can expire from the memcache at any time, and may be expired prior
+    to the expiration deadline set for the value."
 
-We still use it here for locking, since it's much faster than datastore 
+We still use it here for locking, since it's much faster than datastore
 persistence. And also (http://www.webdav.org/specs/rfc4918.html#lock-timeout):
-    "a client MUST NOT assume that just because the timeout has not expired, 
+    "a client MUST NOT assume that just because the timeout has not expired,
     the lock still exists."
 
-Memcache does not allow enumeration of stored values, so we have to keep a 
-list of all locked paths in order to find locked children for a given path. 
+Memcache does not allow enumeration of stored values, so we have to keep a
+list of all locked paths in order to find locked children for a given path.
 
 See http://code.google.com/appengine/docs/python/memcache/
 See `Developers info`_ for more information about the WsgiDAV architecture.
 
-.. _`Developers info`: http://docs.wsgidav.googlecode.com/hg/html/develop.html  
+.. _`Developers info`: http://docs.wsgidav.googlecode.com/hg/html/develop.html
 """
 from __future__ import absolute_import
 
@@ -49,15 +49,15 @@ __docformat__ = "reStructuredText"
 class LockStorageMemcache(object):
     """
     An in-memory lock manager implementation using a Google's Memcache.
-    
+
     The data is stored in the Memcache namespace 'lock' like this::
-    
+
     memcache[{lock:}<token>] : <lock dictionary>
     memcache[{lock:}<token2>] : <lock dictionary 2>
     ...
     memcache[{lock:}'*'] : {path1: [<token-list>],
                             path2: [<token-list>]),
-                            } 
+                            }
     """
 
     LOCK_TIME_OUT_DEFAULT = 604800  # 1 week, in seconds
@@ -74,7 +74,7 @@ class LockStorageMemcache(object):
 
     def open(self):
         """Called before first use.
-        
+
         May be implemented to initialize a storage.
         """
         pass
@@ -89,7 +89,7 @@ class LockStorageMemcache(object):
 
     def get(self, token):
         """Return a lock dictionary for a token.
-        
+
         See wsgidav.lock_storage.LockStorageDict.get()
         """
         lock = cached_lock.get(token)
@@ -107,7 +107,7 @@ class LockStorageMemcache(object):
 
     def create(self, path, lock):
         """Create a direct lock for a resource path.
-        
+
         See wsgidav.lock_storage.LockStorageDict.create()
         """
         # We expect only a lock definition, not an existing lock
@@ -151,7 +151,7 @@ class LockStorageMemcache(object):
 
     def refresh(self, token, timeout):
         """Modify an existing lock's timeout.
-        
+
         See wsgidav.lock_storage.LockStorageDict.refresh()
         """
         lock = self.get(token)
@@ -189,7 +189,7 @@ class LockStorageMemcache(object):
 
     def delete(self, token):
         """Delete lock.
-        
+
         See wsgidav.lock_storage.LockStorageDict.delete()
         """
         lock = self.get(token)

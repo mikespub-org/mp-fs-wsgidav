@@ -23,10 +23,6 @@ from . import fs, sessions
 
 standard_library.install_aliases()
 
-try:
-    from io import StringIO
-except ImportError:
-    from io import StringIO  # @UnusedImport
 
 __docformat__ = "reStructuredText en"
 
@@ -151,7 +147,7 @@ class BTFSResource(_DAVResource):
 
     def getMemberNames(self):
         """Return list of (direct) collection member names (_DAVResource or derived).
-        
+
         See _DAVResource.getMemberList()
         """
         # self._check_browse_access()
@@ -161,7 +157,7 @@ class BTFSResource(_DAVResource):
 
     def getMember(self, name):
         """Return list of (direct) collection members (_DAVResource or derived).
-        
+
         See _DAVResource.getMemberList()
         """
         # logging.debug('%r + %r' % (self.path, name))
@@ -182,7 +178,7 @@ class BTFSResource(_DAVResource):
 
     def createEmptyResource(self, name):
         """Create an empty (length-0) resource.
-        
+
         See _DAVResource.createEmptyResource()
         """
         assert self.is_collection
@@ -199,7 +195,7 @@ class BTFSResource(_DAVResource):
 
     def createCollection(self, name):
         """Create a new collection as member of self.
-        
+
         See _DAVResource.createCollection()
         """
         assert self.is_collection
@@ -211,7 +207,7 @@ class BTFSResource(_DAVResource):
 
     def getContent(self):
         """Open content as a stream for reading.
-         
+
         See _DAVResource.getContent()
         """
         assert not self.is_collection
@@ -223,7 +219,7 @@ class BTFSResource(_DAVResource):
 
     def beginWrite(self, content_type=None):
         """Open content as a stream for writing.
-         
+
         See _DAVResource.beginWrite()
         """
         assert not self.is_collection
@@ -234,10 +230,10 @@ class BTFSResource(_DAVResource):
     begin_write = beginWrite
 
     def supportRecursiveDelete(self):
-        """Return True, if delete() may be called on non-empty collections 
+        """Return True, if delete() may be called on non-empty collections
         (see comments there).
-        
-        This method MUST be implemented for collections (not called on 
+
+        This method MUST be implemented for collections (not called on
         non-collections).
         """
         # TODO: should support recursive operations
@@ -247,7 +243,7 @@ class BTFSResource(_DAVResource):
 
     def delete(self):
         """Remove this resource or collection (recursive).
-        
+
         See _DAVResource.delete()
         """
         self._check_write_access()
@@ -312,8 +308,8 @@ class BTFSResource(_DAVResource):
 
     def getPropertyNames(self, is_allprop):
         """Return list of supported property names in Clark Notation.
-        
-        See _DAVResource.getPropertyNames() 
+
+        See _DAVResource.getPropertyNames()
         """
         # Let base class implementation add supported live and dead properties
         propNameList = super(BTFSResource, self).get_property_names(is_allprop)
@@ -325,7 +321,7 @@ class BTFSResource(_DAVResource):
 
     def getPropertyValue(self, name):
         """Return the value of a property.
-        
+
         See _DAVResource.getPropertyValue()
         """
         # Supported custom live properties
@@ -404,7 +400,8 @@ class BTFSResourceProvider(DAVProvider):
         self._count_get_resource_inst += 1
         try:
             res = BTFSResource(path, environ)
-        except:
+        except Exception as e:
+            logging.debug(e)
             logging.exception("getResourceInst(%r) failed" % path)
             res = None
         logging.debug("getResourceInst(%r): %s" % (path, res))

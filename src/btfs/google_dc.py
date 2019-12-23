@@ -1,44 +1,45 @@
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 """
-Implementation of a domain controller that uses the Users Service of 
+Implementation of a domain controller that uses the Users Service of
 Google App Engine.
 
 Credentials are verified by applying this rules:
 
-1. If '*' is in the list of configured users allow anonymous access. 
-2. If the current request was made by an authenticated user with 
+1. If '*' is in the list of configured users allow anonymous access.
+2. If the current request was made by an authenticated user with
    admin permissions for this GAE application: grant write access.
    Note: this is not reliable, since a WebDAV client may not be recognized.
-3. If the user name that is passed with the request is not configured in the 
+3. If the user name that is passed with the request is not configured in the
    'User Administration' page of this CloudDAV application: deny access.
 4. Use Google's ClientLogin API to verify the the password.
-5. TODO: Grant read or read/write access, depending on user configuration. 
+5. TODO: Grant read or read/write access, depending on user configuration.
 
-Example:  
-    >net use M: https://myapp.appspot.com/ /user:user@gmail.com 
+Example:
+    >net use M: https://myapp.appspot.com/ /user:user@gmail.com
     >dir m:
-  or pass a password  
+  or pass a password
     >net use M: https://myapp.appspot.com/ /user:user@gmail.com mypassword
 
   When using XP:
   - we cannot use https:// in the URL (but will be redirected)
   - we must connect to a sub-folder
     >net use M: http://myapp.appspot.com/dav /user:user@gmail.com
-    
+
 
 See http://code.google.com/appengine/docs/python/users/
     http://code.google.com/apis/accounts/docs/AuthForInstalledApps.html
 
 See `Developers info`_ for more information about the WsgiDAV architecture.
 
-.. _`Developers info`: http://docs.wsgidav.googlecode.com/hg/html/develop.html  
+.. _`Developers info`: http://docs.wsgidav.googlecode.com/hg/html/develop.html
 """
 from __future__ import absolute_import, print_function
 
-import http.cookiejar
+# import http.cookiejar
 import logging
-import sys
+
+# import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -146,7 +147,7 @@ class GoogleDomainController(BaseDomainController):
     # def __init__(self, userMap=None):
     def __init__(self, wsgidav_app, config):
         super(GoogleDomainController, self).__init__(wsgidav_app, config)
-        dc_conf = config.get("google_dc", {})
+        # dc_conf = config.get("google_dc", {})
 
     #        self.appName = appName
     #        self.userMap = userMap
@@ -176,7 +177,7 @@ class GoogleDomainController(BaseDomainController):
     get_domain_realm = getDomainRealm
 
     def requireAuthentication(self, realmname, environ):
-        """Return True if this realm requires authentication or False if it is 
+        """Return True if this realm requires authentication or False if it is
         available for general access."""
         logging.debug("requireAuthentication(%r)" % (realmname,))
         # If '*' is in the list of allowed accounts, allow anonymous access
@@ -189,7 +190,7 @@ class GoogleDomainController(BaseDomainController):
 
     def isRealmUser(self, realmname, username, environ):
         """Returns True if this username is valid for the realm, False otherwise.
-        
+
         Used for digest authentication.
         """
         raise NotImplementedError(
@@ -200,7 +201,7 @@ class GoogleDomainController(BaseDomainController):
 
     def getRealmUserPassword(self, realmname, username, environ):
         """Return the password for the given username for the realm.
-        
+
         Used for digest authentication.
         """
         raise NotImplementedError(
@@ -210,8 +211,8 @@ class GoogleDomainController(BaseDomainController):
     _get_realm_user_password = getRealmUserPassword
 
     def authDomainUser(self, realmname, username, password, environ):
-        """Returns True if this username/password pair is valid for the realm, 
-        False otherwise. 
+        """Returns True if this username/password pair is valid for the realm,
+        False otherwise.
 
         Used for basic authentication.
         """
