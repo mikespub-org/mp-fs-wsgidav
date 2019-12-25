@@ -22,7 +22,7 @@ standard_library.install_aliases()
 count = 0
 
 
-def make_tree(parent, depth):
+def make_tree(parent, depth=0):
     global count
     dirname = os.path.basename(parent).replace("test", "dir")
     filename = dirname.replace("dir", "file")
@@ -45,6 +45,7 @@ def make_tree(parent, depth):
         bt_fs.mkdir(path)
         assert bt_fs.isdir(path)
         make_tree(path, depth + 1)
+    return count
 
 
 def test():
@@ -78,8 +79,8 @@ def test():
 
     print("*** bt_fs tests passed ***")
 
-    make_tree("/test", 0)
-    print(count)
+    # make_tree("/test", 0)
+    # print(count)
 
     # Test providers
     provider = BTFSResourceProvider()
@@ -157,5 +158,6 @@ def profile_test():
 
 
 if __name__ == "__main__":
+    # print(make_tree('/test'))
     # test()
     profile_test()
