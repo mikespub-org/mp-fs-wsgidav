@@ -124,17 +124,17 @@ class Path(polymodel.PolyModel):
          / -> /
          // -> /
         """
-        #        if not isinstance(p, unicode):
-        #            logging.debug("Path.normalize: encoding str %s to unicode.", repr(p))
-        #            p = str.decode(p, 'utf-8')
+        # if not isinstance(p, unicode):
+        #     logging.debug("Path.normalize: encoding str %s to unicode.", repr(p))
+        #     p = str.decode(p, 'utf-8')
         if not isinstance(p, str):
             p = p.decode("utf-8")
         result = os.path.normpath(p)
         # mw: added for Windows:
         result = result.replace("\\", "/")
         result = result.replace("//", "/")
-        #        if not isinstance(result, unicode):
-        #            result = result.decode('utf-8')
+        # if not isinstance(result, unicode):
+        #     result = result.decode('utf-8')
         if p != result:
             logging.debug("Path.normalize(%r): %r." % (p, result))
         return result
@@ -150,20 +150,20 @@ class Path(polymodel.PolyModel):
         """
         return os.path.dirname(cls.normalize(p))
 
-    #    @classmethod
-    #    def check_existence(cls, path):
-    #        """Checking for a path existence.
+    # @classmethod
+    # def check_existence(cls, path):
+    #     """Checking for a path existence.
     #
-    #        Querying for the key should be faster than SELECET *.
-    #        This also
-    #        """
-    #        path = cls.normalize(path)
-    #        result = cls.cache.get(path)
-    #        if result:
-    #            return result
-    #        logging.debug("check_existence(%r)" % path)
-    #        result = db.GqlQuery("SELECT __key__ WHERE path = :1", path)
-    #        return result is not None
+    #     Querying for the key should be faster than SELECET *.
+    #     This also
+    #     """
+    #     path = cls.normalize(path)
+    #     result = cls.cache.get(path)
+    #     if result:
+    #         return result
+    #     logging.debug("check_existence(%r)" % path)
+    #     result = db.GqlQuery("SELECT __key__ WHERE path = :1", path)
+    #     return result is not None
 
     @classmethod
     def retrieve(cls, path):
@@ -179,7 +179,7 @@ class Path(polymodel.PolyModel):
         result = cls.list_by_path(path)
         if len(result) == 1:
             result = result[0]
-            #            assert type(result) in (Path, cls)
+            # assert type(result) in (Path, cls)
             cls.cache.set(path, result)
             # logging.debug('New result: %s' % result)
             return result
@@ -197,7 +197,7 @@ class Path(polymodel.PolyModel):
         logging.debug("%s.new(%r)" % (cls.__name__, path))
         path = cls.normalize(path)
         # here we use Dir.retrieve because the parent must be a Dir.
-        #        parent_path = Dir.retrieve(cls.get_parent_path(path))
+        # parent_path = Dir.retrieve(cls.get_parent_path(path))
         parent_path = Path.retrieve(cls.get_parent_path(path))
         if path != "/":
             if not parent_path:
@@ -228,15 +228,15 @@ class Dir(Path):
     # _exclude_from_indexes = None
     # _auto_now_add = ['create_time']
     # _auto_now = ['modify_time']
-    #    cache = cached_dir
+    # cache = cached_dir
 
     def _init_entity(self, **kwargs):
         super(Dir, self)._init_entity(**kwargs)
         self._entity.setdefault("parent_path", None)
 
     def get_content(self):
-        #        result = list(self.dir_set) + list(self.file_set)
-        #        logging.debug("Dir.get_content: %r" % result)
+        # result = list(self.dir_set) + list(self.file_set)
+        # logging.debug("Dir.get_content: %r" % result)
         # TODO: ORDER BY
         # result = list(Path.gql("WHERE parent_path=:1", self))
         result = self.cache.get_list(self.path)
@@ -267,12 +267,12 @@ class Dir(Path):
                     p.delete()
                 else:
                     RuntimeError("invalid child type")
-        #            for d in self.dir_set:
-        #                logging.debug("Dir.delete(%s): %r, d=%r" % (recursive, self.path, d))
-        #                d.delete(recursive)
-        #            for f in self.file_set:
-        #                logging.debug("Dir.delete(%s): %r, f=%r" % (recursive, self.path, f))
-        #                f.delete()
+        # for d in self.dir_set:
+        #     logging.debug("Dir.delete(%s): %r, d=%r" % (recursive, self.path, d))
+        #     d.delete(recursive)
+        # for f in self.file_set:
+        #     logging.debug("Dir.delete(%s): %r, f=%r" % (recursive, self.path, f))
+        #     f.delete()
         Path.delete(self)
         return
 
@@ -291,7 +291,7 @@ class File(Path):
     # _auto_now_add = ['create_time']
     # _auto_now = ['modify_time']
 
-    #    cache = cached_file
+    # cache = cached_file
 
     def _init_entity(self, **kwargs):
         super(File, self)._init_entity(**kwargs)

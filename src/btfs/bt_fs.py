@@ -23,17 +23,17 @@ standard_library.install_aliases()
 
 def initfs(backend="datastore", readonly=False):
     """
-    Make sure fs already inited.
+    Make sure bt_fs already inited.
     (e.g. there's a '/' and '/dav' collection in db).
     """
-    logging.debug("fs.initfs")
+    logging.debug("bt_fs.initfs")
     if backend not in ("datastore"):
         raise NotImplementedError("Backend '%s' is not supported." % backend)
     if not isdir("/"):
-        logging.info("fs.initfs: mkdir '/'")
+        logging.info("bt_fs.initfs: mkdir '/'")
         mkdir("/")
     if not isdir("/dav"):
-        logging.info("fs.initfs: mkdir '/dav'")
+        logging.info("bt_fs.initfs: mkdir '/dav'")
         mkdir("/dav")
     return
 
@@ -43,18 +43,18 @@ def _getresource(path):
     """Return a model.Dir or model.File object for `path`.
 
     `path` may be an existing Dir/File entity.
-    Since _getresource is called by most other functions in the `fs` module,
+    Since _getresource is called by most other functions in the `bt_fs` module,
     this allows the DAV provider to pass a cached resource, thus implementing
     a simple per-request caching, like in::
 
-        statresults = fs.stat(self.pathEntity)
+        statresults = bt_fs.stat(self.pathEntity)
 
     Return None, if path does not exist.
     """
     if type(path) in (Dir, File):
         logging.debug("_getresource(%r): request cache HIT" % path.path)
         return path
-    #    logging.info("_getresource(%r)" % path)
+    # logging.info("_getresource(%r)" % path)
     p = Path.retrieve(path)
     assert p is None or type(p) in (Dir, File)
     return p
@@ -127,9 +127,9 @@ def stat(s):
                 "stat_result(st_size=%r, st_atime=%r, st_mtime=%r, st_ctime=%r)" % self
             )
 
-        #        def _asdict(t):
-        #            'Return a new dict which maps field names to their values'
-        #            return {'st_size': t[0], 'st_atime': t[1], 'st_mtime': t[2], 'st_ctime': t[3]}
+        # def _asdict(t):
+        #     'Return a new dict which maps field names to their values'
+        #     return {'st_size': t[0], 'st_atime': t[1], 'st_mtime': t[2], 'st_ctime': t[3]}
 
         def _replace(self, **kwds):
             "Return a new stat_result object replacing specified fields with new values"

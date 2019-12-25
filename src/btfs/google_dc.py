@@ -149,8 +149,8 @@ class GoogleDomainController(BaseDomainController):
         super(GoogleDomainController, self).__init__(wsgidav_app, config)
         # dc_conf = config.get("google_dc", {})
 
-    #        self.appName = appName
-    #        self.userMap = userMap
+        # self.appName = appName
+        # self.userMap = userMap
 
     def __repr__(self):
         return self.__class__.__name__
@@ -217,8 +217,8 @@ class GoogleDomainController(BaseDomainController):
         Used for basic authentication.
         """
         logging.debug("authDomainUser(%r, %r, %r)" % (realmname, username, "***"))
-        #        headers = [ "%s: %r" % e for e in environ.items() ]
-        #        logging.debug("headers:\n\t" + "\n\t".join(headers))
+        # headers = [ "%s: %r" % e for e in environ.items() ]
+        # logging.debug("headers:\n\t" + "\n\t".join(headers))
 
         # If current user is logged in to Google Apps and has 'admin'
         # permission, allow access
