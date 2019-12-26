@@ -32,7 +32,18 @@ from fs.opener import registry
 
 # use the bt_fs module here
 from . import bt_fs
-import set_env
+
+#
+# Specify location of your service account credentials in environment variable before you start:
+#
+# $ export GOOGLE_APPLICATION_CREDENTIALS="~/datastore-user.cred.json"
+#
+# See https://cloud.google.com/docs/authentication/getting-started for details...
+#
+# Or specify in startup script or .env file elsewere:
+# import os
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "~/datastore-user.cred.json"
+#
 
 __all__ = ["DatastoreFS", "WrapDatastoreFS"]
 
