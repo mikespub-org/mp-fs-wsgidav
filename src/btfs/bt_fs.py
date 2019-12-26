@@ -196,7 +196,7 @@ def btopen(s, mode="r"):
     f = getfile(s)
     if f is None:
         # Create targtet file, but only in write mode
-        if "w" not in mode:
+        if "w" not in mode and "a" not in mode and "x" not in mode:
             raise ValueError("source not found %r" % s)
         f = File.new(path=s)
     io = BtIO(f, mode)
@@ -208,6 +208,10 @@ def listdir(s):
     # path_str = [c.basename(c.path).encode('utf-8') for c in p.get_content()]
     path_str = [c.basename(c.path) for c in p.get_content()]
     return path_str
+
+
+def stop_cache(stop=False):
+    Path.cache.stop_cache = stop
 
 
 # ===============================================================================
@@ -225,7 +229,7 @@ class BtIO(io.BytesIO):
         return
 
     def is_readonly(self):
-        return "w" not in self.mode
+        return "w" not in self.mode and "a" not in self.mode and "x" not in self.mode
 
     def flush(self):
         io.BytesIO.flush(self)

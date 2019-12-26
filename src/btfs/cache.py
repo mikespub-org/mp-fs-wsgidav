@@ -187,6 +187,7 @@ class NamespacedCache(object):
             id = threading._get_ident()
         logging.debug("NamespacedCache.__init__, thread=%s", id)
         self.namespace = namespace
+        self.stop_cache = False
         return
 
     def __del__(self):
@@ -202,6 +203,8 @@ class NamespacedCache(object):
         return key
 
     def get(self, key):
+        if self.stop_cache:
+            return
         key = self._add_namespace(key)
         result = memcache3.get(key)
         if result is not None:
@@ -213,12 +216,16 @@ class NamespacedCache(object):
         return result
 
     def set(self, key, value, time=0):
+        if self.stop_cache:
+            return
         logging.debug("Cache add: %r.%r = %r" % (self.namespace, key, value))
         key = self._add_namespace(key)
         memcache3._stats["set"] += 1
         return memcache3.set(key, value, timeout=time)
 
     def set_multi(self, mapping, time=0, key_prefix=""):
+        if self.stop_cache:
+            return []
         new_mapping = {}
         for key, value in list(mapping.items()):
             logging.debug("Cache add multi: %r.%r = %r" % (self.namespace, key, value))
@@ -234,12 +241,16 @@ class NamespacedCache(object):
         return ["failed"]
 
     def delete(self, key):
+        if self.stop_cache:
+            return
         logging.debug("Cache delete: %r.%r" % (self.namespace, key))
         key = self._add_namespace(key)
         memcache3._stats["delete"] += 1
         return memcache3.delete(key)
 
     def get_list(self, key):
+        if self.stop_cache:
+            return
         key = "list:" + self._add_namespace(key)
         memcache3._stats["get_list"] += 1
         result = memcache3.get(key)
@@ -248,6 +259,8 @@ class NamespacedCache(object):
         return result
 
     def set_list(self, key, value, time=0):
+        if self.stop_cache:
+            return
         key = "list:" + self._add_namespace(key)
         memcache3._stats["set_list"] += 1
         if value is not None:
@@ -255,6 +268,8 @@ class NamespacedCache(object):
         return memcache3.set(key, value, timeout=time)
 
     def del_list(self, key):
+        if self.stop_cache:
+            return
         key = "list:" + self._add_namespace(key)
         memcache3._stats["del_list"] += 1
         return memcache3.delete(key)

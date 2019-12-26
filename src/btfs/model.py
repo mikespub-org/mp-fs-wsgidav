@@ -213,7 +213,7 @@ class Path(polymodel.PolyModel):
         else:
             result = cls(path=path, parent_path=parent_path)
         if not result.is_saved():
-            logging.error("No complete key available yet")
+            logging.debug("No complete key available yet")
             result.set_key()
         result.put()
         return result
