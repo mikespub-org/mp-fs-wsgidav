@@ -17,6 +17,10 @@ The master branch here continues the modernization and uses Python 3.7+ with mor
   * Cachelib Lock Manager to support in-memory locks using [cachelib](https://github.com/pallets/cachelib) (either memcache, redis or in-memory)
   * Property Manager partially integrated with the DAV Provider (?)
 
+In addition, the following new filesystem providers were created for [PyFilestem2](https://docs.pyfilesystem.org/):
+  * [Datastore FS](https://github.com/mikespub-org/mar10-clouddav/blob/master/src/btfs/datastore_fs.py) for basic support of Google Cloud Firestore in Datastore mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
+  * Firestore FS for basic support of Google Cloud Firestore in native mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
+  
 The purpose here is **not** to provide a production-ready version for use on Google Cloud, but to experiment with various newer back-end services and explore the differences with older versions. And of course have fun while doing it :-)
 
 ## Original Description ##
