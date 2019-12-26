@@ -1,4 +1,4 @@
-# CloudDAV
+# CloudDAV - looking for a new name
 
 ## Fork Status ##
 The original version of [CloudDAV](https://github.com/mar10/clouddav) from 2010 was meant to run on Google App Engine with Python 2.5 and [WsgiDAV](https://github.com/mar10/wsgidav) 0.5.0
