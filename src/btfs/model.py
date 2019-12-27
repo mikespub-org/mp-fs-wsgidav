@@ -52,11 +52,12 @@ class Path(polymodel.PolyModel):
 
     def _init_entity(self, **kwargs):
         super(Path, self)._init_entity(**kwargs)
+        now = datetime.datetime.now(datetime.timezone.utc)
         template = {
             "path": "",
             "size": 0,
-            "create_time": datetime.datetime.utcnow(),
-            "modify_time": datetime.datetime.utcnow(),
+            "create_time": now,
+            "modify_time": now,
         }
         for key in template:
             self._entity.setdefault(key, template[key])
@@ -89,6 +90,12 @@ class Path(polymodel.PolyModel):
     def __repr__(self):
         return "%s('%s')" % (type(self).class_name(), self.path)
 
+    def isdir(self):
+        return type(self) is Dir
+
+    def isfile(self):
+        return type(self) is File
+
     @classmethod
     def list_by_path(cls, path):
         # result = list(cls.gql("WHERE path = :1", path))
@@ -116,6 +123,19 @@ class Path(polymodel.PolyModel):
             instance = cls.from_entity(entity)
             result.append(instance)
         return result
+
+    @classmethod
+    def ilist_by_parent_path(cls, parent_path):
+        # result = list(Path.gql("WHERE parent_path=:1", self))
+        # query = db.get_client().query(kind=cls._kind)
+        query = db.get_client().query(kind="Path")
+        # CHECKME: don't use parent here - ancestor queries return all descendants (at all levels)
+        if isinstance(parent_path, db.Model):
+            query.add_filter("parent_path", "=", parent_path.key())
+        else:
+            query.add_filter("parent_path", "=", parent_path)
+        for entity in query.fetch():
+            yield cls.from_entity(entity)
 
     @classmethod
     def normalize(cls, p):
@@ -218,6 +238,66 @@ class Path(polymodel.PolyModel):
         result.put()
         return result
 
+    @staticmethod
+    def _getresource(path):
+        """Return a model.Dir or model.File object for `path`.
+
+        `path` may be an existing Dir/File entity.
+        Since _getresource is called by most other functions in the `bt_fs` module,
+        this allows the DAV provider to pass a cached resource, thus implementing
+        a simple per-request caching, like in::
+
+            statresults = bt_fs.stat(self.pathEntity)
+
+        Return None, if path does not exist.
+        """
+        if type(path) in (Dir, File):
+            logging.debug("_getresource(%r): request cache HIT" % path.path)
+            return path
+        # logging.info("_getresource(%r)" % path)
+        p = Path.retrieve(path)
+        assert p is None or type(p) in (Dir, File)
+        return p
+
+    @staticmethod
+    def mkdir(path):
+        p = Dir.new(path)
+        return p
+
+    # @staticmethod
+    # def btopen(path, mode="r"):
+    #     """Open the file (eg. return a BtIO object)"""
+    #     from .bt_fs import BtIO
+    #
+    #     f = Path._getresource(path)
+    #     assert f is None or type(f) is File
+    #     if f is None:
+    #         # Create targtet file, but only in write mode
+    #         if "w" not in mode and "a" not in mode and "x" not in mode:
+    #             raise ValueError("source not found %r" % path)
+    #         f = File.new(path=path)
+    #     io = BtIO(f, mode)
+    #     return io
+
+    # @staticmethod
+    # def copyfile(s, d):
+    #     # raise, if not exists:
+    #     sio = Path.btopen(s, "rb")
+    #     # overwrite destination, if exists:
+    #     dio = Path.btopen(d, "wb")
+    #     while True:
+    #         buf = sio.read(8 * 1024)
+    #         if not buf:
+    #             break
+    #         dio.write(buf)
+    #     dio.close()
+    #     sio.close()
+    #     return
+
+    @staticmethod
+    def stop_cache(stop=False):
+        Path.cache.stop_cache = stop
+
 
 # ===============================================================================
 # Dir
@@ -252,6 +332,37 @@ class Dir(Path):
                 self.cache.set(item.path, item)
         return result
 
+    # https://stackoverflow.com/questions/4566769/can-i-memoize-a-python-generator/10726355
+    def iget_content(self):
+        # result = list(self.dir_set) + list(self.file_set)
+        # logging.debug("Dir.get_content: %r" % result)
+        # TODO: ORDER BY
+        # result = list(Path.gql("WHERE parent_path=:1", self))
+        result = self.cache.get_list(self.path)
+        if result:
+            logging.debug("Dir.iget_content: HIT %r" % result)
+            for item in result:
+                yield item
+            return
+        result = []
+        for item in Path.ilist_by_parent_path(self):
+            result.append(item)
+            yield item
+        logging.debug("Dir.iget_content: MISS %r" % result)
+        self.cache.set_list(self.path, result)
+        # preset items in cache since we will probably need them right after this
+        if isinstance(result, list) and len(result) > 0 and isinstance(result[0], Path):
+            for item in result:
+                self.cache.set(item.path, item)
+        return
+
+    def listdir(self):
+        return [c.basename(c.path) for c in self.get_content()]
+
+    def ilistdir(self):
+        for c in self.iget_content():
+            yield c.basename(c.path)
+
     def delete(self, recursive=False):
         logging.debug("Dir.delete(%s): %r" % (recursive, self.path))
         if not recursive:
@@ -275,6 +386,12 @@ class Dir(Path):
         #     f.delete()
         Path.delete(self)
         return
+
+    def rmdir(self):
+        self.delete(recursive=False)
+
+    def rmtree(self):
+        self.delete(recursive=True)
 
 
 # ===============================================================================
@@ -364,6 +481,9 @@ class File(Path):
             db.get_client().delete_multi(chunk_keys)
         Path.delete(self)
         return
+
+    def unlink(self):
+        self.delete()
 
 
 # ===============================================================================

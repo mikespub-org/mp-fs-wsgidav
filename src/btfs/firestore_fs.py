@@ -121,7 +121,9 @@ class FirestoreFS(FS):
             raise errors.ResourceNotFound(path)
 
         _stat = fire_fs.stat(_res)
-        info = {"basic": {"name": os.path.basename(_path), "is_dir": fire_fs.isdir(_res)}}
+        info = {
+            "basic": {"name": os.path.basename(_path), "is_dir": fire_fs.isdir(_res)}
+        }
         if "details" in namespaces:
             info["details"] = self._make_details_from_stat(_stat)
             if fire_fs.isdir(_res):
