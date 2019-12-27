@@ -584,9 +584,13 @@ class DatastoreFS(FS):
             dir_path, file_name = os.path.split(_dst_path)
             _dir_res = self._getresource(dir_path)
             if not _dir_res or not _dir_res.isdir():
-                raise errors.ResourceNotFound(path)
+                raise errors.ResourceNotFound(dst_path)
 
-            bt_fs.copyfile(self._prep_path(_src_path), self._prep_path(_dst_path))
+            _src_res = self._getresource(src_path)
+            if not _src_res or not _src_res.isfile():
+                raise errors.ResourceNotFound(src_path)
+
+            bt_fs.copyfile(_src_res, self._prep_path(_dst_path))
 
     # ---------------------------------------------------------------- #
     # Internal methods                                                 #
@@ -652,11 +656,10 @@ class DatastoreFS(FS):
         return os.path.join(self.root_path, _path).replace(os.sep, "/")
 
     def _reset_path(self, path, confirm=False):
-        _path = self.validatepath(path)
         if not confirm:
             print(
                 "Are you sure you want to reset path '%s' - located at '%s' on Cloud Datastore?"
-                % (path, self._prep_path(_path))
+                % (path, self._prep_path(path))
             )
             return False
 
@@ -665,6 +668,9 @@ class DatastoreFS(FS):
             if not _res or not _res.isdir():
                 raise errors.DirectoryExpected(path)
 
+            if len(_res.listdir()) < 1:
+                return self.opendir(path)
+
             has_cache = self._is_cached
             if not has_cache:
                 self._stop_cache(False)
@@ -672,7 +678,7 @@ class DatastoreFS(FS):
             if not has_cache:
                 self._stop_cache(True)
 
-            _res = bt_fs.mkdir(self._prep_path(_path))
+            _res = bt_fs.mkdir(self._prep_path(path))
             return self.opendir(path)
 
     def _stop_cache(self, confirm=False):
