@@ -671,12 +671,12 @@ class DatastoreFS(FS):
             if len(_res.listdir()) < 1:
                 return self.opendir(path)
 
-            has_cache = self._is_cached
-            if not has_cache:
+            if not self._is_cached:
                 self._stop_cache(False)
-            _res.delete(recursive=True)
-            if not has_cache:
+                _res.delete(recursive=True)
                 self._stop_cache(True)
+            else:
+                _res.delete(recursive=True)
 
             _res = bt_fs.mkdir(self._prep_path(path))
             return self.opendir(path)

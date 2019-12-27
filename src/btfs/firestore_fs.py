@@ -21,7 +21,7 @@ from fs.mode import Mode
 from fs.wrapfs import WrapFS
 from fs.opener import open_fs
 from functools import partial
-from datetime import datetime
+import datetime
 import itertools
 import os.path
 import logging
@@ -32,6 +32,10 @@ from fs.opener import registry
 
 # use the fire_fs module here - TODO
 from . import fire_fs
+
+# from .model import Path as PathModel
+# TODO: replace with more advanced IO class - see e.g. _MemoryFile in fs.memoryfs
+# from .fire_fs import BtIO
 
 #
 # Specify location of your service account credentials in environment variable before you start:
@@ -63,9 +67,15 @@ class FirestoreFS(FS):
         self._is_cached = True
         if not use_cache:
             self._stop_cache(True)
-        _res = fire_fs.getdir(_root_path)
-        if _res and fire_fs.isdir(_res):
-            log.info("Root path exists %s" % _root_path)
+        # Initialize Firestore filesystem if needed
+        fire_fs.initfs()
+        # Check if the requested root_path exists
+        _res = fire_fs._getresource(_root_path)
+        if _res:
+            if _res.isdir():
+                log.info("Root path exists %s" % _root_path)
+            else:
+                raise errors.DirectoryExpected(root_path)
         else:
             log.info("Creating root path %s" % _root_path)
             _res = fire_fs.mkdir(_root_path)
@@ -76,22 +86,6 @@ class FirestoreFS(FS):
 
     # https://docs.pyfilesystem.org/en/latest/implementers.html#essential-methods
     # From https://github.com/PyFilesystem/pyfilesystem2/blob/master/fs/base.py
-
-    @classmethod
-    def _make_details_from_stat(cls, stat_result):
-        # type: (os.stat_result) -> Dict[Text, object]
-        """Make a *details* info dict from an `os.stat_result` object.
-        """
-        details = {
-            # "_write": ["accessed", "modified"],
-            "_write": ["created", "modified"],
-            "accessed": stat_result.st_atime,
-            "modified": stat_result.st_mtime,
-            "created": stat_result.st_ctime,
-            "size": stat_result.st_size,
-            # "type": int(cls._get_type_from_stat(stat_result)),
-        }
-        return details
 
     # ---------------------------------------------------------------- #
     # Required methods                                                 #
@@ -115,35 +109,11 @@ class FirestoreFS(FS):
         """
         self.check()
         namespaces = namespaces or ()
-        _path = self.validatepath(path)
-        _res = fire_fs._getresource(self._prep_path(_path))
+        _res = self._getresource(path)
         if _res is None:
             raise errors.ResourceNotFound(path)
 
-        _stat = fire_fs.stat(_res)
-        info = {
-            "basic": {"name": os.path.basename(_path), "is_dir": fire_fs.isdir(_res)}
-        }
-        if "details" in namespaces:
-            info["details"] = self._make_details_from_stat(_stat)
-            if fire_fs.isdir(_res):
-                info["details"]["type"] = 1
-            else:
-                info["details"]["type"] = 2
-        if "stat" in namespaces:
-            info["stat"] = {
-                k: getattr(_stat, k) for k in dir(_stat) if k.startswith("st_")
-            }
-        # if "lstat" in namespaces:
-        #     info["lstat"] = {
-        #         k: getattr(_lstat, k) for k in dir(_lstat) if k.startswith("st_")
-        #     }
-        # if "link" in namespaces:
-        #     info["link"] = self._make_link_info(sys_path)
-        # if "access" in namespaces:
-        #     info["access"] = self._make_access_from_stat(_stat)
-
-        return Info(info)
+        return self._make_info_from_resource(_res, namespaces)
 
     def listdir(self, path):
         # type: (Text) -> List[Text]
@@ -165,16 +135,15 @@ class FirestoreFS(FS):
 
         """
         self.check()
-        _path = self.validatepath(path)
         with self._lock:
-            _res = fire_fs._getresource(self._prep_path(_path))
+            _res = self._getresource(path)
             if not _res:
                 raise errors.ResourceNotFound(path)
 
-            if not fire_fs.isdir(_res):
+            if not _res.isdir():
                 raise errors.DirectoryExpected(path)
 
-            return fire_fs.listdir(_res)
+            return _res.listdir()
 
     def makedir(
         self,
@@ -213,16 +182,16 @@ class FirestoreFS(FS):
 
             dir_path, dir_name = os.path.split(_path)
 
-            _dir_res = fire_fs._getresource(self._prep_path(dir_path))
-            if not _dir_res or not fire_fs.isdir(_dir_res):
+            _dir_res = self._getresource(dir_path)
+            if not _dir_res or not _dir_res.isdir():
                 raise errors.ResourceNotFound(path)
 
-            if dir_name in fire_fs.listdir(_dir_res):
+            if dir_name in _dir_res.listdir():
                 if not recreate:
                     raise errors.DirectoryExists(path)
 
-                _res = fire_fs._getresource(self._prep_path(_path))
-                if _res and fire_fs.isdir(_res):
+                _res = self._getresource(path)
+                if _res and _res.isdir():
                     return self.opendir(path)
 
             _res = fire_fs.mkdir(self._prep_path(_path))
@@ -269,28 +238,28 @@ class FirestoreFS(FS):
             raise errors.FileExpected(path)
 
         with self._lock:
-            _dir_res = fire_fs._getresource(self._prep_path(dir_path))
-            if not _dir_res or not fire_fs.isdir(_dir_res):
+            _dir_res = self._getresource(dir_path)
+            if not _dir_res or not _dir_res.isdir():
                 raise errors.ResourceNotFound(path)
 
             if _mode.create:
-                if file_name in fire_fs.listdir(_dir_res):
+                if file_name in _dir_res.listdir():
                     if _mode.exclusive:
                         raise errors.FileExists(path)
 
-                    _res = fire_fs._getresource(self._prep_path(_path))
-                    if not _res or fire_fs.isdir(_res):
+                    _res = self._getresource(path)
+                    if not _res or not _res.isfile():
                         raise errors.FileExpected(path)
 
                     return fire_fs.btopen(_res, mode)
 
                 return fire_fs.btopen(self._prep_path(_path), mode)
 
-            if file_name not in fire_fs.listdir(_dir_res):
+            if file_name not in _dir_res.listdir():
                 raise errors.ResourceNotFound(path)
 
-            _res = fire_fs._getresource(self._prep_path(_path))
-            if not _res or fire_fs.isdir(_res):
+            _res = self._getresource(path)
+            if not _res or not _res.isfile():
                 raise errors.FileExpected(path)
 
             return fire_fs.btopen(_res, mode)
@@ -308,17 +277,16 @@ class FirestoreFS(FS):
 
         """
         self.check()
-        _path = self.validatepath(path)
 
         with self._lock:
-            _res = fire_fs._getresource(self._prep_path(_path))
+            _res = self._getresource(path)
             if not _res:
                 raise errors.ResourceNotFound(path)
 
-            if not fire_fs.isfile(_res):
+            if not _res.isfile():
                 raise errors.FileExpected(path)
 
-            fire_fs.unlink(_res)
+            _res.delete()
 
     def removedir(self, path):
         # type: (Text) -> None
@@ -345,17 +313,17 @@ class FirestoreFS(FS):
             raise errors.RemoveRootError()
 
         with self._lock:
-            _res = fire_fs._getresource(self._prep_path(_path))
+            _res = self._getresource(path)
             if not _res:
                 raise errors.ResourceNotFound(path)
 
-            if not fire_fs.isdir(_res):
+            if not _res.isdir():
                 raise errors.DirectoryExpected(path)
 
-            if len(fire_fs.listdir(_res)) > 0:
+            if len(_res.listdir()) > 0:
                 raise errors.DirectoryNotEmpty(path)
 
-            fire_fs.rmdir(_res)
+            _res.delete(recursive=False)
 
     def setinfo(self, path, info):
         # type: (Text, RawInfo) -> None
@@ -382,9 +350,9 @@ class FirestoreFS(FS):
             >>> my_fs.setinfo('file.txt', details_info)
 
         """
-        _path = self.validatepath(path)
+        self.check()
         with self._lock:
-            _res = fire_fs._getresource(self._prep_path(_path))
+            _res = self._getresource(path)
             if not _res:
                 raise errors.ResourceNotFound(path)
 
@@ -401,9 +369,13 @@ class FirestoreFS(FS):
                     if accessed_time and not modified_time:
                         modified_time = accessed_time
                     if created_time:
-                        _res.create_time = datetime.fromtimestamp(created_time)
+                        _res.create_time = datetime.datetime.fromtimestamp(
+                            created_time, datetime.timezone.utc
+                        )
                     if modified_time:
-                        _res.modify_time = datetime.fromtimestamp(modified_time)
+                        _res.modify_time = datetime.datetime.fromtimestamp(
+                            modified_time, datetime.timezone.utc
+                        )
                     _res.put()
 
     # ---------------------------------------------------------------- #
@@ -422,16 +394,8 @@ class FirestoreFS(FS):
             bool: `True` if a resource exists at the given path.
 
         """
-        _path = self.validatepath(path)
-        try:
-            # self.getinfo(path)
-            return fire_fs.exists(self._prep_path(_path))
-        # except errors.ResourceNotFound:
-        #     return False
-        except AssertionError:
-            return False
-        # else:
-        #     return True
+        _res = self._getresource(path)
+        return _res is not None
 
     def isdir(self, path):
         # type: (Text) -> bool
@@ -444,16 +408,10 @@ class FirestoreFS(FS):
             bool: `True` if ``path`` maps to a directory.
 
         """
-        _path = self.validatepath(path)
-        try:
-            # return self.getinfo(path).is_dir
-            return fire_fs.isdir(self._prep_path(_path))
-        # except errors.ResourceNotFound:
-        #     return False
-        except AssertionError:
+        _res = self._getresource(path)
+        if not _res or not _res.isdir():
             return False
-        # else:
-        #     return True
+        return True
 
     def isfile(self, path):
         # type: (Text) -> bool
@@ -466,16 +424,10 @@ class FirestoreFS(FS):
             bool: `True` if ``path`` maps to a file.
 
         """
-        _path = self.validatepath(path)
-        try:
-            # return not self.getinfo(path).is_dir
-            return fire_fs.isfile(self._prep_path(_path))
-        # except errors.ResourceNotFound:
-        #     return False
-        except AssertionError:
+        _res = self._getresource(path)
+        if not _res or not _res.isfile():
             return False
-        # else:
-        #     return True
+        return True
 
     def scandir(
         self,
@@ -506,22 +458,21 @@ class FirestoreFS(FS):
         """
         self.check()
         namespaces = namespaces or ()
-        _path = self.validatepath(path)
 
-        # TODO: use information from Dir.get_content() directly
-        info = (
-            self.getinfo(
-                os.path.join(_path, name).replace(os.sep, "/"), namespaces=namespaces
-            )
-            for name in self.listdir(path)
-        )
-        iter_info = iter(info)
+        _res = self._getresource(path)
+        if not _res:
+            raise errors.ResourceNotFound(path)
+
+        if not _res.isdir():
+            raise errors.DirectoryExpected(path)
+
+        iter_info = self._scandir_from_resource(_res, namespaces)
         if page is not None:
             start, end = page
             iter_info = itertools.islice(iter_info, start, end)
         return iter_info
 
-    def filterdir(
+    def todo_filterdir(
         self,
         path,  # type: Text
         files=None,  # type: Optional[Iterable[Text]]
@@ -631,16 +582,71 @@ class FirestoreFS(FS):
                 raise errors.DestinationExists(dst_path)
 
             dir_path, file_name = os.path.split(_dst_path)
-            _dir_res = fire_fs._getresource(self._prep_path(dir_path))
-            if not _dir_res or not fire_fs.isdir(_dir_res):
-                raise errors.ResourceNotFound(path)
+            _dir_res = self._getresource(dir_path)
+            if not _dir_res or not _dir_res.isdir():
+                raise errors.ResourceNotFound(dst_path)
 
-            fire_fs.copyfile(self._prep_path(_src_path), self._prep_path(_dst_path))
+            _src_res = self._getresource(src_path)
+            if not _src_res or not _src_res.isfile():
+                raise errors.ResourceNotFound(src_path)
+
+            fire_fs.copyfile(_src_res, self._prep_path(_dst_path))
 
     # ---------------------------------------------------------------- #
     # Internal methods                                                 #
     # Filesystem-specific methods.                                     #
     # ---------------------------------------------------------------- #
+
+    @staticmethod
+    def _make_info_from_resource(_res, namespaces):
+        def epoch(dt):
+            # return time.mktime(dt.utctimetuple())
+            return (
+                dt - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+            ) / datetime.timedelta(seconds=1)
+
+        st_size = _res.size
+        st_atime = epoch(_res.modify_time)
+        st_mtime = st_atime
+        st_ctime = epoch(_res.create_time)
+
+        info = {"basic": {"name": _res.basename(_res.path), "is_dir": _res.isdir()}}
+        if "details" in namespaces:
+            info["details"] = {
+                # "_write": ["accessed", "modified"],
+                "_write": ["created", "modified"],
+                "accessed": st_atime,
+                "modified": st_mtime,
+                "created": st_ctime,
+                "size": st_size,
+                # "type": int(cls._get_type_from_stat(stat_result)),
+            }
+            if _res.isdir():
+                info["details"]["type"] = 1
+            else:
+                info["details"]["type"] = 2
+        if "stat" in namespaces:
+            info["stat"] = {
+                "st_size": st_size,
+                "st_atime": st_atime,
+                "st_mtime": st_mtime,
+                "st_ctime": st_ctime,
+            }
+        # if "lstat" in namespaces:
+        #     info["lstat"] = {
+        #         k: getattr(_lstat, k) for k in dir(_lstat) if k.startswith("st_")
+        #     }
+        # if "link" in namespaces:
+        #     info["link"] = cls._make_link_info(sys_path)
+        # if "access" in namespaces:
+        #     info["access"] = cls._make_access_from_stat(_stat)
+
+        return Info(info)
+
+    @classmethod
+    def _scandir_from_resource(cls, _res, namespaces):
+        for _child_res in _res.iget_content():
+            yield cls._make_info_from_resource(_child_res, namespaces)
 
     def _prep_path(self, _path):
         if _path.startswith(self.root_path + "/"):
@@ -650,27 +656,29 @@ class FirestoreFS(FS):
         return os.path.join(self.root_path, _path).replace(os.sep, "/")
 
     def _reset_path(self, path, confirm=False):
-        _path = self.validatepath(path)
         if not confirm:
             print(
                 "Are you sure you want to reset path '%s' - located at '%s' on Cloud Firestore?"
-                % (path, self._prep_path(_path))
+                % (path, self._prep_path(path))
             )
             return False
 
         with self._lock:
-            _res = fire_fs._getresource(self._prep_path(_path))
-            if not _res or fire_fs.isfile(_res):
+            _res = self._getresource(path)
+            if not _res or not _res.isdir():
                 raise errors.DirectoryExpected(path)
 
-            has_cache = self._is_cached
-            if not has_cache:
-                self._stop_cache(False)
-            fire_fs.rmtree(_res)
-            if not has_cache:
-                self._stop_cache(True)
+            if len(_res.listdir()) < 1:
+                return self.opendir(path)
 
-            _res = fire_fs.mkdir(self._prep_path(_path))
+            if not self._is_cached:
+                self._stop_cache(False)
+                _res.delete(recursive=True)
+                self._stop_cache(True)
+            else:
+                _res.delete(recursive=True)
+
+            _res = fire_fs.mkdir(self._prep_path(path))
             return self.opendir(path)
 
     def _stop_cache(self, confirm=False):
@@ -694,6 +702,34 @@ class FirestoreFS(FS):
         _path = self.validatepath(path)
         return fire_fs._getresource(self._prep_path(_path))
 
+    # @staticmethod
+    # def btopen(path, mode="r"):
+    #     """Open the file (eg. return a BtIO object)"""
+    #     f = Path._getresource(path)
+    #     assert f is None or type(f) is File
+    #     if f is None:
+    #         # Create targtet file, but only in write mode
+    #         if "w" not in mode and "a" not in mode and "x" not in mode:
+    #             raise ValueError("source not found %r" % path)
+    #         f = File.new(path=path)
+    #     io = BtIO(f, mode)
+    #     return io
+
+    # @staticmethod
+    # def copyfile(s, d):
+    #     # raise, if not exists:
+    #     sio = Path.btopen(s, "rb")
+    #     # overwrite destination, if exists:
+    #     dio = Path.btopen(d, "wb")
+    #     while True:
+    #         buf = sio.read(8 * 1024)
+    #         if not buf:
+    #             break
+    #         dio.write(buf)
+    #     dio.close()
+    #     sio.close()
+    #     return
+
 
 class WrapFirestoreFS(WrapFS):
     def __init__(self, root_path=None):
@@ -716,7 +752,7 @@ class FirestoreOpener(Opener):
 
 
 def main():
-    fi_fs = FirestoreFS()
+    fi_fs = FirestoreFS("/")
     # fi_fs = WrapFirestoreFS()
     # fi_fs = open_fs("firestore://")
     fi_fs.tree()

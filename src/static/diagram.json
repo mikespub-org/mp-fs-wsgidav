@@ -1,0 +1,1 @@
+{"customisations":"plain","type":"usecase","dsl":"[User]-(WsgiDAV), [User]-(PyFilesystem2), (PyFilesystem2)<(Datastore FS), (Datastore FS)>(Cloud Datastore API), (WsgiDAV)<(Datastore DAV Provider), (Datastore DAV Provider)>(Cloud Datastore API), (Cloud Datastore API)>(Google Cloud Datastore)","digest":"4a055295","file_only":false,"mime":"image/png","extension":"png"}
