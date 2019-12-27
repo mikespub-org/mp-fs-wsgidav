@@ -170,18 +170,24 @@ def rmtree(s):
     return
 
 
+def mkfile(s):
+    p = File.new(s)
+    return p
+
+
 def copyfile(s, d):
+    Path.copyfile(s, d)
     # raise, if not exists:
-    sio = btopen(s, "rb")
+    # sio = btopen(s, "rb")
     # overwrite destination, if exists:
-    dio = btopen(d, "wb")
-    while True:
-        buf = sio.read(8 * 1024)
-        if not buf:
-            break
-        dio.write(buf)
-    dio.close()
-    sio.close()
+    # dio = btopen(d, "wb")
+    # while True:
+    #     buf = sio.read(8 * 1024)
+    #     if not buf:
+    #         break
+    #     dio.write(buf)
+    # dio.close()
+    # sio.close()
     return
 
 

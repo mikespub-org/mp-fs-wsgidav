@@ -56,6 +56,7 @@ class BTFSResource(_DAVResource):
         self._roles = []
         if environ is None or not environ.get("wsgidav.auth.roles"):
             self._roles.append(self.provider.anon_role)
+            logging.debug("Roles: %s" % self._roles)
             return
         # set by Firebase DC based on wsgidav config, custom claims or user database
         if environ.get("wsgidav.auth.roles"):

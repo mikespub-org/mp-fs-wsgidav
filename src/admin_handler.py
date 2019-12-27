@@ -32,13 +32,12 @@ def db_get_stats(model, limit=1000):
 
 
 def find_orphans(limit=1000):
-    dir_list = Dir.list_all(1000)
     dir_keys = {}
-    for item in dir_list:
+    for item in Dir.ilist_all(1000):
         dir_keys[item.key()] = item
     output = "Orphan Dirs:\n"
     dir_orphans = []
-    for item in dir_list:
+    for item in dir_keys.values():
         if not item.parent_path:
             if item.path != "/":
                 output += "No Parent Path: %s\n" % item.path
@@ -53,12 +52,10 @@ def find_orphans(limit=1000):
         if key not in dir_keys:
             output += "Unknown Parent: %s\n" % item.path
             dir_orphans.append(item.key())
-    del dir_list
-    file_list = File.list_all(1000)
     output += "Orphan Files:\n"
     file_keys = {}
     file_orphans = []
-    for item in file_list:
+    for item in File.ilist_all(1000):
         file_keys[item.key()] = item
         try:
             key = item.parent_path
@@ -75,12 +72,10 @@ def find_orphans(limit=1000):
             file_orphans.append(item.key())
             continue
         file_keys[item.key()] = item
-    del file_list
-    chunk_list = Chunk.list_all(1000, projection=["offset"])
     output += "Orphan Chunks:\n"
     # chunk_keys = {}
     chunk_orphans = []
-    for item in chunk_list:
+    for item in Chunk.ilist_all(1000, projection=["offset"]):
         try:
             key = item.key().parent
         except Exception as e:
@@ -96,7 +91,6 @@ def find_orphans(limit=1000):
             chunk_orphans.append(item.key())
             continue
         # chunk_keys[item.key()] = item
-    del chunk_list
     # TODO: resize files & dirs based on chunk_keys?
     return output, dir_orphans, file_orphans, chunk_orphans
 
@@ -154,21 +148,21 @@ def admin_view():
     datastore_stats["User"] = db_get_stats(AuthorizedUser)
     datastore_stats["Session"] = db_get_stats(sessions.AuthSession)
     paths = []
-    for item in Path.list_all(10):
+    for item in Path.ilist_all(10):
         info = item.to_dict(True)
         paths.append(info)
     chunks = []
-    for item in Chunk.list_all(10):
+    for item in Chunk.ilist_all(10):
         info = item.to_dict(True)
         if len(info["data"]) > 100:
             info["data"] = "%s... (%s bytes)" % (info["data"][:100], len(info["data"]))
         chunks.append(info)
     userlist = []
-    for item in AuthorizedUser.list_all(10):
+    for item in AuthorizedUser.ilist_all(10):
         info = item.to_dict(True)
         userlist.append(info)
     sessionlist = []
-    for item in sessions.AuthSession.list_all(10):
+    for item in sessions.AuthSession.ilist_all(10):
         info = item.to_dict(True)
         sessionlist.append(info)
     nickname = "stranger"

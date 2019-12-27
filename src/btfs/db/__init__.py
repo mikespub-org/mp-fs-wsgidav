@@ -31,6 +31,12 @@ def make_entity(key, exclude_from_indexes=None, **kwargs):
     return entity
 
 
+def delete(keys):
+    if isinstance(keys, list):
+        return get_client().delete_multi(keys)
+    return get_client().delete(keys)
+
+
 _class_map = {}
 
 
@@ -150,6 +156,13 @@ class Model(with_metaclass(ModelType, object)):
             instance = cls.from_entity(entity)
             result.append(instance)
         return result
+
+    @classmethod
+    def ilist_all(cls, limit=1000, offset=0, **kwargs):
+        query = cls.query(**kwargs)
+        for entity in query.fetch(limit, offset):
+            instance = cls.from_entity(entity)
+            yield instance
 
     @classmethod
     def get_count(cls, limit=1000, offset=0, **kwargs):

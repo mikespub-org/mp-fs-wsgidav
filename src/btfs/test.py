@@ -57,7 +57,7 @@ def test():
     bt_fs.initfs()
     assert bt_fs.isdir("/")
 
-    rootpath = "/test"
+    rootpath = "/run_test"
     if bt_fs.exists(rootpath):
         logging.info("removing " + rootpath)
         bt_fs.rmtree(rootpath)
@@ -87,6 +87,8 @@ def test():
     lockman = LockManager(LockStorageMemcache())
     provider.set_lock_manager(lockman)
     environ = {"wsgidav.provider": provider}
+    environ["wsgidav.auth.user_name"] = "test"
+    environ["wsgidav.auth.roles"] = ["editor"]
 
     resRoot = provider.get_resource_inst(rootpath + "/", environ)
     resRoot.create_collection("folder1")

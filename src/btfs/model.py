@@ -264,6 +264,11 @@ class Path(polymodel.PolyModel):
         p = Dir.new(path)
         return p
 
+    @staticmethod
+    def mkfile(path):
+        p = File.new(path)
+        return p
+
     # @staticmethod
     # def btopen(path, mode="r"):
     #     """Open the file (eg. return a BtIO object)"""
@@ -279,20 +284,22 @@ class Path(polymodel.PolyModel):
     #     io = BtIO(f, mode)
     #     return io
 
-    # @staticmethod
-    # def copyfile(s, d):
-    #     # raise, if not exists:
-    #     sio = Path.btopen(s, "rb")
-    #     # overwrite destination, if exists:
-    #     dio = Path.btopen(d, "wb")
-    #     while True:
-    #         buf = sio.read(8 * 1024)
-    #         if not buf:
-    #             break
-    #         dio.write(buf)
-    #     dio.close()
-    #     sio.close()
-    #     return
+    @staticmethod
+    def copyfile(s, d):
+        # raise, if not exists:
+        src = Path._getresource(s)
+        if src is None:
+            raise ValueError("Source not found %r" % s)
+        if not src.isfile():
+            raise ValueError("Source not a File %r" % s)
+        dst = Path._getresource(d)
+        if dst is None:
+            dst = File.new(path=d)
+        if not dst.isfile():
+            raise ValueError("Destination not a File %r" % d)
+        # TODO: copyfile2 without downloading/uploading chunk data at all?
+        dst.iput_content(src.iget_content())
+        return
 
     @staticmethod
     def stop_cache(stop=False):
@@ -439,6 +446,18 @@ class File(Path):
         # logging.debug('Content: %s' % repr(result))
         return result
 
+    def iget_content(self):
+        """
+        Return chunks via iterable.
+        """
+        if self.is_saved():
+            # chunks = Chunk.gql("WHERE file=:1 ORDER BY offset ASC", self)
+            chunks = Chunk.fetch_entities_by_file(self)
+        else:
+            chunks = []
+        for chunk in chunks:
+            yield chunk["data"]
+
     def put_content(self, s):
         """
         Split the DB transaction to serveral small chunks,
@@ -447,16 +466,12 @@ class File(Path):
         size = len(s)
         # self.content = []
         if not self.is_saved():
-            logging.error("No complete key available yet")
+            logging.debug("No complete key available yet")
             self.set_key()
             # raise Exception
         else:
             # clear old chunks
-            # for chunk in self.chunk_set:  # use ancestor instead?
-            #    chunk.delete()
-            chunk_keys = Chunk.list_keys_by_file(self)
-            if chunk_keys and len(chunk_keys) > 0:
-                db.get_client().delete_multi(chunk_keys)
+            self.truncate()
 
         # put new datas
         for i in range(0, size, self.ChunkSize):
@@ -467,6 +482,66 @@ class File(Path):
             ck.put()
         self.size = size
         self.put()
+        return
+
+    def iput_content(self, iterable):
+        """
+        Split the DB transaction to serveral small chunks,
+        to keep we don't exceed appengine's limit.
+        """
+        # size = len(s)
+        # self.content = []
+        if not self.is_saved():
+            logging.debug("No complete key available yet")
+            self.set_key()
+            # raise Exception
+        else:
+            # clear old chunks
+            self.truncate()
+
+        # put new datas
+        i = 0
+        for data in iterable:
+            logging.debug("File.iput_content putting the chunk with offset = %d" % i)
+            length = len(data)
+            if length > self.ChunkSize:
+                # TODO: split data into chunks as above
+                raise ValueError("Too much data received: %s" % length)
+            # ck = Chunk(file=self.key(), offset=i, data=data, parent=self.key())  # use parent here?
+            ck = Chunk(offset=i, data=data, parent=self.key())
+            ck.put()
+            i += length
+        self.size = i
+        self.put()
+        return
+
+    def download(self, file):
+        # Note: we always write in chunks here, regardless of the chunk_size
+        for data in self.iget_content():
+            file.write(data)
+
+    def truncate(self, size=None):
+        # Note: we always truncate to 0 here, regardless of the size
+        if not self.is_saved():
+            self.size = 0
+            return 0
+        if size is not None and size > 0:
+            raise NotImplementedError
+        # clear old chunks
+        # for chunk in self.chunk_set:  # use ancestor instead?
+        #    chunk.delete()
+        chunk_keys = Chunk.list_keys_by_file(self)
+        if chunk_keys and len(chunk_keys) > 0:
+            db.get_client().delete_multi(chunk_keys)
+        self.size = 0
+        self.cache.delete(self.path)
+        return 0
+
+    def upload(self, file):
+        # See fs.tools.copy_file_data at https://github.com/PyFilesystem/pyfilesystem2/blob/master/fs/tools.py
+        # Note: we always read in chunks here, regardless of the chunk_size
+        read_iter = iter(lambda: file.read(self.ChunkSize) or None, None)
+        self.iput_content(read_iter)
         return
 
     def delete(self):
