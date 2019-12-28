@@ -18,20 +18,21 @@ from fs import errors
 from fs.base import FS
 from fs.info import Info
 from fs.mode import Mode
+from fs.path import split, join
 from fs.wrapfs import WrapFS
 from fs.opener import open_fs
+from fs.iotools import RawWrapper
 from functools import partial
 import datetime
 import itertools
-import os.path
 import logging
 
 # for opener
 from fs.opener import Opener
 from fs.opener import registry
 
-# use the fire_fs module here - TODO
-from . import fire_fs
+# use the fire_fs module here
+from . import fire_fs  # TODO
 
 # from .model import Path as PathModel
 # TODO: replace with more advanced IO class - see e.g. _MemoryFile in fs.memoryfs
@@ -61,7 +62,6 @@ class FirestoreFS(FS):
         if root_path is None:
             root_path = "/_firestore_fs_"
         _root_path = self.validatepath(root_path)
-        _root_path = _root_path.replace(os.sep, "/")
         if not _root_path.startswith("/"):
             _root_path = "/" + _root_path
         self._is_cached = True
@@ -107,7 +107,6 @@ class FirestoreFS(FS):
         For more information regarding resource information, see :ref:`info`.
 
         """
-        self.check()
         namespaces = namespaces or ()
         _res = self._getresource(path)
         if _res is None:
@@ -134,7 +133,6 @@ class FirestoreFS(FS):
             fs.errors.ResourceNotFound: If ``path`` does not exist.
 
         """
-        self.check()
         with self._lock:
             _res = self._getresource(path)
             if not _res:
@@ -169,7 +167,6 @@ class FirestoreFS(FS):
             fs.errors.ResourceNotFound: If the path is not found.
 
         """
-        self.check()
         # mode = Permissions.get_mode(permissions)
         _path = self.validatepath(path)
 
@@ -180,7 +177,9 @@ class FirestoreFS(FS):
                 else:
                     raise errors.DirectoryExists(path)
 
-            dir_path, dir_name = os.path.split(_path)
+            if _path.endswith("/"):
+                _path = _path[:-1]
+            dir_path, dir_name = split(_path)
 
             _dir_res = self._getresource(dir_path)
             if not _dir_res or not _dir_res.isdir():
@@ -228,11 +227,10 @@ class FirestoreFS(FS):
             fs.errors.ResourceNotFound: If the path does not exist.
 
         """
-        self.check()
         _mode = Mode(mode)
         _mode.validate_bin()
         _path = self.validatepath(path)
-        dir_path, file_name = os.path.split(_path)
+        dir_path, file_name = split(_path)
 
         if not file_name:
             raise errors.FileExpected(path)
@@ -251,9 +249,9 @@ class FirestoreFS(FS):
                     if not _res or not _res.isfile():
                         raise errors.FileExpected(path)
 
-                    return fire_fs.btopen(_res, mode)
+                    return self._btopen(_res, mode)
 
-                return fire_fs.btopen(self._prep_path(_path), mode)
+                return self._btopen(self._prep_path(_path), mode)
 
             if file_name not in _dir_res.listdir():
                 raise errors.ResourceNotFound(path)
@@ -262,7 +260,7 @@ class FirestoreFS(FS):
             if not _res or not _res.isfile():
                 raise errors.FileExpected(path)
 
-            return fire_fs.btopen(_res, mode)
+            return self._btopen(_res, mode)
 
     def remove(self, path):
         # type: (Text) -> None
@@ -276,8 +274,6 @@ class FirestoreFS(FS):
             fs.errors.ResourceNotFound: If the path does not exist.
 
         """
-        self.check()
-
         with self._lock:
             _res = self._getresource(path)
             if not _res:
@@ -307,10 +303,11 @@ class FirestoreFS(FS):
                 the root directory (i.e. ``'/'``)
 
         """
-        self.check()
         _path = self.validatepath(path)
         if _path == "/" or _path == "" or _path is None:
             raise errors.RemoveRootError()
+        if _path.endswith("/"):
+            _path = _path[:-1]
 
         with self._lock:
             _res = self._getresource(path)
@@ -350,7 +347,6 @@ class FirestoreFS(FS):
             >>> my_fs.setinfo('file.txt', details_info)
 
         """
-        self.check()
         with self._lock:
             _res = self._getresource(path)
             if not _res:
@@ -456,7 +452,6 @@ class FirestoreFS(FS):
             fs.errors.ResourceNotFound: If ``path`` does not exist.
 
         """
-        self.check()
         namespaces = namespaces or ()
 
         _res = self._getresource(path)
@@ -581,16 +576,220 @@ class FirestoreFS(FS):
             if not overwrite and self.exists(dst_path):
                 raise errors.DestinationExists(dst_path)
 
-            dir_path, file_name = os.path.split(_dst_path)
+            dir_path, file_name = split(_dst_path)
             _dir_res = self._getresource(dir_path)
             if not _dir_res or not _dir_res.isdir():
                 raise errors.ResourceNotFound(dst_path)
 
             _src_res = self._getresource(src_path)
-            if not _src_res or not _src_res.isfile():
+            if not _src_res:
                 raise errors.ResourceNotFound(src_path)
+            if not _src_res.isfile():
+                raise errors.FileExpected(src_path)
 
             fire_fs.copyfile(_src_res, self._prep_path(_dst_path))
+
+    def move(self, src_path, dst_path, overwrite=False):
+        # type: (Text, Text, bool) -> None
+        """Move a file from ``src_path`` to ``dst_path``.
+
+        Arguments:
+            src_path (str): A path on the filesystem to move.
+            dst_path (str): A path on the filesystem where the source
+                file will be written to.
+            overwrite (bool): If `True`, destination path will be
+                overwritten if it exists.
+
+        Raises:
+            fs.errors.FileExpected: If ``src_path`` maps to a
+                directory instead of a file.
+            fs.errors.DestinationExists: If ``dst_path`` exists,
+                and ``overwrite`` is `False`.
+            fs.errors.ResourceNotFound: If a parent directory of
+                ``dst_path`` does not exist.
+
+        """
+        # TODO: update parent key of chunk entities instead of copy & delete?
+        self.copy(src_path, dst_path, overwrite)
+        self.remove(src_path)
+
+    def create(self, path, wipe=False):
+        # type: (Text, bool) -> bool
+        """Create an empty file.
+
+        The default behavior is to create a new file if one doesn't
+        already exist. If ``wipe`` is `True`, any existing file will
+        be truncated.
+
+        Arguments:
+            path (str): Path to a new file in the filesystem.
+            wipe (bool): If `True`, truncate any existing
+                file to 0 bytes (defaults to `False`).
+
+        Returns:
+            bool: `True` if a new file had to be created.
+
+        """
+        with self._lock:
+            _res = self._getresource(path)
+            if _res:
+                if not _res.isfile():
+                    raise errors.FileExpected(path)
+                if not wipe:
+                    return False
+                _res.truncate(0)
+
+            else:
+                _path = self.validatepath(path)
+
+                dir_path, file_name = split(_path)
+                _dir_res = self._getresource(dir_path)
+                if not _dir_res or not _dir_res.isdir():
+                    raise errors.ResourceNotFound(path)
+
+                _res = fire_fs.mkfile(self._prep_path(_path))
+
+            return True
+
+    def readbytes(self, path):
+        # type: (Text) -> bytes
+        """Get the contents of a file as bytes.
+
+        Arguments:
+            path (str): A path to a readable file on the filesystem.
+
+        Returns:
+            bytes: the file contents.
+
+        Raises:
+            fs.errors.ResourceNotFound: if ``path`` does not exist.
+
+        """
+        with self._lock:
+            _res = self._getresource(path)
+            if not _res:
+                raise errors.ResourceNotFound(path)
+            if not _res.isfile():
+                raise errors.FileExpected(path)
+
+            return _res.get_content()
+
+    def download(self, path, file, chunk_size=None, **options):
+        # type: (Text, BinaryIO, Optional[int], **Any) -> None
+        """Copies a file from the filesystem to a file-like object.
+
+        This may be more efficient that opening and copying files
+        manually if the filesystem supplies an optimized method.
+
+        Arguments:
+            path (str): Path to a resource.
+            file (file-like): A file-like object open for writing in
+                binary mode.
+            chunk_size (int, optional): Number of bytes to read at a
+                time, if a simple copy is used, or `None` to use
+                sensible default.
+            **options: Implementation specific options required to open
+                the source file.
+
+        Note that the file object ``file`` will *not* be closed by this
+        method. Take care to close it after this method completes
+        (ideally with a context manager).
+
+        Example:
+            >>> with open('starwars.mov', 'wb') as write_file:
+            ...     my_fs.download('/movies/starwars.mov', write_file)
+
+        """
+        with self._lock:
+            _res = self._getresource(path)
+            if not _res:
+                raise errors.ResourceNotFound(path)
+            if not _res.isfile():
+                raise errors.FileExpected(path)
+
+            # Note: we always write in chunks here, regardless of the chunk_size
+            _res.download(file)
+
+    def writebytes(self, path, contents):
+        # type: (Text, bytes) -> None
+        # FIXME(@althonos): accept bytearray and memoryview as well ?
+        """Copy binary data to a file.
+
+        Arguments:
+            path (str): Destination path on the filesystem.
+            contents (bytes): Data to be written.
+
+        Raises:
+            TypeError: if contents is not bytes.
+
+        """
+        if not isinstance(contents, bytes):
+            raise TypeError("contents must be bytes")
+        with self._lock:
+            _res = self._getresource(path)
+            if _res:
+                if not _res.isfile():
+                    raise errors.FileExpected(path)
+                _res.truncate(0)
+
+            else:
+                _path = self.validatepath(path)
+
+                dir_path, file_name = split(_path)
+                _dir_res = self._getresource(dir_path)
+                if not _dir_res or not _dir_res.isdir():
+                    raise errors.ResourceNotFound(path)
+
+                _res = fire_fs.mkfile(self._prep_path(_path))
+
+            _res.put_content(contents)
+
+    def upload(self, path, file, chunk_size=None, **options):
+        # type: (Text, BinaryIO, Optional[int], **Any) -> None
+        """Set a file to the contents of a binary file object.
+
+        This method copies bytes from an open binary file to a file on
+        the filesystem. If the destination exists, it will first be
+        truncated.
+
+        Arguments:
+            path (str): A path on the filesystem.
+            file (io.IOBase): a file object open for reading in
+                binary mode.
+            chunk_size (int, optional): Number of bytes to read at a
+                time, if a simple copy is used, or `None` to use
+                sensible default.
+            **options: Implementation specific options required to open
+                the source file.
+
+        Note that the file object ``file`` will *not* be closed by this
+        method. Take care to close it after this method completes
+        (ideally with a context manager).
+
+        Example:
+            >>> with open('~/movies/starwars.mov', 'rb') as read_file:
+            ...     my_fs.upload('starwars.mov', read_file)
+
+        """
+        with self._lock:
+            _res = self._getresource(path)
+            if _res:
+                if not _res.isfile():
+                    raise errors.FileExpected(path)
+                _res.truncate(0)
+
+            else:
+                _path = self.validatepath(path)
+
+                dir_path, file_name = split(_path)
+                _dir_res = self._getresource(dir_path)
+                if not _dir_res or not _dir_res.isdir():
+                    raise errors.ResourceNotFound(path)
+
+                _res = fire_fs.mkfile(self._prep_path(_path))
+
+            # Note: we always read in chunks here, regardless of the chunk_size
+            _res.upload(file)
 
     # ---------------------------------------------------------------- #
     # Internal methods                                                 #
@@ -653,7 +852,7 @@ class FirestoreFS(FS):
             return _path
         if _path.startswith("/"):
             _path = _path[1:]
-        return os.path.join(self.root_path, _path).replace(os.sep, "/")
+        return join(self.root_path, _path)
 
     def _reset_path(self, path, confirm=False):
         if not confirm:
@@ -664,7 +863,10 @@ class FirestoreFS(FS):
             return False
 
         with self._lock:
-            _res = self._getresource(path)
+            try:
+                _res = self._getresource(path)
+            except:
+                _res = fire_fs._getresource(self._prep_path(path))
             if not _res or not _res.isdir():
                 raise errors.DirectoryExpected(path)
 
@@ -702,33 +904,22 @@ class FirestoreFS(FS):
         _path = self.validatepath(path)
         return fire_fs._getresource(self._prep_path(_path))
 
-    # @staticmethod
-    # def btopen(path, mode="r"):
-    #     """Open the file (eg. return a BtIO object)"""
-    #     f = Path._getresource(path)
-    #     assert f is None or type(f) is File
-    #     if f is None:
-    #         # Create targtet file, but only in write mode
-    #         if "w" not in mode and "a" not in mode and "x" not in mode:
-    #             raise ValueError("source not found %r" % path)
-    #         f = File.new(path=path)
-    #     io = BtIO(f, mode)
-    #     return io
-
-    # @staticmethod
-    # def copyfile(s, d):
-    #     # raise, if not exists:
-    #     sio = Path.btopen(s, "rb")
-    #     # overwrite destination, if exists:
-    #     dio = Path.btopen(d, "wb")
-    #     while True:
-    #         buf = sio.read(8 * 1024)
-    #         if not buf:
-    #             break
-    #         dio.write(buf)
-    #     dio.close()
-    #     sio.close()
-    #     return
+    @staticmethod
+    def _btopen(path, mode="r"):
+        """Open the file (eg. return a BtIO object)"""
+        stream = fire_fs.btopen(path, mode)
+        _mode = Mode(mode)
+        if not _mode.reading:
+            stream.readable = lambda: False  # mock a write-only stream
+        if not _mode.writing:
+            stream.writable = lambda: False  # mock a read-only stream
+        if _mode.truncate:
+            stream.seek(0)
+            stream.truncate()
+        elif _mode.appending:
+            stream.seek(0, 2)  # io.SEEK_END
+        io_object = RawWrapper(stream, mode=mode, name=path)
+        return io_object
 
 
 class WrapFirestoreFS(WrapFS):

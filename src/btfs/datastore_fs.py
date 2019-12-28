@@ -18,12 +18,13 @@ from fs import errors
 from fs.base import FS
 from fs.info import Info
 from fs.mode import Mode
+from fs.path import split, join
 from fs.wrapfs import WrapFS
 from fs.opener import open_fs
+from fs.iotools import RawWrapper
 from functools import partial
 import datetime
 import itertools
-import os.path
 import logging
 
 # for opener
@@ -61,7 +62,6 @@ class DatastoreFS(FS):
         if root_path is None:
             root_path = "/_datastore_fs_"
         _root_path = self.validatepath(root_path)
-        _root_path = _root_path.replace(os.sep, "/")
         if not _root_path.startswith("/"):
             _root_path = "/" + _root_path
         self._is_cached = True
@@ -177,7 +177,9 @@ class DatastoreFS(FS):
                 else:
                     raise errors.DirectoryExists(path)
 
-            dir_path, dir_name = os.path.split(_path)
+            if _path.endswith("/"):
+                _path = _path[:-1]
+            dir_path, dir_name = split(_path)
 
             _dir_res = self._getresource(dir_path)
             if not _dir_res or not _dir_res.isdir():
@@ -228,7 +230,7 @@ class DatastoreFS(FS):
         _mode = Mode(mode)
         _mode.validate_bin()
         _path = self.validatepath(path)
-        dir_path, file_name = os.path.split(_path)
+        dir_path, file_name = split(_path)
 
         if not file_name:
             raise errors.FileExpected(path)
@@ -247,9 +249,9 @@ class DatastoreFS(FS):
                     if not _res or not _res.isfile():
                         raise errors.FileExpected(path)
 
-                    return bt_fs.btopen(_res, mode)
+                    return self._btopen(_res, mode)
 
-                return bt_fs.btopen(self._prep_path(_path), mode)
+                return self._btopen(self._prep_path(_path), mode)
 
             if file_name not in _dir_res.listdir():
                 raise errors.ResourceNotFound(path)
@@ -258,7 +260,7 @@ class DatastoreFS(FS):
             if not _res or not _res.isfile():
                 raise errors.FileExpected(path)
 
-            return bt_fs.btopen(_res, mode)
+            return self._btopen(_res, mode)
 
     def remove(self, path):
         # type: (Text) -> None
@@ -304,6 +306,8 @@ class DatastoreFS(FS):
         _path = self.validatepath(path)
         if _path == "/" or _path == "" or _path is None:
             raise errors.RemoveRootError()
+        if _path.endswith("/"):
+            _path = _path[:-1]
 
         with self._lock:
             _res = self._getresource(path)
@@ -572,7 +576,7 @@ class DatastoreFS(FS):
             if not overwrite and self.exists(dst_path):
                 raise errors.DestinationExists(dst_path)
 
-            dir_path, file_name = os.path.split(_dst_path)
+            dir_path, file_name = split(_dst_path)
             _dir_res = self._getresource(dir_path)
             if not _dir_res or not _dir_res.isdir():
                 raise errors.ResourceNotFound(dst_path)
@@ -584,6 +588,30 @@ class DatastoreFS(FS):
                 raise errors.FileExpected(src_path)
 
             bt_fs.copyfile(_src_res, self._prep_path(_dst_path))
+
+    def move(self, src_path, dst_path, overwrite=False):
+        # type: (Text, Text, bool) -> None
+        """Move a file from ``src_path`` to ``dst_path``.
+
+        Arguments:
+            src_path (str): A path on the filesystem to move.
+            dst_path (str): A path on the filesystem where the source
+                file will be written to.
+            overwrite (bool): If `True`, destination path will be
+                overwritten if it exists.
+
+        Raises:
+            fs.errors.FileExpected: If ``src_path`` maps to a
+                directory instead of a file.
+            fs.errors.DestinationExists: If ``dst_path`` exists,
+                and ``overwrite`` is `False`.
+            fs.errors.ResourceNotFound: If a parent directory of
+                ``dst_path`` does not exist.
+
+        """
+        # TODO: update parent key of chunk entities instead of copy & delete?
+        self.copy(src_path, dst_path, overwrite)
+        self.remove(src_path)
 
     def create(self, path, wipe=False):
         # type: (Text, bool) -> bool
@@ -614,7 +642,7 @@ class DatastoreFS(FS):
             else:
                 _path = self.validatepath(path)
 
-                dir_path, file_name = os.path.split(_path)
+                dir_path, file_name = split(_path)
                 _dir_res = self._getresource(dir_path)
                 if not _dir_res or not _dir_res.isdir():
                     raise errors.ResourceNotFound(path)
@@ -707,7 +735,7 @@ class DatastoreFS(FS):
             else:
                 _path = self.validatepath(path)
 
-                dir_path, file_name = os.path.split(_path)
+                dir_path, file_name = split(_path)
                 _dir_res = self._getresource(dir_path)
                 if not _dir_res or not _dir_res.isdir():
                     raise errors.ResourceNotFound(path)
@@ -753,7 +781,7 @@ class DatastoreFS(FS):
             else:
                 _path = self.validatepath(path)
 
-                dir_path, file_name = os.path.split(_path)
+                dir_path, file_name = split(_path)
                 _dir_res = self._getresource(dir_path)
                 if not _dir_res or not _dir_res.isdir():
                     raise errors.ResourceNotFound(path)
@@ -824,7 +852,7 @@ class DatastoreFS(FS):
             return _path
         if _path.startswith("/"):
             _path = _path[1:]
-        return os.path.join(self.root_path, _path).replace(os.sep, "/")
+        return join(self.root_path, _path)
 
     def _reset_path(self, path, confirm=False):
         if not confirm:
@@ -835,7 +863,10 @@ class DatastoreFS(FS):
             return False
 
         with self._lock:
-            _res = self._getresource(path)
+            try:
+                _res = self._getresource(path)
+            except:
+                _res = bt_fs._getresource(self._prep_path(path))
             if not _res or not _res.isdir():
                 raise errors.DirectoryExpected(path)
 
@@ -873,18 +904,22 @@ class DatastoreFS(FS):
         _path = self.validatepath(path)
         return bt_fs._getresource(self._prep_path(_path))
 
-    # @staticmethod
-    # def btopen(path, mode="r"):
-    #     """Open the file (eg. return a BtIO object)"""
-    #     f = Path._getresource(path)
-    #     assert f is None or type(f) is File
-    #     if f is None:
-    #         # Create targtet file, but only in write mode
-    #         if "w" not in mode and "a" not in mode and "x" not in mode:
-    #             raise ValueError("source not found %r" % path)
-    #         f = File.new(path=path)
-    #     io = BtIO(f, mode)
-    #     return io
+    @staticmethod
+    def _btopen(path, mode="r"):
+        """Open the file (eg. return a BtIO object)"""
+        stream = bt_fs.btopen(path, mode)
+        _mode = Mode(mode)
+        if not _mode.reading:
+            stream.readable = lambda: False  # mock a write-only stream
+        if not _mode.writing:
+            stream.writable = lambda: False  # mock a read-only stream
+        if _mode.truncate:
+            stream.seek(0)
+            stream.truncate()
+        elif _mode.appending:
+            stream.seek(0, 2)  # io.SEEK_END
+        io_object = RawWrapper(stream, mode=mode, name=path)
+        return io_object
 
 
 class WrapDatastoreFS(WrapFS):

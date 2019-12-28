@@ -235,7 +235,12 @@ class BtIO(io.BytesIO):
         return
 
     def is_readonly(self):
-        return "w" not in self.mode and "a" not in self.mode and "x" not in self.mode
+        return (
+            "w" not in self.mode
+            and "a" not in self.mode
+            and "x" not in self.mode
+            and "+" not in self.mode
+        )
 
     def flush(self):
         io.BytesIO.flush(self)

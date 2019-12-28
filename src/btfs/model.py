@@ -423,11 +423,12 @@ class File(Path):
 
     def put(self):
         if self.is_saved():
+            pass
             # CHECKME: this doesn't return the chunks yet
-            if self.size == 0:
-                self.size = sum(
-                    len(chunk["data"]) for chunk in Chunk.fetch_entities_by_file(self)
-                )  # use ancestor instead?
+            # if self.size == 0:
+            #     self.size = sum(
+            #         len(chunk["data"]) for chunk in Chunk.fetch_entities_by_file(self)
+            #     )  # use ancestor instead?
         else:
             self.size = 0
         Path.put(self)
