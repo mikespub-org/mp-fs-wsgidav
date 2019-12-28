@@ -247,35 +247,127 @@ class CachedModel(Model):
         return result
 
 
-# class GqlQuery(list):
-#
-#    def __init__(self, query_string=None, *args, **kwargs):
-#        print(query_string, args, kwargs)
-#        pass
-#
-#    def get(self):
-#        pass
+# https://cloud.google.com/datastore/docs/concepts/metadataqueries#namespace_queries
+def list_namespaces():
+    query = get_query(kind="__namespace__")
+    query.keys_only()
+
+    all_namespaces = [entity.key.id_or_name for entity in query.fetch()]
+    return all_namespaces
 
 
-# class DummyProperty(object):
-#
-#    def __init__(self, *args, **kwargs):
-#        pass
-#
-#    def __str__(self):
-#        if hasattr(self, 'path'):
-#            return self.path
+def list_kinds():
+    query = get_query(kind="__kind__")
+    query.keys_only()
+
+    kinds = [entity.key.id_or_name for entity in query.fetch()]
+    return kinds
 
 
-# StringProperty = DummyProperty
-# IntegerProperty = DummyProperty
-# DateTimeProperty = DummyProperty
-# ReferenceProperty = DummyProperty
-# BlobProperty = DummyProperty
-# UserProperty = DummyProperty
-# BooleanProperty = DummyProperty
+def get_properties():
+    from collections import defaultdict
+
+    query = get_query(kind="__property__")
+    query.keys_only()
+
+    properties_by_kind = defaultdict(list)
+
+    for entity in query.fetch():
+        kind = entity.key.parent.name
+        property_ = entity.key.name
+
+        properties_by_kind[kind].append(property_)
+
+    return properties_by_kind
 
 
-# class ReferencePropertyResolveError(Exception):
-#    pass
-#
+def get_properties_for_kind(kind):
+    ancestor = get_key("__kind__", kind)
+    query = get_query(kind="__property__", ancestor=ancestor)
+
+    representations_by_property = {}
+
+    for entity in query.fetch():
+        property_name = entity.key.name
+        # property_types = entity['property_representation']
+
+        # representations_by_property[property_name] = property_types
+        representations_by_property[property_name] = dict(entity)
+
+    return representations_by_property
+
+
+def list_entities(kind, limit=5, offset=0, **kwargs):
+    # TODO: use cursors in fetch() below if needed
+    start_cursor = kwargs.pop("start_cursor", None)
+    end_cursor = kwargs.pop("end_cursor", None)
+    query = get_query(kind=kind, **kwargs)
+    # result = {}
+    # for entity in query.fetch(limit, offset):
+    #     result[entity.key.id_or_name] = entity
+    result = [query.fetch(limit, offset)]
+    return result
+
+
+def ilist_entities(kind, limit=5, offset=0, **kwargs):
+    # TODO: use cursors in fetch() below if needed
+    start_cursor = kwargs.pop("start_cursor", None)
+    end_cursor = kwargs.pop("end_cursor", None)
+    query = get_query(kind=kind, **kwargs)
+    for entity in query.fetch(limit, offset):
+        yield entity
+
+
+def list_entity_keys(kind, limit=1000, offset=0, **kwargs):
+    # TODO: use cursors in fetch() below if needed
+    start_cursor = kwargs.pop("start_cursor", None)
+    end_cursor = kwargs.pop("end_cursor", None)
+    query = get_query(kind=kind, **kwargs)
+    query.keys_only()
+    # result = [entity.key.id_or_name for entity in query.fetch(limit, offset)]
+    result = [entity.key for entity in query.fetch(limit, offset)]
+    return result
+
+
+def ilist_entity_keys(kind, limit=1000, offset=0, **kwargs):
+    # TODO: use cursors in fetch() below if needed
+    start_cursor = kwargs.pop("start_cursor", None)
+    end_cursor = kwargs.pop("end_cursor", None)
+    query = get_query(kind=kind, **kwargs)
+    query.keys_only()
+    for entity in query.fetch(limit, offset):
+        # yield entity.key.id_or_name
+        yield entity.key
+
+
+def get_query(kind, **kwargs):
+    # namespace = kwargs.pop("namespace", None)
+    # project = kwargs.pop("project", None)
+    # ancestor = kwargs.pop("ancestor", None)
+    # filters = kwargs.pop("filters", None)
+    # projection = kwargs.pop("projection", None)
+    # order = kwargs.pop("order", None)
+    # distinct_on = kwargs.pop("distinct_on", None)
+    query = get_client().query(kind=kind, **kwargs)
+    return query
+
+
+def get_entity_by_id(kind, id_or_name, **kwargs):
+    key = get_key(kind, id_or_name, **kwargs)
+    entity = get_entity(key)
+    return entity
+
+
+def get_entity(key):
+    return get_client().get(key)
+
+
+# Partial keys with *path_args are ('Parent', 'parent_id', 'Child', ...)
+# Partial keys with **kwargs are ('Child', parent=parent_key)
+def get_key(kind, id_or_name=None, *path_args, **kwargs):
+    # namespace = kwargs.pop("namespace", None)
+    # project = kwargs.pop("project", None)
+    # parent = kwargs.pop("parent", None)
+    if id_or_name is None:
+        return get_client().key(kind, **kwargs)
+    return get_client().key(kind, id_or_name, *path_args, **kwargs)
