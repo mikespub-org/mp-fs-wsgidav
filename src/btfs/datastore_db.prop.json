@@ -1,0 +1,77 @@
+{
+  "AuthSession": {
+    "agent": [
+      "STRING"
+    ],
+    "create_time": [
+      "INT64"
+    ],
+    "nickname": [
+      "STRING"
+    ],
+    "roles": [
+      "STRING"
+    ],
+    "session_id": [
+      "STRING"
+    ],
+    "update_time": [
+      "INT64"
+    ],
+    "user_id": [
+      "STRING"
+    ]
+  },
+  "AuthorizedUser": {
+    "auth_domain": [
+      "STRING"
+    ],
+    "canWrite": [
+      "BOOLEAN"
+    ],
+    "claims": [
+      "NULL"
+    ],
+    "email": [
+      "STRING"
+    ],
+    "nickname": [
+      "STRING"
+    ],
+    "roles": [
+      "STRING"
+    ],
+    "user": [
+      "NULL"
+    ],
+    "user_id": [
+      "STRING"
+    ]
+  },
+  "Chunk": {
+    "offset": [
+      "INT64"
+    ]
+  },
+  "Path": {
+    "class": [
+      "STRING"
+    ],
+    "create_time": [
+      "INT64"
+    ],
+    "modify_time": [
+      "INT64"
+    ],
+    "parent_path": [
+      "NULL",
+      "REFERENCE"
+    ],
+    "path": [
+      "STRING"
+    ],
+    "size": [
+      "INT64"
+    ]
+  }
+}
