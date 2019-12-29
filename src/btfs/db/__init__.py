@@ -60,7 +60,7 @@ class Model(with_metaclass(ModelType, object)):
     # def __init__(self, parent=None, key_name=None, _app=None, _from_entity=False, **kwargs):
     def __init__(self, _from_entity=False, **kwargs):
         # _from_entity = kwargs.pop('_from_entity', False)
-        if _from_entity:
+        if _from_entity is not False:
             self._entity = _from_entity
         else:
             self._init_entity(**kwargs)
@@ -84,20 +84,27 @@ class Model(with_metaclass(ModelType, object)):
         self._entity = make_entity(key, self._exclude_from_indexes, **kwargs)
 
     def __setattr__(self, key, value):
-        if key != "_entity" and self._entity:
+        # if key != "_entity" and self._entity:
+        if not key.startswith("_") and self._entity:
             self._entity[key] = value
             return
         super(Model, self).__setattr__(key, value)
 
     def __getattribute__(self, key):
-        if key != "_entity" and self._entity and key in self._entity:
+        # if key != "_entity" and self._entity and key in self._entity:
+        if not key.startswith("_") and self._entity and key in self._entity:
             return self._entity[key]
         return super(Model, self).__getattribute__(key)
 
     def key(self):
-        if self._entity and hasattr(self._entity, "key"):
+        # if self._entity and hasattr(self._entity, "key"):
+        if (
+            hasattr(self._entity, "key")
+            and self._entity.key
+            and self._entity.key.id_or_name
+        ):
             return self._entity.key
-        logging.warning("No key for %s" % self)
+        # logging.debug("No key for %r" % self.__dict__)
 
     def is_saved(self):
         if not self.key() or self.key().is_partial:
@@ -256,27 +263,36 @@ def list_namespaces():
     return all_namespaces
 
 
-def list_kinds():
+def list_kinds(with_meta=False):
     query = get_query(kind="__kind__")
     query.keys_only()
 
     kinds = [entity.key.id_or_name for entity in query.fetch()]
+    if with_meta:
+        kinds = list_metakinds() + kinds
     return kinds
+
+
+def list_metakinds():
+    return ["__namespace__", "__kind__", "__property__"]
 
 
 def get_properties():
     from collections import defaultdict
 
     query = get_query(kind="__property__")
-    query.keys_only()
+    # query.keys_only()
 
-    properties_by_kind = defaultdict(list)
+    # properties_by_kind = defaultdict(list)
+    properties_by_kind = defaultdict(dict)
 
     for entity in query.fetch():
         kind = entity.key.parent.name
-        property_ = entity.key.name
+        property_name = entity.key.name
+        property_types = entity["property_representation"]
 
-        properties_by_kind[kind].append(property_)
+        # properties_by_kind[kind].append(property_name)
+        properties_by_kind[kind][property_name] = property_types
 
     return properties_by_kind
 
@@ -297,7 +313,7 @@ def get_properties_for_kind(kind):
     return representations_by_property
 
 
-def list_entities(kind, limit=5, offset=0, **kwargs):
+def list_entities(kind, limit=1000, offset=0, **kwargs):
     # TODO: use cursors in fetch() below if needed
     start_cursor = kwargs.pop("start_cursor", None)
     end_cursor = kwargs.pop("end_cursor", None)
@@ -305,11 +321,11 @@ def list_entities(kind, limit=5, offset=0, **kwargs):
     # result = {}
     # for entity in query.fetch(limit, offset):
     #     result[entity.key.id_or_name] = entity
-    result = [query.fetch(limit, offset)]
+    result = list(query.fetch(limit, offset))
     return result
 
 
-def ilist_entities(kind, limit=5, offset=0, **kwargs):
+def ilist_entities(kind, limit=1000, offset=0, **kwargs):
     # TODO: use cursors in fetch() below if needed
     start_cursor = kwargs.pop("start_cursor", None)
     end_cursor = kwargs.pop("end_cursor", None)
@@ -368,6 +384,42 @@ def get_key(kind, id_or_name=None, *path_args, **kwargs):
     # namespace = kwargs.pop("namespace", None)
     # project = kwargs.pop("project", None)
     # parent = kwargs.pop("parent", None)
-    if id_or_name is None:
-        return get_client().key(kind, **kwargs)
-    return get_client().key(kind, id_or_name, *path_args, **kwargs)
+    path = [*path_args]
+    path.append(kind)
+    if id_or_name is not None:
+        path.append(id_or_name)
+    return get_client().key(*path, **kwargs)
+
+
+class MakeModel(CachedModel):
+    _kind = "MakeModel"
+
+    # def __init__(self, parent=None, key_name=None, _app=None, _from_entity=False, **kwargs):
+    def __init__(self, kind=None, _from_entity=False, **kwargs):
+        # CHECKME: only used for make_instance() below - do not use a "kind" property elsewhere
+        if kind is not None:
+            self._kind = kind
+        else:
+            raise ValueError("Missing kind")
+        super(MakeModel, self).__init__(_from_entity=_from_entity, **kwargs)
+
+    def set_key(self):
+        pass
+
+    def isdir(self):
+        return self.key() is None
+
+
+def make_instance(kind, entity=None):
+    if entity is None:
+        instance = MakeModel(kind=kind)
+    else:
+        instance = MakeModel(kind=kind, _from_entity=entity)
+    return instance
+
+
+def close():
+    global _client
+    if _client is not None:
+        # _client.close()
+        _client = None

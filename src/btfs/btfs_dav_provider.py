@@ -40,15 +40,15 @@ class BTFSResource(_DAVResource):
     ]
 
     def __init__(self, path, environ):
-        self.pathEntity = Path.retrieve(path)
-        if not self.pathEntity:
+        self.path_entity = Path.retrieve(path)
+        if not self.path_entity:
             raise ValueError("Path not found: %r" % path)
-        is_collection = type(self.pathEntity) is Dir
+        is_collection = type(self.path_entity) is Dir
         logging.debug("BTFSResource(%r): %r" % (path, is_collection))
         super(BTFSResource, self).__init__(path, is_collection, environ)
         # check access based on user roles in environ
         self._get_user_roles(environ)
-        self.statresults = bt_fs.stat(self.pathEntity)
+        self.statresults = bt_fs.stat(self.path_entity)
         self._etag = None
         self._content_type = None
 
@@ -86,14 +86,12 @@ class BTFSResource(_DAVResource):
                 return
         raise DAVError(HTTP_FORBIDDEN)
 
-    def getContentLength(self):
+    def get_content_length(self):
         if self.is_collection:
             return None
         return self.statresults.st_size
 
-    get_content_length = getContentLength
-
-    def getContentType(self):
+    def get_content_type(self):
         if self.is_collection:
             # TODO: should be None?
             return "httpd/unix-directory"
@@ -107,19 +105,13 @@ class BTFSResource(_DAVResource):
         self._content_type = mimetype
         return mimetype
 
-    get_content_type = getContentType
-
-    def getCreationDate(self):
+    def get_creation_date(self):
         return self.statresults.st_ctime
 
-    get_creation_date = getCreationDate
-
-    def getDisplayName(self):
+    def get_display_name(self):
         return self.name
 
-    get_display_name = getDisplayName
-
-    def getEtag(self):
+    def get_etag(self):
         if self._etag:
             return self._etag
         if self.is_collection:
@@ -134,53 +126,43 @@ class BTFSResource(_DAVResource):
             )
         return self._etag
 
-    get_etag = getEtag
-
-    def getLastModified(self):
+    def get_last_modified(self):
         return self.statresults.st_mtime
 
-    get_last_modified = getLastModified
-
-    def supportRanges(self):
+    def support_ranges(self):
         return True
 
-    support_ranges = supportRanges
-
-    def getMemberNames(self):
+    def get_member_names(self):
         """Return list of (direct) collection member names (_DAVResource or derived).
 
-        See _DAVResource.getMemberList()
+        See _DAVResource.get_member_list()
         """
         # self._check_browse_access()
-        return bt_fs.listdir(self.pathEntity)
+        return bt_fs.listdir(self.path_entity)
 
-    get_member_names = getMemberNames
-
-    def getMember(self, name):
+    def get_member(self, name):
         """Return list of (direct) collection members (_DAVResource or derived).
 
-        See _DAVResource.getMemberList()
+        See _DAVResource.get_member_list()
         """
         # logging.debug('%r + %r' % (self.path, name))
         # self._check_browse_access()
         res = BTFSResource(util.join_uri(self.path, name), self.environ)
         return res
 
-    get_member = getMember
-
-    # def handleDelete(self):
+    # def handle_delete(self):
     #     raise DAVError(HTTP_FORBIDDEN)
-    # def handleMove(self, destPath):
+    # def handle_move(self, dest_path):
     #     raise DAVError(HTTP_FORBIDDEN)
-    # def handleCopy(self, destPath, depthInfinity):
+    # def handle_copy(self, dest_path, depth_infinity):
     #     raise DAVError(HTTP_FORBIDDEN)
 
     # --- Read / write ---------------------------------------------------------
 
-    def createEmptyResource(self, name):
+    def create_empty_resource(self, name):
         """Create an empty (length-0) resource.
 
-        See _DAVResource.createEmptyResource()
+        See _DAVResource.create_empty_resource()
         """
         assert self.is_collection
         assert not "/" in name
@@ -190,47 +172,39 @@ class BTFSResource(_DAVResource):
         # FIXME: should be length-0
         # f.write(".")
         f.close()
-        return self.provider.getResourceInst(path, self.environ)
+        return self.provider.get_resource_inst(path, self.environ)
 
-    create_empty_resource = createEmptyResource
-
-    def createCollection(self, name):
+    def create_collection(self, name):
         """Create a new collection as member of self.
 
-        See _DAVResource.createCollection()
+        See _DAVResource.create_collection()
         """
         assert self.is_collection
         self._check_write_access()
         path = util.join_uri(self.path, name)
         bt_fs.mkdir(path)
 
-    create_collection = createCollection
-
-    def getContent(self):
+    def get_content(self):
         """Open content as a stream for reading.
 
-        See _DAVResource.getContent()
+        See _DAVResource.get_content()
         """
         assert not self.is_collection
         self._check_read_access()
         # return bt_fs.btopen(self.path, "rb")
-        return bt_fs.btopen(self.pathEntity, "rb")
+        return bt_fs.btopen(self.path_entity, "rb")
 
-    get_content = getContent
-
-    def beginWrite(self, content_type=None):
+    def begin_write(self, content_type=None):
         """Open content as a stream for writing.
 
-        See _DAVResource.beginWrite()
+        See _DAVResource.begin_write()
         """
         assert not self.is_collection
         self._check_write_access()
         # return bt_fs.btopen(self.path, "wb")
-        return bt_fs.btopen(self.pathEntity, "wb")
+        return bt_fs.btopen(self.path_entity, "wb")
 
-    begin_write = beginWrite
-
-    def supportRecursiveDelete(self):
+    def support_recursive_delete(self):
         """Return True, if delete() may be called on non-empty collections
         (see comments there).
 
@@ -240,8 +214,6 @@ class BTFSResource(_DAVResource):
         # TODO: should support recursive operations
         return False
 
-    support_recursive_delete = supportRecursiveDelete
-
     def delete(self):
         """Remove this resource or collection (recursive).
 
@@ -250,15 +222,15 @@ class BTFSResource(_DAVResource):
         self._check_write_access()
         if self.is_collection:
             # bt_fs.rmtree(self.path)
-            bt_fs.rmtree(self.pathEntity)
+            bt_fs.rmtree(self.path_entity)
         else:
             # bt_fs.unlink(self.path)
-            bt_fs.unlink(self.pathEntity)
+            bt_fs.unlink(self.path_entity)
         self.removeAllProperties(True)
         self.removeAllLocks(True)
 
-    def copyMoveSingle(self, dest_path, is_move):
-        """See _DAVResource.copyMoveSingle() """
+    def copy_move_single(self, dest_path, is_move):
+        """See _DAVResource.copy_move_single() """
         assert not util.is_equal_or_child_uri(self.path, dest_path)
         self._check_write_access()
         if self.is_collection:
@@ -268,49 +240,45 @@ class BTFSResource(_DAVResource):
         else:
             # Copy file (overwrite, if exists)
             # bt_fs.copyfile(self.path, dest_path)
-            bt_fs.copyfile(self.pathEntity, dest_path)
-        # shutil.copy2(self._filePath, fpDest)
+            bt_fs.copyfile(self.path_entity, dest_path)
+        # shutil.copy2(self._file_path, fpDest)
         # (Live properties are copied by copy2 or copystat)
         # Copy dead properties
-        propMan = self.provider.prop_manager
-        if propMan:
-            destRes = self.provider.get_resource_inst(dest_path, self.environ)
+        prop_man = self.provider.prop_manager
+        if prop_man:
+            dest_res = self.provider.get_resource_inst(dest_path, self.environ)
             if is_move:
-                propMan.move_properties(
-                    self.get_ref_url(), destRes.get_ref_url(), with_children=False
+                prop_man.move_properties(
+                    self.get_ref_url(), dest_res.get_ref_url(), with_children=False
                 )
             else:
-                propMan.copy_properties(self.get_ref_url(), destRes.get_ref_url())
+                prop_man.copy_properties(self.get_ref_url(), dest_res.get_ref_url())
 
-    copy_move_single = copyMoveSingle
-
-    def supportRecursiveMove(self, dest_path):
-        """Return True, if moveRecursive() is available (see comments there)."""
+    def support_recursive_move(self, dest_path):
+        """Return True, if move_recursive() is available (see comments there)."""
         # TODO: should support recursive operations
         return False
 
-    support_recursive_move = supportRecursiveMove
-
-    # def moveRecursive(self, destPath):
-    #     """See _DAVResource.moveRecursive() """
+    # def move_recursive(self, dest_path):
+    #     """See _DAVResource.move_recursive() """
     #     # FIXME
     #     raise NotImplementedError()
-    #     fpDest = self.provider._locToFilePath(destPath)
-    #     assert not util.is_equal_or_child_uri(self.path, destPath)
+    #     fpDest = self.provider._locToFilePath(dest_path)
+    #     assert not util.is_equal_or_child_uri(self.path, dest_path)
     #     assert not os.path.exists(fpDest)
-    #     _logger.debug("moveRecursive(%s, %s)" % (self._filePath, fpDest))
-    #     shutil.move(self._filePath, fpDest)
+    #     _logger.debug("moveRecursive(%s, %s)" % (self._file_path, fpDest))
+    #     shutil.move(self._file_path, fpDest)
     #     # (Live properties are copied by copy2 or copystat)
     #     # Move dead properties
     #     if self.provider.prop_manager:
-    #         destRes = self.provider.get_resource_inst(destPath, self.environ)
-    #         self.provider.prop_manager.move_properties(self.get_ref_url(), destRes.get_ref_url(),
+    #         dest_res = self.provider.get_resource_inst(dest_path, self.environ)
+    #         self.provider.prop_manager.move_properties(self.get_ref_url(), dest_res.get_ref_url(),
     #                                                    with_children=True)
 
-    def getPropertyNames(self, is_allprop):
+    def get_property_names(self, is_allprop):
         """Return list of supported property names in Clark Notation.
 
-        See _DAVResource.getPropertyNames()
+        See _DAVResource.get_property_names()
         """
         # Let base class implementation add supported live and dead properties
         propNameList = super(BTFSResource, self).get_property_names(is_allprop)
@@ -318,12 +286,10 @@ class BTFSResource(_DAVResource):
         # propNameList.extend(BTFSResource._supportedProps)
         return propNameList
 
-    get_property_names = getPropertyNames
-
-    def getPropertyValue(self, name):
+    def get_property_value(self, name):
         """Return the value of a property.
 
-        See _DAVResource.getPropertyValue()
+        See _DAVResource.get_property_value()
         """
         # Supported custom live properties
         if name == "{btfs:}key":
@@ -331,12 +297,10 @@ class BTFSResource(_DAVResource):
         # Let base class implementation report live and dead properties
         return super(BTFSResource, self).get_property_value(name)
 
-    get_property_value = getPropertyValue
-
-    # def setPropertyValue(self, name, value, dry_run=False):
+    # def set_property_value(self, name, value, dry_run=False):
     #     """Set or remove property value.
     #
-    #     See _DAVResource.setPropertyValue()
+    #     See _DAVResource.set_property_value()
     #     """
     #     if value is None:
     #         # We can never remove properties
@@ -394,7 +358,7 @@ class BTFSResourceProvider(DAVProvider):
     def is_readonly(self):
         return self._readonly
 
-    def getResourceInst(self, path, environ):
+    def get_resource_inst(self, path, environ):
         # return (no) desktop.ini for Microsoft-WebDAV-MiniRedir
         if not self.desktop_ini and path.endswith("/desktop.ini"):
             return
@@ -403,12 +367,10 @@ class BTFSResourceProvider(DAVProvider):
             res = BTFSResource(path, environ)
         except Exception as e:
             logging.debug(e)
-            logging.exception("getResourceInst(%r) failed" % path)
+            logging.exception("get_resource_inst(%r) failed" % path)
             res = None
-        logging.debug("getResourceInst(%r): %s" % (path, res))
+        logging.debug("get_resource_inst(%r): %s" % (path, res))
         return res
-
-    get_resource_inst = getResourceInst
 
     # called by wsgidav.request_server to handle all do_* methods
     # def custom_request_handler(self, environ, start_response, default_handler):
