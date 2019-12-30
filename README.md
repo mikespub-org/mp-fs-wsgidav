@@ -16,6 +16,7 @@ The master branch here continues the modernization and uses Python 3.7+ with mor
   * Firebase Domain Controller to validate id tokens with Google Cloud [Identity Platform](https://cloud.google.com/identity-platform/docs/) (Firebase Authentication)
   * Cachelib Lock Manager to support in-memory locks using [cachelib](https://github.com/pallets/cachelib) (either memcache, redis or in-memory)
   * Property Manager partially integrated with the DAV Provider (?)
+  * Firestore DAV Provider for a virtual filesystem built on Google [Cloud Firestore in native mode](https://cloud.google.com/firestore/docs/)
 
 In addition, the following new filesystem providers were created for [PyFilestem2](https://docs.pyfilesystem.org/):
   * [Datastore FS](https://github.com/mikespub-org/mar10-clouddav/blob/master/src/btfs/datastore_fs.py) for basic support of Google Cloud Firestore in Datastore mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
