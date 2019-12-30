@@ -289,12 +289,16 @@ class FileStructure(BaseStructure):
         file_ref.update({"size": size})
         return file_ref.get()
 
-    def get_chunks_data(self, file_ref):
+    def iget_chunks_data(self, file_ref):
         query = file_ref.collection("_").order_by("offset")
-        data = b""
         for chunk in query.stream():
-            data += chunk.get("data")
-        return data
+            yield chunk.get("data")
+
+    def get_chunks_data(self, file_ref):
+        content = b""
+        for data in self.iget_chunks_data(file_ref):
+            content += data
+        return content
 
     def get_file_data(self, path):
         file_ref = self.get_file_ref(path)
@@ -364,9 +368,9 @@ class FileStructure(BaseStructure):
         query = self.get_dir_query(dir_ref).where("size", ">=", 0)
         return self.list_coll_docs(query)
 
-    # the following methods only apply when dealing with a dir collection supporting .list_documents()
+    # the following methods only apply when dealing with a dir collection supporting .list_documents(), i.e. not flat
     def get_dir_coll(self, dir_ref):
-        raise NotImplementedError
+        return dir_ref.collection("_")
 
     def list_dir_refs(self, path, recursive=False):
         dir_ref = self.get_dir_ref(path)
@@ -381,7 +385,7 @@ class FileStructure(BaseStructure):
             # if recursive and 'd' in subcoll_refs:
             #    self.list_coll_refs(subcoll_refs['d'], recursive, depth + 1)
             # has_dir_coll = self.get_dir_coll(doc_ref).document('.empty').get().exists
-            has_dir_coll = "count" in doc_ref.get().to_dict()
+            has_dir_coll = "count" in doc_ref.get(["count"]).to_dict()
             print("  " * depth, "Ref", doc_ref.path, has_dir_coll)
             if recursive and has_dir_coll:
                 self.list_coll_refs(self.get_dir_coll(doc_ref), recursive, depth + 1)
@@ -394,12 +398,15 @@ class TestStructure(FileStructure):
         # CHECKME: if some of the parent dirs don't exist, they won't really be created as documents - ghost :-)
         if not doc.exists:
             doc = self.create_file(file_ref, data)
+        else:
+            logging.debug("Found file %s" % file_ref.path)
         # if doc.to_dict()['size'] == 0:
         if doc.get("size") != len(data):
             doc = self.update_file_size(file_ref)
         assert doc.exists
         # print(path, doc.reference.path, self.convert_ref_to_path(doc.reference.path))
         assert path == self.convert_ref_to_path(doc.reference.path)
+        # assert data == self.get_file_data(path)
         assert doc.get("size") == len(data)
         return doc
 
@@ -408,6 +415,8 @@ class TestStructure(FileStructure):
         doc = dir_ref.get()
         if not doc.exists:
             doc = self.create_dir(dir_ref)
+        else:
+            logging.debug("Found dir %s" % dir_ref.path)
         if doc.get("count") == 0:
             doc = self.update_dir_count(dir_ref)
         assert doc.exists
@@ -518,12 +527,10 @@ class TreeStructure(TestStructure):
     def get_chunks_query(self, file_ref):
         return file_ref.collection("c").select(["offset", "size"]).order_by("offset")
 
-    def get_chunks_data(self, file_ref):
+    def iget_chunks_data(self, file_ref):
         query = file_ref.collection("c").order_by("offset")
-        data = b""
         for chunk in query.stream():
-            data += chunk.get("data")
-        return data
+            yield chunk.get("data")
 
     def create_dir(self, dir_ref):
         logging.debug("Creating dir %s" % dir_ref.path)
@@ -536,7 +543,7 @@ class TreeStructure(TestStructure):
         # for doc in dir_ref.collection('d').select(['size', 'count']).stream():
         return dir_ref.collection("d").select(field_paths)
 
-    # the following methods only apply when dealing with a dir collection supporting .list_documents()
+    # the following methods only apply when dealing with a dir collection supporting .list_documents(), i.e. not flat
     def get_dir_coll(self, dir_ref):
         return dir_ref.collection("d")
 
@@ -594,16 +601,14 @@ class FlatStructure(TestStructure):
             .order_by("offset")
         )
 
-    def get_chunks_data(self, file_ref):
+    def iget_chunks_data(self, file_ref):
         query = (
             self.client.collection(self.chunks)
             .where("parent_path", "==", file_ref.id)
             .order_by("offset")
         )
-        data = b""
         for chunk in query.stream():
-            data += chunk.get("data")
-        return data
+            yield chunk.get("data")
 
     def get_dir_query(self, dir_ref, field_paths=["size", "count"]):
         # return self.client.collection(self.paths).where('parent_path', '==', dir_ref.id).stream()
@@ -613,6 +618,6 @@ class FlatStructure(TestStructure):
             .where("parent_path", "==", dir_ref.id)
         )
 
-    # the following methods only apply when dealing with a dir collection supporting .list_documents()
+    # the following methods only apply when dealing with a dir collection supporting .list_documents(), i.e. not flat
     def get_dir_coll(self, dir_ref):
         raise NotImplementedError
