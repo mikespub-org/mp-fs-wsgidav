@@ -10,7 +10,11 @@ from google.cloud import firestore
 
 # from .cache import cached_doc
 # from .tree import get_structure
-from google.cloud.firestore import CollectionReference, DocumentReference, DocumentSnapshot
+from google.cloud.firestore import (
+    CollectionReference,
+    DocumentReference,
+    DocumentSnapshot,
+)
 
 _client = None
 

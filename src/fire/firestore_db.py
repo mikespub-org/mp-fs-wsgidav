@@ -484,7 +484,7 @@ class FirestoreDB(FS):
                 "type": 1,
                 # from coll_ref properties
                 "id": coll_ref.id,
-                "parent": coll_ref.parent
+                "parent": coll_ref.parent,
             }
 
         return Info(info)
