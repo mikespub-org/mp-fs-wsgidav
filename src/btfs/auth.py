@@ -1,3 +1,7 @@
+#
+# Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
+# Licensed under the MIT license: https://opensource.org/licenses/mit-license.php
+#
 # CHECKME: use IAP, wrapper or middleware to set authenticated header
 #
 # See also https://github.com/mar10/wsgidav/issues/109

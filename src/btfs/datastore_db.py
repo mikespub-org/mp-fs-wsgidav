@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+#
+# Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
+# Licensed under the MIT license: https://opensource.org/licenses/mit-license.php
+#
 """Basic support for a read-only database explorer of Google Cloud Datastore with PyFilesystem2
 
 Example opening directly with DatastoreDB():

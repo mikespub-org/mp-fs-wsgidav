@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+#
+# Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
+# Licensed under the MIT license: https://opensource.org/licenses/mit-license.php
+#
 """Basic support of Google Cloud Firestore as filesystem with PyFilesystem2
 
 Example opening directly with FirestoreFS():
@@ -34,7 +38,7 @@ from fs.opener import registry
 # use the fire_fs module here
 from . import fire_fs  # TODO
 
-# from .model import Path as PathModel
+# from .doc import Path as PathDoc
 # TODO: replace with more advanced IO class - see e.g. _MemoryFile in fs.memoryfs
 # from .fire_fs import BtIO
 
@@ -609,7 +613,7 @@ class FirestoreFS(FS):
                 ``dst_path`` does not exist.
 
         """
-        # TODO: update parent key of chunk entities instead of copy & delete?
+        # TODO: update parent key of chunk docs instead of copy & delete?
         self.copy(src_path, dst_path, overwrite)
         self.remove(src_path)
 
