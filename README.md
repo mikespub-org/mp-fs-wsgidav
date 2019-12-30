@@ -21,6 +21,7 @@ In addition, the following new filesystem providers were created for [PyFilestem
   * [Datastore FS](https://github.com/mikespub-org/mar10-clouddav/blob/master/src/btfs/datastore_fs.py) for basic support of Google Cloud Firestore in Datastore mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
   * [Datastore DB](https://github.com/mikespub-org/mar10-clouddav/blob/master/src/btfs/datastore_db.py) for a read-only database explorer of Google Cloud Firestore in Datastore mode with [PyFilestem2](https://docs.pyfilesystem.org/)
   * Firestore FS for basic support of Google Cloud Firestore in native mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
+  * [Firestore DB](https://github.com/mikespub-org/mar10-clouddav/blob/master/src/fire/firestore_db.py) for a read-only database explorer of Google Cloud Firestore in native mode with [PyFilestem2](https://docs.pyfilesystem.org/)
 
 ![Datastore Diagram](https://github.com/mikespub-org/mar10-clouddav/raw/master/src/static/diagram.jpg)
 
