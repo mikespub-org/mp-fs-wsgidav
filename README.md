@@ -26,6 +26,10 @@ In addition, the following new filesystem providers were created for [PyFilestem
 
 ![Datastore Diagram](https://github.com/mikespub-org/mar10-clouddav/raw/master/src/static/diagram.jpg)
 
+And finally, you can now swap PyFilesystem2 filesystems and WsgiDAV DAV providers and use them in both environments:
+  * [DAVProvider2FS](https://github.com/mikespub-org/mar10-clouddav/blob/master/src/mapper/fs_from_dav_provider.py) for basic support of WsgiDAV DAV providers as filesystem for PyFilesystem2
+  * [FS2DAVProvider](https://github.com/mikespub-org/mar10-clouddav/blob/master/src/mapper/dav_provider_from_fs.py) for basic support of PyFilesystem2 filesystems as DAV provider for WsgiDAV
+
 The purpose here is **not** to provide a production-ready version for use on Google Cloud, but to experiment with various newer back-end services and explore the differences with older versions. And of course have fun while doing it :-)
 
 ## Original Description ##
