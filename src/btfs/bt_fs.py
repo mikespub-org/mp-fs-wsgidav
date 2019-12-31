@@ -216,6 +216,11 @@ def listdir(s):
     return path_str
 
 
+def scandir(s):
+    p = getdir(s)
+    return p.get_content()
+
+
 def stop_cache(stop=False):
     Path.cache.stop_cache = stop
 

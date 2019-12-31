@@ -40,7 +40,11 @@ class BTFSResource(_DAVResource):
     ]
 
     def __init__(self, path, environ):
-        self.path_entity = Path.retrieve(path)
+        if isinstance(path, Path):
+            self.path_entity = path
+            path = self.path_entity.path
+        else:
+            self.path_entity = Path.retrieve(path)
         if not self.path_entity:
             raise ValueError("Path not found: %r" % path)
         is_collection = type(self.path_entity) is Dir
@@ -149,6 +153,18 @@ class BTFSResource(_DAVResource):
         # self._check_browse_access()
         res = BTFSResource(util.join_uri(self.path, name), self.environ)
         return res
+
+    def get_member_list(self):
+        """Return a list of direct members (_DAVResource or derived objects).
+        """
+        if not self.is_collection:
+            raise NotImplementedError
+        memberList = []
+        for entity in bt_fs.scandir(self.path_entity):
+            member = BTFSResource(entity, self.environ)
+            assert member is not None
+            memberList.append(member)
+        return memberList
 
     # def handle_delete(self):
     #     raise DAVError(HTTP_FORBIDDEN)
