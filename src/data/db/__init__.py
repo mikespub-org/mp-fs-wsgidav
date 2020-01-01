@@ -9,7 +9,9 @@ import os.path
 from future.utils import with_metaclass
 from google.cloud import datastore
 
-from ..cache import cached_model
+from ..cache import NamespacedCache
+
+cached_model = NamespacedCache("model")
 
 _client = None
 

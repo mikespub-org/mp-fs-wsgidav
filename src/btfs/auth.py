@@ -16,7 +16,7 @@ import google.auth.transport.requests
 import google.oauth2.id_token
 import requests
 
-from . import db
+from data import db
 
 # See https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.id_token.html
 # firebase_request_adapter = requests.Request()

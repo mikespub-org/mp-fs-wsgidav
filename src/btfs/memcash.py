@@ -4,7 +4,7 @@ import random
 import time
 from builtins import map, str
 
-from .cache import memcache3
+from data.cache import memcache3
 
 CURRENT_VERSION_ID = os.environ.get("CURRENT_VERSION_ID", "0")
 local_cache = {}

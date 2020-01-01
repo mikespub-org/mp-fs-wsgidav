@@ -8,13 +8,15 @@ import logging
 # from future.utils import with_metaclass
 from google.cloud import firestore
 
-# from .cache import cached_doc
+# from .cache import NamespacedCache
 # from .tree import get_structure
 from google.cloud.firestore import (
     CollectionReference,
     DocumentReference,
     DocumentSnapshot,
 )
+
+# cached_doc = NamespacedCache("doc")
 
 _client = None
 

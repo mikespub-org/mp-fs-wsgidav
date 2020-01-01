@@ -34,12 +34,13 @@ from wsgidav.lock_manager import (
     validate_lock,
 )
 
-from .cache import cached_lock
+from data.cache import NamespacedCache
+
+cached_lock = NamespacedCache("lock")
 
 _logger = util.get_module_logger(__name__)
 
 __docformat__ = "reStructuredText"
-
 
 # ===============================================================================
 # LockStorageMemcache

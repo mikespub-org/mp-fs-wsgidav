@@ -7,14 +7,14 @@
 
 Example opening directly with DatastoreFS():
     >>> from datastore_fs import DatastoreFS
-    >>> ds_fs = DatastoreFS()
-    >>> ds_fs.listdir("/")
+    >>> data_fs = DatastoreFS()
+    >>> data_fs.listdir("/")
 
 Example opening via a FS URL "datastore://"
     >>> import fs
     >>> import datastore_fs  # not registered by default, so we need to import first
-    >>> ds_fs = fs.open_fs("datastore://")
-    >>> ds_fs.listdir("/")
+    >>> data_fs = fs.open_fs("datastore://")
+    >>> data_fs.listdir("/")
 
 For more information on PyFilesystem2, see https://docs.pyfilesystem.org/
 """
@@ -942,16 +942,16 @@ class DatastoreOpener(Opener):
     protocols = ["datastore"]
 
     def open_fs(self, fs_url, parse_result, writeable, create, cwd):
-        ds_fs = DatastoreFS()
-        return ds_fs
+        data_fs = DatastoreFS()
+        return data_fs
 
 
 def main():
-    ds_fs = DatastoreFS("/")
-    # ds_fs = WrapDatastoreFS()
-    # ds_fs = open_fs("datastore://")
-    ds_fs.tree()
-    return ds_fs
+    data_fs = DatastoreFS("/")
+    # data_fs = WrapDatastoreFS()
+    # data_fs = open_fs("datastore://")
+    data_fs.tree()
+    return data_fs
 
 
 if __name__ == "__main__":

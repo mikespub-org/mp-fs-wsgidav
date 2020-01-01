@@ -17,7 +17,7 @@ from wsgidav import util
 from wsgidav.dav_error import HTTP_FORBIDDEN, DAVError
 from wsgidav.dav_provider import DAVProvider, _DAVResource
 
-from btfs.model import Dir, File, Path
+from data.model import Dir, File, Path
 
 from . import bt_fs, sessions
 

@@ -7,14 +7,14 @@
 
 Example opening directly with FirestoreDB():
     >>> from firestore_db import FirestoreDB
-    >>> fi_db = FirestoreDB()
-    >>> fi_db.listdir("/")
+    >>> fire_db = FirestoreDB()
+    >>> fire_db.listdir("/")
 
 Example opening via a FS URL "firestore_db://"
     >>> import fs
     >>> import firestore_db  # not registered by default, so we need to import first
-    >>> fi_db = fs.open_fs("firestore_db://")
-    >>> fi_db.listdir("/")
+    >>> fire_db = fs.open_fs("firestore_db://")
+    >>> fire_db.listdir("/")
 
 For more information on PyFilesystem2, see https://docs.pyfilesystem.org/
 """
@@ -654,26 +654,26 @@ class FirestoreDBOpener(Opener):
     protocols = ["firestore_db"]
 
     def open_fs(self, fs_url, parse_result, writeable, create, cwd):
-        fi_db = FirestoreDB()
-        return fi_db
+        fire_db = FirestoreDB()
+        return fire_db
 
 
 def main(coll=None, id=None, *args):
     # logging.getLogger().setLevel(logging.DEBUG)
-    fi_db = FirestoreDB(limit=20)
-    # fi_db = open_fs("firestore_db://")
-    # fi_db = WrapFirestoreDB()
+    fire_db = FirestoreDB(limit=20)
+    # fire_db = open_fs("firestore_db://")
+    # fire_db = WrapFirestoreDB()
     # path = "/"
     if coll is None:
-        # result = fi_db.listdir(path)
-        result = fi_db.tree()
-        # result = fi_db.listdir("/")
-        # result = list(fi_db.scandir("/", ["details"]))
+        # result = fire_db.listdir(path)
+        result = fire_db.tree()
+        # result = fire_db.listdir("/")
+        # result = list(fire_db.scandir("/", ["details"]))
         # for item in result:
         #     print(item.raw)
     else:
         # path += coll
-        fi_coll = fi_db.opendir(coll)
+        fi_coll = fire_db.opendir(coll)
         if id is None:
             # result = fi_coll.getinfo("/", namespaces=["properties"]).raw
             result = fi_coll.listdir("/")
@@ -693,7 +693,7 @@ def main(coll=None, id=None, *args):
                 # fp = fi_coll.openbin(path, "rb")
                 # result = fp.read()
                 # fp.close()
-    fi_db.close()
+    fire_db.close()
     return result
 
 

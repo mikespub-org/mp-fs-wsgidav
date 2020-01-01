@@ -15,9 +15,10 @@ from builtins import object, range
 
 from . import db
 
-# from cache import cached_dir, cached_file, cached_content
-from .cache import cached_resource
+from .cache import NamespacedCache
 from .db import polymodel
+
+cached_resource = NamespacedCache("resource")
 
 DO_EXPENSIVE_CHECKS = False
 # DO_EXPENSIVE_CHECKS = True

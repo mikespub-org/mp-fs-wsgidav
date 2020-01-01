@@ -7,14 +7,14 @@
 
 Example opening directly with DatastoreDB():
     >>> from datastore_db import DatastoreDB
-    >>> ds_db = DatastoreDB()
-    >>> ds_db.listdir("/")
+    >>> data_db = DatastoreDB()
+    >>> data_db.listdir("/")
 
 Example opening via a FS URL "datastore_db://"
     >>> import fs
     >>> import datastore_db  # not registered by default, so we need to import first
-    >>> ds_db = fs.open_fs("datastore_db://")
-    >>> ds_db.listdir("/")
+    >>> data_db = fs.open_fs("datastore_db://")
+    >>> data_db.listdir("/")
 
 For more information on PyFilesystem2, see https://docs.pyfilesystem.org/
 """
@@ -641,22 +641,22 @@ class DatastoreDBOpener(Opener):
     protocols = ["datastore_db"]
 
     def open_fs(self, fs_url, parse_result, writeable, create, cwd):
-        ds_db = DatastoreDB()
-        return ds_db
+        data_db = DatastoreDB()
+        return data_db
 
 
 def main(kind=None, id=None, *args):
     # logging.getLogger().setLevel(logging.DEBUG)
-    ds_db = DatastoreDB(limit=20)
-    # ds_db = open_fs("datastore_db://")
-    # ds_db = WrapDatastoreDB()
+    data_db = DatastoreDB(limit=20)
+    # data_db = open_fs("datastore_db://")
+    # data_db = WrapDatastoreDB()
     # path = "/"
     if kind is None:
-        # result = ds_db.listdir(path)
-        result = ds_db.tree()
+        # result = data_db.listdir(path)
+        result = data_db.tree()
     else:
         # path += kind
-        ds_kind = ds_db.opendir(kind)
+        ds_kind = data_db.opendir(kind)
         if id is None:
             # result = ds_kind.getinfo("/", namespaces=["properties"]).raw
             result = ds_kind.listdir("/")
@@ -670,7 +670,7 @@ def main(kind=None, id=None, *args):
                 fp = ds_kind.openbin(path, "rb")
                 result = fp.read()
                 fp.close()
-    ds_db.close()
+    data_db.close()
     return result
 
 

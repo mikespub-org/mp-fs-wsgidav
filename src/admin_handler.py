@@ -10,11 +10,11 @@ from pprint import pformat
 
 from flask import Flask, render_template, request
 
-from btfs import db, sessions
+from btfs import sessions
 from btfs.auth import AuthorizedUser
-from btfs.cache import memcache3
-from btfs.db import stats
-from btfs.model import Chunk, Dir, File, Path
+from data import db
+from data.cache import memcache3
+from data.model import Chunk, Dir, File, Path
 
 
 def db_get_stats(model, limit=1000):

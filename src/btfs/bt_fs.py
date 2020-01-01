@@ -15,7 +15,7 @@ from builtins import map
 
 from future import standard_library
 
-from .model import Dir, File, Path
+from data.model import Dir, File, Path
 
 standard_library.install_aliases()
 # from btfs import memcash

@@ -12,7 +12,7 @@ import os
 import uuid
 from functools import wraps
 
-from . import db
+from data import db
 from .auth import get_user_claims, verify_user_session
 
 # TODO: make configurable
