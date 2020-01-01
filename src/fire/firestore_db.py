@@ -705,8 +705,13 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         result = main(*sys.argv[1:])
     else:
-        print("%s [<coll> [<id> [<coll> [<id> [...]]]]]" % "python3 -m fire.firestore_db")
-        print("%s [<coll>[/<id>[/<coll> [<id>:propname]]]]" % "python3 -m fire.firestore_db")
+        print(
+            "%s [<coll> [<id> [<coll> [<id> [...]]]]]" % "python3 -m fire.firestore_db"
+        )
+        print(
+            "%s [<coll>[/<id>[/<coll> [<id>:propname]]]]"
+            % "python3 -m fire.firestore_db"
+        )
         result = main()
 
     pprint(result)

@@ -1,9 +1,10 @@
-# -*- coding: iso-8859-1 -*-
+#
+# Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 """
 Implementation of a WsgiDAV provider that implements a virtual file system based
-on Google's Big Table.
+on Google Cloud Firestore in Datastore mode.
 """
 from __future__ import absolute_import
 
@@ -17,10 +18,10 @@ from wsgidav import util
 from wsgidav.dav_error import HTTP_FORBIDDEN, DAVError
 from wsgidav.dav_provider import DAVProvider, _DAVResource
 
-from data.model import Dir, File, Path
+from .model import Dir, File, Path
 
-from . import sessions
-from data import fs as data_fs
+# from . import sessions
+from . import fs as data_fs
 
 standard_library.install_aliases()
 
@@ -28,17 +29,17 @@ standard_library.install_aliases()
 __docformat__ = "reStructuredText en"
 
 # _logger = util.get_module_logger(__name__)
-BUFFER_SIZE = 8192
 
 # ===============================================================================
-# BTFSResource classes
+# DatastoreDAVResource classes
 # ===============================================================================
-class BTFSResource(_DAVResource):
+class DatastoreDAVResource(_DAVResource):
     """."""
 
-    _supportedProps = [
-        "{btfs:}key",
+    _supported_props = [
+        "{datastore:}key",
     ]
+    _namespaces = ["datastore:"]
 
     def __init__(self, path, environ):
         if isinstance(path, Path):
@@ -49,13 +50,15 @@ class BTFSResource(_DAVResource):
         if not self.path_entity:
             raise ValueError("Path not found: %r" % path)
         is_collection = type(self.path_entity) is Dir
-        logging.debug("BTFSResource(%r): %r" % (path, is_collection))
-        super(BTFSResource, self).__init__(path, is_collection, environ)
+        logging.debug("%s(%r): %r" % (type(self).__name__, path, is_collection))
+        super(DatastoreDAVResource, self).__init__(path, is_collection, environ)
         # check access based on user roles in environ
         self._get_user_roles(environ)
         self.statresults = data_fs.stat(self.path_entity)
         self._etag = None
         self._content_type = None
+        # TODO: fill self._data with some properties from self.path_entity?
+        self._data = {}
 
     def _get_user_roles(self, environ):
         self._roles = []
@@ -152,7 +155,8 @@ class BTFSResource(_DAVResource):
         """
         # logging.debug('%r + %r' % (self.path, name))
         # self._check_browse_access()
-        res = BTFSResource(util.join_uri(self.path, name), self.environ)
+        # res = DatastoreDAVResource(util.join_uri(self.path, name), self.environ)
+        res = type(self)(util.join_uri(self.path, name), self.environ)
         return res
 
     def get_member_list(self):
@@ -162,7 +166,8 @@ class BTFSResource(_DAVResource):
             raise NotImplementedError
         memberList = []
         for entity in data_fs.scandir(self.path_entity):
-            member = BTFSResource(entity, self.environ)
+            # member = DatastoreDAVResource(entity, self.environ)
+            member = type(self)(entity, self.environ)
             assert member is not None
             memberList.append(member)
         return memberList
@@ -243,8 +248,8 @@ class BTFSResource(_DAVResource):
         else:
             # data_fs.unlink(self.path)
             data_fs.unlink(self.path_entity)
-        self.removeAllProperties(True)
-        self.removeAllLocks(True)
+        self.remove_all_properties(True)
+        self.remove_all_locks(True)
 
     def copy_move_single(self, dest_path, is_move):
         """See _DAVResource.copy_move_single() """
@@ -298,9 +303,9 @@ class BTFSResource(_DAVResource):
         See _DAVResource.get_property_names()
         """
         # Let base class implementation add supported live and dead properties
-        propNameList = super(BTFSResource, self).get_property_names(is_allprop)
+        propNameList = super(DatastoreDAVResource, self).get_property_names(is_allprop)
         # Add custom live properties (report on 'allprop' and 'propnames')
-        # propNameList.extend(BTFSResource._supportedProps)
+        # propNameList.extend(type(self)._supported_props)
         return propNameList
 
     def get_property_value(self, name):
@@ -309,10 +314,13 @@ class BTFSResource(_DAVResource):
         See _DAVResource.get_property_value()
         """
         # Supported custom live properties
-        if name == "{btfs:}key":
-            return self._data["key"]
+        if name in self._supported_props:
+            # Example: '{DAV:}foo'  -> ('DAV:', 'foo')
+            ns, localname = util.split_namespace(name)
+            if ns in self._namespaces and localname in self._data:
+                return self._data[localname]
         # Let base class implementation report live and dead properties
-        return super(BTFSResource, self).get_property_value(name)
+        return super(DatastoreDAVResource, self).get_property_value(name)
 
     # def set_property_value(self, name, value, dry_run=False):
     #     """Set or remove property value.
@@ -322,13 +330,13 @@ class BTFSResource(_DAVResource):
     #     if value is None:
     #         # We can never remove properties
     #         raise DAVError(HTTP_FORBIDDEN)
-    ##     if name == "{btfs:}key":
-    ##         # value is of type etree.Element
-    ##         self._data["tags"] = value.text.split(",")
-    #     elif name == "{virtres:}description":
+    #     if name == "{datastore:}tags":
+    #         # value is of type etree.Element
+    #         self._data["tags"] = value.text.split(",")
+    #     elif name == "{datastore:}description":
     #         # value is of type etree.Element
     #         self._data["description"] = value.text
-    #     elif name in VirtualResource._supportedProps:
+    #     elif name in type(self)._supported_props:
     #         # Supported property, but read-only
     #         raise DAVError(HTTP_FORBIDDEN,
     #                        errcondition=PRECONDITION_CODE_ProtectedProperty)
@@ -339,17 +347,17 @@ class BTFSResource(_DAVResource):
     #     return
 
     # called by wsgidav.request_server for do_GET and do_HEAD methods
-    def finalize_headers(self, environ, response_headers):
-        sessions.finalize_headers(environ, response_headers)
-        return super(BTFSResource, self).finalize_headers(environ, response_headers)
+    # def finalize_headers(self, environ, response_headers):
+    #     sessions.finalize_headers(environ, response_headers)
+    #     return super(DatastoreDAVResource, self).finalize_headers(environ, response_headers)
 
 
 # ===============================================================================
-# BTFSResourceProvider
+# DatastoreDAVProvider
 # ===============================================================================
 
 
-class BTFSResourceProvider(DAVProvider):
+class DatastoreDAVProvider(DAVProvider):
     """
     WsgiDAV provider that implements a virtual filesystem based on Googles Big Table.
     Update: actually, it used the old App Engine Datastore, which has now been upgraded
@@ -357,9 +365,10 @@ class BTFSResourceProvider(DAVProvider):
     """
 
     known_roles = ("admin", "editor", "reader", "browser", "none")
+    resource_class = DatastoreDAVResource
 
     def __init__(self, *args, **kwargs):
-        super(BTFSResourceProvider, self).__init__()
+        super(DatastoreDAVProvider, self).__init__()
         # TODO: make provider configurable
         self._readonly = kwargs.pop("readonly", False)
         # TODO: support firestore in native mode
@@ -381,7 +390,8 @@ class BTFSResourceProvider(DAVProvider):
             return
         self._count_get_resource_inst += 1
         try:
-            res = BTFSResource(path, environ)
+            # res = DatastoreDAVResource(path, environ)
+            res = self.resource_class(path, environ)
         except Exception as e:
             logging.debug(e)
             logging.exception("get_resource_inst(%r) failed" % path)
@@ -393,4 +403,4 @@ class BTFSResourceProvider(DAVProvider):
     # def custom_request_handler(self, environ, start_response, default_handler):
     #    #return default_handler(environ, start_response)
     #    logging.debug('Custom: %r %r' % (start_response, default_handler))
-    #    return super(BTFSResourceProvider, self).custom_request_handler(environ, start_response, default_handler)
+    #    return super(DatastoreDAVProvider, self).custom_request_handler(environ, start_response, default_handler)
