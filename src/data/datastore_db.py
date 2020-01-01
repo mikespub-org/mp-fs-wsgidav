@@ -41,7 +41,7 @@ from fs.iotools import RawWrapper, make_stream
 
 # from .model import Path as PathModel
 # TODO: replace with more advanced IO class - see e.g. _MemoryFile in fs.memoryfs
-# from .bt_fs import BtIO
+# from .fs import BtIO
 
 #
 # Specify location of your service account credentials in environment variable before you start:
@@ -64,8 +64,10 @@ log = logging.getLogger(__name__)
 class DatastoreDB(FS):
     def __init__(self, limit=1000):
         # self._meta = {}
+        self._limit = limit
         # Initialize Datastore database if needed
-        # db.initdb()
+        # db.initdb(self)
+        self._closed = False
         self._namespaces = db.list_namespaces()
         # include meta kinds here too
         self._kinds = db.list_kinds(True)
@@ -73,7 +75,6 @@ class DatastoreDB(FS):
         self._properties = db.get_properties()
         # for kind in self._kinds:
         #     self._properties[kind] = db.get_properties_for_kind(kind)
-        self._limit = limit
         super(DatastoreDB, self).__init__()
 
     # https://docs.pyfilesystem.org/en/latest/implementers.html#essential-methods
@@ -681,7 +682,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         result = main(*sys.argv[1:])
     else:
-        print("%s [<kind> [<id> [<propname>]]]" % basename(sys.argv[0]))
+        print("%s [<kind> [<id> [<propname>]]]" % "python3 -m data.datastore_db")
         result = main()
 
     pprint(result)

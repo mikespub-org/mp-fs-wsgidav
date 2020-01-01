@@ -19,7 +19,8 @@ from wsgidav.dav_provider import DAVProvider, _DAVResource
 
 from data.model import Dir, File, Path
 
-from . import bt_fs, sessions
+from . import sessions
+from data import fs as data_fs
 
 standard_library.install_aliases()
 
@@ -52,7 +53,7 @@ class BTFSResource(_DAVResource):
         super(BTFSResource, self).__init__(path, is_collection, environ)
         # check access based on user roles in environ
         self._get_user_roles(environ)
-        self.statresults = bt_fs.stat(self.path_entity)
+        self.statresults = data_fs.stat(self.path_entity)
         self._etag = None
         self._content_type = None
 
@@ -142,7 +143,7 @@ class BTFSResource(_DAVResource):
         See _DAVResource.get_member_list()
         """
         # self._check_browse_access()
-        return bt_fs.listdir(self.path_entity)
+        return data_fs.listdir(self.path_entity)
 
     def get_member(self, name):
         """Return list of (direct) collection members (_DAVResource or derived).
@@ -160,7 +161,7 @@ class BTFSResource(_DAVResource):
         if not self.is_collection:
             raise NotImplementedError
         memberList = []
-        for entity in bt_fs.scandir(self.path_entity):
+        for entity in data_fs.scandir(self.path_entity):
             member = BTFSResource(entity, self.environ)
             assert member is not None
             memberList.append(member)
@@ -184,7 +185,7 @@ class BTFSResource(_DAVResource):
         assert not "/" in name
         self._check_write_access()
         path = util.join_uri(self.path, name)
-        f = bt_fs.btopen(path, "wb")
+        f = data_fs.btopen(path, "wb")
         # FIXME: should be length-0
         # f.write(".")
         f.close()
@@ -198,7 +199,7 @@ class BTFSResource(_DAVResource):
         assert self.is_collection
         self._check_write_access()
         path = util.join_uri(self.path, name)
-        bt_fs.mkdir(path)
+        data_fs.mkdir(path)
 
     def get_content(self):
         """Open content as a stream for reading.
@@ -207,8 +208,8 @@ class BTFSResource(_DAVResource):
         """
         assert not self.is_collection
         self._check_read_access()
-        # return bt_fs.btopen(self.path, "rb")
-        return bt_fs.btopen(self.path_entity, "rb")
+        # return data_fs.btopen(self.path, "rb")
+        return data_fs.btopen(self.path_entity, "rb")
 
     def begin_write(self, content_type=None):
         """Open content as a stream for writing.
@@ -217,8 +218,8 @@ class BTFSResource(_DAVResource):
         """
         assert not self.is_collection
         self._check_write_access()
-        # return bt_fs.btopen(self.path, "wb")
-        return bt_fs.btopen(self.path_entity, "wb")
+        # return data_fs.btopen(self.path, "wb")
+        return data_fs.btopen(self.path_entity, "wb")
 
     def support_recursive_delete(self):
         """Return True, if delete() may be called on non-empty collections
@@ -237,11 +238,11 @@ class BTFSResource(_DAVResource):
         """
         self._check_write_access()
         if self.is_collection:
-            # bt_fs.rmtree(self.path)
-            bt_fs.rmtree(self.path_entity)
+            # data_fs.rmtree(self.path)
+            data_fs.rmtree(self.path_entity)
         else:
-            # bt_fs.unlink(self.path)
-            bt_fs.unlink(self.path_entity)
+            # data_fs.unlink(self.path)
+            data_fs.unlink(self.path_entity)
         self.removeAllProperties(True)
         self.removeAllLocks(True)
 
@@ -251,12 +252,12 @@ class BTFSResource(_DAVResource):
         self._check_write_access()
         if self.is_collection:
             # Create destination collection, if not exists
-            if not bt_fs.exists(dest_path):
-                bt_fs.mkdir(dest_path)
+            if not data_fs.exists(dest_path):
+                data_fs.mkdir(dest_path)
         else:
             # Copy file (overwrite, if exists)
-            # bt_fs.copyfile(self.path, dest_path)
-            bt_fs.copyfile(self.path_entity, dest_path)
+            # data_fs.copyfile(self.path, dest_path)
+            data_fs.copyfile(self.path_entity, dest_path)
         # shutil.copy2(self._file_path, fpDest)
         # (Live properties are copied by copy2 or copystat)
         # Copy dead properties
@@ -369,7 +370,7 @@ class BTFSResourceProvider(DAVProvider):
         self.anon_role = kwargs.pop("anon_role", "browser")
         # return (no) desktop.ini for Microsoft-WebDAV-MiniRedir
         self.desktop_ini = kwargs.pop("desktop_ini", False)
-        bt_fs.initfs()
+        data_fs.initfs()
 
     def is_readonly(self):
         return self._readonly

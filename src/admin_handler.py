@@ -201,17 +201,17 @@ def clear_cache():
 
 
 def clear_datastore():
-    logging.warning("clear_datastore: bt_fs.rmtree('/')")
-    from btfs import bt_fs
+    logging.warning("clear_datastore: data_fs.rmtree('/')")
+    from data import fs as data_fs
 
     # cannot use rmtree("/"), because it prohibits '/'
     try:
-        bt_fs.rmtree("/")
+        data_fs.rmtree("/")
     except Exception as e:
         logging.warning(e)
-    # bt_fs.getdir("/").delete(recursive=True)
+    # data_fs.getdir("/").delete(recursive=True)
     memcache3.reset()
-    bt_fs.initfs()
+    data_fs.initfs()
     output = "Removed '/'. <a href='?'>Back</a>"
     return output
 

@@ -1,4 +1,5 @@
-# -*- coding: iso-8859-1 -*-
+#
+# Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 #
@@ -244,11 +245,11 @@ class Path(polymodel.PolyModel):
         """Return a model.Dir or model.File object for `path`.
 
         `path` may be an existing Dir/File entity.
-        Since _getresource is called by most other functions in the `bt_fs` module,
+        Since _getresource is called by most other functions in the `data.fs` module,
         this allows the DAV provider to pass a cached resource, thus implementing
         a simple per-request caching, like in::
 
-            statresults = bt_fs.stat(self.pathEntity)
+            statresults = data.fs.stat(self.pathEntity)
 
         Return None, if path does not exist.
         """
@@ -273,7 +274,7 @@ class Path(polymodel.PolyModel):
     # @staticmethod
     # def btopen(path, mode="r"):
     #     """Open the file (eg. return a BtIO object)"""
-    #     from .bt_fs import BtIO
+    #     from .fs import BtIO
     #
     #     f = Path._getresource(path)
     #     assert f is None or type(f) is File

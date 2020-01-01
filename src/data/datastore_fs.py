@@ -35,12 +35,11 @@ import logging
 from fs.opener import Opener
 from fs.opener import registry
 
-# use the bt_fs module here
-from . import bt_fs
+# use the datastore fs module here
+from . import fs as data_fs
 
-# from .model import Path as PathModel
 # TODO: replace with more advanced IO class - see e.g. _MemoryFile in fs.memoryfs
-# from .bt_fs import BtIO
+# from .fs import BtIO
 
 #
 # Specify location of your service account credentials in environment variable before you start:
@@ -72,9 +71,9 @@ class DatastoreFS(FS):
         if not use_cache:
             self._stop_cache(True)
         # Initialize Datastore filesystem if needed
-        bt_fs.initfs()
+        data_fs.initfs()
         # Check if the requested root_path exists
-        _res = bt_fs._getresource(_root_path)
+        _res = data_fs._getresource(_root_path)
         if _res:
             if _res.isdir():
                 log.info("Root path exists %s" % _root_path)
@@ -82,7 +81,7 @@ class DatastoreFS(FS):
                 raise errors.DirectoryExpected(root_path)
         else:
             log.info("Creating root path %s" % _root_path)
-            _res = bt_fs.mkdir(_root_path)
+            _res = data_fs.mkdir(_root_path)
         log.info("Resource: %s" % _res)
         self.root_path = _root_path
         self.root_res = _res
@@ -197,7 +196,7 @@ class DatastoreFS(FS):
                 if _res and _res.isdir():
                     return self.opendir(path)
 
-            _res = bt_fs.mkdir(self._prep_path(_path))
+            _res = data_fs.mkdir(self._prep_path(_path))
             return self.opendir(path)
 
     def openbin(
@@ -591,7 +590,7 @@ class DatastoreFS(FS):
             if not _src_res.isfile():
                 raise errors.FileExpected(src_path)
 
-            bt_fs.copyfile(_src_res, self._prep_path(_dst_path))
+            data_fs.copyfile(_src_res, self._prep_path(_dst_path))
 
     def move(self, src_path, dst_path, overwrite=False):
         # type: (Text, Text, bool) -> None
@@ -651,7 +650,7 @@ class DatastoreFS(FS):
                 if not _dir_res or not _dir_res.isdir():
                     raise errors.ResourceNotFound(path)
 
-                _res = bt_fs.mkfile(self._prep_path(_path))
+                _res = data_fs.mkfile(self._prep_path(_path))
 
             return True
 
@@ -744,7 +743,7 @@ class DatastoreFS(FS):
                 if not _dir_res or not _dir_res.isdir():
                     raise errors.ResourceNotFound(path)
 
-                _res = bt_fs.mkfile(self._prep_path(_path))
+                _res = data_fs.mkfile(self._prep_path(_path))
 
             _res.put_content(contents)
 
@@ -790,7 +789,7 @@ class DatastoreFS(FS):
                 if not _dir_res or not _dir_res.isdir():
                     raise errors.ResourceNotFound(path)
 
-                _res = bt_fs.mkfile(self._prep_path(_path))
+                _res = data_fs.mkfile(self._prep_path(_path))
 
             # Note: we always read in chunks here, regardless of the chunk_size
             _res.upload(file)
@@ -870,7 +869,7 @@ class DatastoreFS(FS):
             try:
                 _res = self._getresource(path)
             except:
-                _res = bt_fs._getresource(self._prep_path(path))
+                _res = data_fs._getresource(self._prep_path(path))
             if not _res or not _res.isdir():
                 raise errors.DirectoryExpected(path)
 
@@ -884,7 +883,7 @@ class DatastoreFS(FS):
             else:
                 _res.delete(recursive=True)
 
-            _res = bt_fs.mkdir(self._prep_path(path))
+            _res = data_fs.mkdir(self._prep_path(path))
             return self.opendir(path)
 
     def _stop_cache(self, confirm=False):
@@ -892,7 +891,7 @@ class DatastoreFS(FS):
             self._is_cached = False
         else:
             self._is_cached = True
-        bt_fs.stop_cache(confirm)
+        data_fs.stop_cache(confirm)
 
     def _getresource(self, path):
         # type: (Text) -> bool
@@ -906,12 +905,12 @@ class DatastoreFS(FS):
 
         """
         _path = self.validatepath(path)
-        return bt_fs._getresource(self._prep_path(_path))
+        return data_fs._getresource(self._prep_path(_path))
 
     @staticmethod
     def _btopen(path, mode="r"):
         """Open the file (eg. return a BtIO object)"""
-        stream = bt_fs.btopen(path, mode)
+        stream = data_fs.btopen(path, mode)
         _mode = Mode(mode)
         if not _mode.reading:
             stream.readable = lambda: False  # mock a write-only stream

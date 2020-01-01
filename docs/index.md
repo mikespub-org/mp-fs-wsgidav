@@ -9,8 +9,8 @@ The master branch here provides the following building blocks for [WsgiDAV](http
   * Firestore DAV Provider for a virtual filesystem built on Google [Cloud Firestore in native mode](https://cloud.google.com/firestore/docs/)
 
 In addition, the following new filesystem providers are available for [PyFilestem2](https://docs.pyfilesystem.org/):
-  * [Datastore FS](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/btfs/datastore_fs.py) for basic support of Google Cloud Firestore in Datastore mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
-  * [Datastore DB](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/btfs/datastore_db.py) for a read-only database explorer of Google Cloud Firestore in Datastore mode with [PyFilestem2](https://docs.pyfilesystem.org/)
+  * [Datastore FS](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/data/datastore_fs.py) for basic support of Google Cloud Firestore in Datastore mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
+  * [Datastore DB](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/data/datastore_db.py) for a read-only database explorer of Google Cloud Firestore in Datastore mode with [PyFilestem2](https://docs.pyfilesystem.org/)
   * Firestore FS for basic support of Google Cloud Firestore in native mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
   * [Firestore DB](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/fire/firestore_db.py) for a read-only database explorer of Google Cloud Firestore in native mode with [PyFilestem2](https://docs.pyfilesystem.org/)
 
@@ -88,13 +88,77 @@ If you want to try out the Datastore or Firestore DAV provider, the Firebase dom
 6. Go to the homepage of your newly deployed project, login using the /auth/ link and define yourself as admin using the /_admin link
 7. Remove anonymous read-write access in the WsgiDAV config file and redeploy the project to App Engine
 
-### Use the Datastore DAV provider or Datastore FS filesystem ###
+### Use the Datastore DAV provider, Datastore FS filesystem or Datastore DB explorer ###
 
-If you want to use the Datastore DAV provider / FS filesystem yourself, you'll need to copy the [src/btfs/](https://github.com/mikespub-org/mp-fs-wsgidav/tree/master/src/btfs) directory to your project.
+If you want to use the Datastore DAV provider / FS filesystem / DB explorer yourself, you'll need to copy the [src/data/](https://github.com/mikespub-org/mp-fs-wsgidav/tree/master/src/data) directory to your project.
 
-### Use the Firestore DAV provider or Firestore FS filesystem ###
+Configure the service account credentials to use:
 
-If you want to use the Firestore DAV provider / FS filesystem yourself, you'll need to copy the [src/fire/](https://github.com/mikespub-org/mp-fs-wsgidav/tree/master/src/fire) directory to your project.
+```
+    $ export GOOGLE_APPLICATION_CREDENTIALS="~/datastore-user.cred.json"
+```
+
+Example using DatastoreDB() as read-only database explorer via command line:
+
+```
+    $ python3 -m data.datastore_db [<kind> [<id> [<propname>]]]
+```
+
+Example using DatastoreDB() as read-only database explorer in PyFilesystem2:
+
+```
+    from .data.datastore_db import DatastoreDB
+    data_db = DatastoreDB()
+    data_db.listdir("/")
+```
+
+Example using DatastoreFS() as filesystem in PyFilesystem2:
+
+```
+    from .data.datastore_fs import DatastoreFS
+    data_fs = DatastoreFS("/")
+    data_fs.listdir("/")
+```
+
+Example using DatastoreDAV() as DAV provider in WsgiDAV:
+
+```
+```
+
+### Use the Firestore DAV provider, Firestore FS filesystem or Firestore DB explorer ###
+
+If you want to use the Firestore DAV provider / FS filesystem / DB explorer yourself, you'll need to copy the [src/fire/](https://github.com/mikespub-org/mp-fs-wsgidav/tree/master/src/fire) directory to your project.
+
+Configure the service account credentials to use:
+
+```
+    $ export GOOGLE_APPLICATION_CREDENTIALS="~/firestore-user.cred.json"
+```
+
+Example using FirestoreDB() as read-only database explorer via command line:
+
+```
+    $ python3 -m fire.firestore_db [<coll> [<id> [<coll> [<id> [...]]]]]
+    $ python3 -m fire.firestore_db [<coll>[/<id>[/<coll> [<id>:<propname>]]]]
+```
+
+Example using FirestoreDB() as read-only database explorer in PyFilesystem2:
+
+```
+    from .fire.firestore_db import FirestoreDB
+    fire_db = FirestoreDB()
+    fire_db.listdir("/")
+```
+
+Example using FirestoreFS() as filesystem in PyFilesystem2:
+
+```
+```
+
+Example using FirestoreDAV() as DAV provider in WsgiDAV:
+
+```
+```
 
 ## Original CloudDAV Project ##
 

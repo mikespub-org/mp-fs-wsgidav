@@ -60,11 +60,12 @@ log = logging.getLogger(__name__)
 class FirestoreDB(FS):
     def __init__(self, root_path=None, limit=1000):
         # self._meta = {}
-        # Initialize Firestore database if needed
-        # db.initdb()
         self._root_path = root_path
-        self._root_ref = None
         self._limit = limit
+        # Initialize Firestore database if needed
+        # db.initdb(self)
+        self._closed = False
+        self._root_ref = None
         super(FirestoreDB, self).__init__()
 
     # https://docs.pyfilesystem.org/en/latest/implementers.html#essential-methods
@@ -666,8 +667,8 @@ def main(coll=None, id=None, *args):
     # path = "/"
     if coll is None:
         # result = fire_db.listdir(path)
-        result = fire_db.tree()
-        # result = fire_db.listdir("/")
+        # result = fire_db.tree()
+        result = fire_db.listdir("/")
         # result = list(fire_db.scandir("/", ["details"]))
         # for item in result:
         #     print(item.raw)
@@ -704,8 +705,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         result = main(*sys.argv[1:])
     else:
-        print("%s [<coll> [<id> [<coll> [<id> [...]]]]]" % basename(sys.argv[0]))
-        print("%s [<coll>[/<id>[/<coll> [<id>:propname]]]]" % basename(sys.argv[0]))
+        print("%s [<coll> [<id> [<coll> [<id> [...]]]]]" % "python3 -m fire.firestore_db")
+        print("%s [<coll>[/<id>[/<coll> [<id>:propname]]]]" % "python3 -m fire.firestore_db")
         result = main()
 
     pprint(result)

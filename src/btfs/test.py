@@ -13,7 +13,7 @@ import os
 from future import standard_library
 from wsgidav.lock_manager import LockManager, lock_string
 
-from btfs import bt_fs
+from data import fs as data_fs
 from btfs.btfs_dav_provider import BTFSResourceProvider
 from btfs.memcache_lock_storage import LockStorageMemcache
 
@@ -31,10 +31,10 @@ def make_tree(parent, depth=0):
         name = "%s.%s.txt" % (filename, i)
         path = os.path.join(parent, name)
         print("  " * depth, path)
-        f1 = bt_fs.btopen(path, "w")
+        f1 = data_fs.btopen(path, "w")
         f1.write(data)
         f1.close()
-        assert bt_fs.isfile(path)
+        assert data_fs.isfile(path)
         count += 1
     if depth > 1:
         return
@@ -42,8 +42,8 @@ def make_tree(parent, depth=0):
         name = "%s.%s" % (dirname, i)
         path = os.path.join(parent, name)
         print("  " * depth, path)
-        bt_fs.mkdir(path)
-        assert bt_fs.isdir(path)
+        data_fs.mkdir(path)
+        assert data_fs.isdir(path)
         make_tree(path, depth + 1)
     return count
 
@@ -53,31 +53,31 @@ def test():
 
     logging.getLogger().setLevel(logging.DEBUG)
 
-    # Test bt_fs.py
-    bt_fs.initfs()
-    assert bt_fs.isdir("/")
+    # Test data_fs.py
+    data_fs.initfs()
+    assert data_fs.isdir("/")
 
     rootpath = "/run_test"
-    if bt_fs.exists(rootpath):
+    if data_fs.exists(rootpath):
         logging.info("removing " + rootpath)
-        bt_fs.rmtree(rootpath)
-    assert not bt_fs.exists(rootpath)
+        data_fs.rmtree(rootpath)
+    assert not data_fs.exists(rootpath)
 
-    bt_fs.mkdir(rootpath)
-    assert bt_fs.isdir(rootpath)
+    data_fs.mkdir(rootpath)
+    assert data_fs.isdir(rootpath)
 
     data = b"file content"
-    bt_fs.mkdir(rootpath + "/dir1")
-    assert bt_fs.isdir(rootpath + "/dir1")
-    f1 = bt_fs.btopen(rootpath + "/dir1/file1.txt", "w")
+    data_fs.mkdir(rootpath + "/dir1")
+    assert data_fs.isdir(rootpath + "/dir1")
+    f1 = data_fs.btopen(rootpath + "/dir1/file1.txt", "w")
     f1.write(data)
     f1.close()
-    assert bt_fs.isfile(rootpath + "/dir1/file1.txt")
+    assert data_fs.isfile(rootpath + "/dir1/file1.txt")
 
-    # bt_fs.unlink(rootpath+"/dir1/file1.txt")
-    # assert not bt_fs.isfile(rootpath+"/dir1/file1.txt")
+    # data_fs.unlink(rootpath+"/dir1/file1.txt")
+    # assert not data_fs.isfile(rootpath+"/dir1/file1.txt")
 
-    print("*** bt_fs tests passed ***")
+    print("*** data_fs tests passed ***")
 
     # make_tree("/test", 0)
     # print(count)
@@ -92,14 +92,14 @@ def test():
 
     resRoot = provider.get_resource_inst(rootpath + "/", environ)
     resRoot.create_collection("folder1")
-    assert bt_fs.isdir(rootpath + "/folder1")
-    assert not bt_fs.isfile(rootpath + "/folder1")
+    assert data_fs.isdir(rootpath + "/folder1")
+    assert not data_fs.isfile(rootpath + "/folder1")
     resChild = provider.get_resource_inst(rootpath + "/folder1", environ)
     assert resChild
     resFile = resChild.create_empty_resource("file_empty.txt")
     assert resFile
-    assert not bt_fs.isdir(rootpath + "/folder1/file_empty.txt")
-    assert bt_fs.isfile(rootpath + "/folder1/file_empty.txt")
+    assert not data_fs.isdir(rootpath + "/folder1/file_empty.txt")
+    assert data_fs.isfile(rootpath + "/folder1/file_empty.txt")
     # write
     data = b"x" * 1024
     res = resChild.create_empty_resource("file2.txt")

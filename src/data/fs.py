@@ -1,4 +1,5 @@
-# -*- coding: iso-8859-1 -*-
+#
+# Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 #
 # The original source for this module was taken from gaedav:
@@ -15,7 +16,7 @@ from builtins import map
 
 from future import standard_library
 
-from data.model import Dir, File, Path
+from .model import Dir, File, Path
 
 standard_library.install_aliases()
 # from btfs import memcash
@@ -23,17 +24,17 @@ standard_library.install_aliases()
 
 def initfs(backend="datastore", readonly=False):
     """
-    Make sure bt_fs already inited.
+    Make sure data.fs already inited.
     (e.g. there's a '/' and '/dav' collection in db).
     """
-    logging.debug("bt_fs.initfs")
+    logging.debug("data.fs.initfs")
     if backend not in ("datastore"):
         raise NotImplementedError("Backend '%s' is not supported." % backend)
     if not isdir("/"):
-        logging.info("bt_fs.initfs: mkdir '/'")
+        logging.info("data.fs.initfs: mkdir '/'")
         mkdir("/")
     if not isdir("/dav"):
-        logging.info("bt_fs.initfs: mkdir '/dav'")
+        logging.info("data.fs.initfs: mkdir '/dav'")
         mkdir("/dav")
     return
 
@@ -43,11 +44,11 @@ def _getresource(path):
     """Return a model.Dir or model.File object for `path`.
 
     `path` may be an existing Dir/File entity.
-    Since _getresource is called by most other functions in the `bt_fs` module,
+    Since _getresource is called by most other functions in the `data.fs` module,
     this allows the DAV provider to pass a cached resource, thus implementing
     a simple per-request caching, like in::
 
-        statresults = bt_fs.stat(self.pathEntity)
+        statresults = data.fs.stat(self.pathEntity)
 
     Return None, if path does not exist.
     """
@@ -176,7 +177,19 @@ def mkfile(s):
 
 
 def copyfile(s, d):
-    Path.copyfile(s, d)
+    # Path.copyfile(s, d)
+    src = Path._getresource(s)
+    if src is None:
+        raise ValueError("source not found %r" % s)
+    if not src.isfile():
+        raise ValueError("source not a File %r" % s)
+    dst = Path._getresource(d)
+    if dst is None:
+        dst = File.new(path=d)
+    if not dst.isfile():
+        raise ValueError("destination not a File %r" % d)
+    # TODO: copyfile2 without downloading/uploading chunk data at all?
+    dst.iput_content(src.iget_content())
     # raise, if not exists:
     # sio = btopen(s, "rb")
     # overwrite destination, if exists:
