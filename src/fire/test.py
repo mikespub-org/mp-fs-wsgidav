@@ -27,6 +27,7 @@ def test_my_fs(my_fs):
     # result = my_fs.get_file_ref("/test/dir.9/dir.9.9/file.9.9.1.txt")
     #
     # Create/delete a test filesystem
+    # my_fs.make_dir("/test")
     # my_fs.make_tree("/test", 0)
     # my_fs.clean_tree("/test", 0)
     # my_fs.make_tree("/test", 0)
