@@ -3,8 +3,20 @@
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 """
-Implementation of a WsgiDAV provider that implements a virtual file system based
+WsgiDAV DAV provider that implements a virtual file system based
 on Google Cloud Firestore in Datastore mode.
+
+Example using DatastoreDAVProvider() as DAV provider in WsgiDAV:
+    >>> from wsgidav.wsgidav_app import WsgiDAVApp
+    >>> from .data.datastore_dav import DatastoreDAVProvider
+    >>>
+    >>> dav_provider = DatastoreDAVProvider()
+    >>> config = {"provider_mapping": {"/": dav_provider}}
+    >>> config["simple_dc"] = {"user_mapping": {"*": True}}  # allow anonymous access or use domain controller
+    >>>
+    >>> app = WsgiDAVApp(config)
+    >>> # run_wsgi_app(app)
+
 """
 from __future__ import absolute_import
 
@@ -355,8 +367,6 @@ class DatastoreDAVResource(_DAVResource):
 # ===============================================================================
 # DatastoreDAVProvider
 # ===============================================================================
-
-
 class DatastoreDAVProvider(DAVProvider):
     """
     WsgiDAV provider that implements a virtual filesystem based on Googles Big Table.
@@ -404,3 +414,41 @@ class DatastoreDAVProvider(DAVProvider):
     #    #return default_handler(environ, start_response)
     #    logging.debug('Custom: %r %r' % (start_response, default_handler))
     #    return super(DatastoreDAVProvider, self).custom_request_handler(environ, start_response, default_handler)
+
+
+def create_app(config=None):
+    # from .data.datastore_dav import DatastoreDAVProvider
+    from wsgidav.wsgidav_app import WsgiDAVApp
+
+    dav_provider = DatastoreDAVProvider()
+
+    config = config or {}
+    config["provider_mapping"] = {"/": dav_provider}
+    # allow anonymous access or use domain controller
+    config["simple_dc"] = {"user_mapping": {"*": True}}
+    config["verbose"] = 3
+
+    return WsgiDAVApp(config)
+
+
+def run_wsgi_app(app, port=8080):
+    from wsgiref.simple_server import make_server
+
+    with make_server("", port, app) as httpd:
+        print("Serving HTTP on port %s..." % port)
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt as e:
+            print("Goodbye...")
+
+
+def main():
+    # Create the WsgiDAV app with the Datastore DAV provider
+    app = create_app()
+
+    # Run the WsgiDAV app with your preferred WSGI server
+    run_wsgi_app(app)
+
+
+if __name__ == "__main__":
+    main()

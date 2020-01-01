@@ -61,6 +61,7 @@ class BTFSResource(DatastoreDAVResource):
 # ===============================================================================
 class BTFSResourceProvider(DatastoreDAVProvider):
     """Expand Datastore DAV Provider with own methods/properties, starting with own resource_class"""
+
     resource_class = BTFSResource
 
     # called by wsgidav.request_server to handle all do_* methods

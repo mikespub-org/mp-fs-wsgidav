@@ -120,9 +120,18 @@ Example using DatastoreFS() as filesystem in PyFilesystem2:
     data_fs.listdir("/")
 ```
 
-Example using DatastoreDAV() as DAV provider in WsgiDAV:
+Example using DatastoreDAVProvider() as DAV provider in WsgiDAV:
 
 ```
+    from wsgidav.wsgidav_app import WsgiDAVApp
+    from .data.datastore_dav import DatastoreDAVProvider
+    
+    dav_provider = DatastoreDAVProvider()
+    config = {"provider_mapping": {"/": dav_provider}}
+    config["simple_dc"] = {"user_mapping": {"*": True}}  # allow anonymous access or use domain controller
+    
+    app = WsgiDAVApp(config)
+    # run_wsgi_app(app)
 ```
 
 ### Use the Firestore DAV provider, Firestore FS filesystem or Firestore DB explorer ###

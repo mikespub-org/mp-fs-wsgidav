@@ -17,7 +17,6 @@ from builtins import object, range
 from . import db
 
 from .cache import NamespacedCache
-from .db import polymodel
 
 cached_resource = NamespacedCache("resource")
 
@@ -38,7 +37,7 @@ class UnmappedPath(object):
 # Path
 # ===============================================================================
 # class Path(db.Model):
-class Path(polymodel.PolyModel):
+class Path(db.PolyModel):
     """Derived from PolyModel, so we can perform queries on objects of the parent class"""
 
     # path = db.StringProperty(required=True)
