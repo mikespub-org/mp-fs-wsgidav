@@ -73,6 +73,8 @@ Example using DAVProvider2FS() as filesystem in PyFilesystem2:
     
     dav_provider = FilesystemProvider("/tmp")
     dav_fs = DAVProvider2FS(dav_provider)
+    # dav_fs.environ["wsgidav.auth.user_name"] = "tester"
+    # dav_fs.environ["wsgidav.auth.roles"] = ["admin"]
     dav_fs.listdir("/")
 ```
 
@@ -168,6 +170,10 @@ Example using FirestoreDAV() as DAV provider in WsgiDAV:
 
 ```
 ```
+
+### Try other combinations ###
+
+You can also combine DatastoreDB() with FS2DAVProvider() to provide a browser/WebDAV interface to your Datastore entities. Or try DatastoreDAVProvider() with DAVProvider2FS() as a slower alternative to DatastoreFS().
 
 ## Original CloudDAV Project ##
 

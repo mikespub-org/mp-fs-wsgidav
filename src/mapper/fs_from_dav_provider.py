@@ -10,6 +10,8 @@ Example opening directly with DAVProvider2FS():
     >>> from wsgidav.fs_dav_provider import FilesystemProvider
     >>>
     >>> dav_provider = FilesystemProvider("/tmp")
+    >>> # dav_fs.environ["wsgidav.auth.user_name"] = "tester"
+    >>> # dav_fs.environ["wsgidav.auth.roles"] = ["admin"]
     >>> dav_fs = DAVProvider2FS(dav_provider)
     >>> dav_fs.listdir("/")
 
@@ -825,6 +827,8 @@ def main():
     dav_fs = DAVProvider2FS(dav_provider)
     # dav_fs = open_fs("dav_provider://")
     # dav_fs = WrapDAVProvider2FS(dav_provider)
+    # dav_fs.environ["wsgidav.auth.user_name"] = "tester"
+    # dav_fs.environ["wsgidav.auth.roles"] = ["admin"]
     result = dav_fs.tree()
     # result = dav_fs.listdir("/")
     return result

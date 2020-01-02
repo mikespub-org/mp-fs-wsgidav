@@ -50,4 +50,3 @@ class TestDatastoreFS(FSTestCases, unittest.TestCase):
         except:
             pass
         data_fs.close()
-
