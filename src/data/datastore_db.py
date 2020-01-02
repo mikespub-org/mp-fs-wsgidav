@@ -222,7 +222,7 @@ class DatastoreDB(FS):
             # CHECKME: someone wants to read the whole entity, so let's give it to them as a json dump
             data = json.dumps(_res.to_dict(True), indent=2, default=lambda o: repr(o))
             stream = io.BytesIO(data.encode("utf-8"))
-            name = self._key_to_path(_res.key())
+            name = self._key_to_path(_res.key()) + ".json"
             return make_stream(name, stream, "rb")
 
         return _res
@@ -628,6 +628,8 @@ class DatastoreDB(FS):
                 raise errors.ResourceNotFound(path)
             # return getattr(instance, propname)
             data = getattr(instance, propname)
+            if not isinstance(data, (str, bytes)):
+                data = repr(data)
             if isinstance(data, str):
                 data = data.encode("utf-8")
             stream = io.BytesIO(data)
@@ -666,18 +668,18 @@ def main(kind=None, id=None, *args):
         result = data_db.tree()
     else:
         # path += kind
-        ds_kind = data_db.opendir(kind)
+        data_kind = data_db.opendir(kind)
         if id is None:
-            # result = ds_kind.getinfo("/", namespaces=["properties"]).raw
-            result = ds_kind.listdir("/")
+            # result = data_kind.getinfo("/", namespaces=["properties"]).raw
+            result = data_kind.listdir("/")
         else:
             # path += "/" + str(id)
             if len(args) < 1:
-                result = ds_kind.getinfo(str(id), namespaces=["properties"]).raw
+                result = data_kind.getinfo(str(id), namespaces=["properties"]).raw
             else:
                 # path += "/" + "/".join(args)
                 path = str(id) + "/" + "/".join(args)
-                fp = ds_kind.openbin(path, "rb")
+                fp = data_kind.openbin(path, "rb")
                 result = fp.read()
                 fp.close()
     data_db.close()

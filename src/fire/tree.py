@@ -117,11 +117,11 @@ class BaseStructure(object):
     def get_coll_query(self, coll_ref, field_paths=None, where=None, order_by=None):
         query = coll_ref
         if field_paths:
-            query.select(field_paths)
+            query = query.select(field_paths)
         if where:
-            query.where(where)
+            query = query.where(where)
         if order_by:
-            query.order_by(order_by)
+            query = query.order_by(order_by)
         return query
 
     def get_doc_query(

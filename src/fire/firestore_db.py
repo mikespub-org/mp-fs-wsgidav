@@ -21,7 +21,7 @@ For more information on PyFilesystem2, see https://docs.pyfilesystem.org/
 from fs import errors
 from fs.base import FS
 from fs.info import Info
-from fs.path import split, join, basename
+from fs.path import split, join, basename, dirname
 from fs.wrapfs import WrapFS
 from fs.opener import open_fs
 
@@ -32,6 +32,7 @@ from fs.opener import registry
 from functools import partial
 import time
 import itertools
+import json
 import logging
 
 # use the db module here
@@ -58,6 +59,8 @@ log = logging.getLogger(__name__)
 
 
 class FirestoreDB(FS):
+    _has_colls = {}
+
     def __init__(self, root_path=None, limit=1000):
         # self._meta = {}
         super(FirestoreDB, self).__init__()
@@ -91,6 +94,9 @@ class FirestoreDB(FS):
 
         """
         namespaces = namespaces or ()
+        if path in ("/", "") or path is None:
+            return self._make_info_from_root(namespaces)
+
         _res = self._getresource(path)
         if _res is None:
             raise errors.ResourceNotFound(path)
@@ -137,11 +143,14 @@ class FirestoreDB(FS):
             return result
 
         # TODO: apply limit, offset etc.
-        # if limit is None:
-        #     limit = self._limit
+        if limit is None:
+            limit = self._limit
         # return [str(ref.id) for ref in db.list_doc_refs(coll, limit, offset)]
+        iter_info = _res.list_documents()
+        if limit:
+            iter_info = itertools.islice(iter_info, offset, offset + limit)
         result = []
-        for doc_ref in _res.list_documents():
+        for doc_ref in iter_info:
             result.append(doc_ref.id)
         return result
 
@@ -189,7 +198,7 @@ class FirestoreDB(FS):
             buffering (int): Buffering policy (-1 to use default buffering,
                 0 to disable buffering, or any positive integer to indicate
                 a buffer size).
-            **options: refword arguments for any additional information
+            **options: keyword arguments for any additional information
                 required by the filesystem (if any).
 
         Returns:
@@ -211,7 +220,23 @@ class FirestoreDB(FS):
             raise errors.ResourceNotFound(path)
 
         if not isinstance(_res, io.RawIOBase):
-            raise TypeError("io stream expected")
+            if not isinstance(_res, db.DocumentReference) and not isinstance(
+                _res, db.DocumentSnapshot
+            ):
+                raise TypeError("io stream expected")
+
+            # CHECKME: someone wants to read the whole document, so let's give it to them as a json dump
+            if isinstance(_res, db.DocumentReference):
+                doc = _res.get()
+            else:
+                doc = _res
+            info = doc.to_dict()
+            # add other doc properties too?
+            info.update(doc.__dict__)
+            data = json.dumps(info, indent=2, default=lambda o: repr(o))
+            stream = io.BytesIO(data.encode("utf-8"))
+            name = str(doc.id) + ".json"
+            return make_stream(name, stream, "rb")
 
         return _res
 
@@ -456,6 +481,12 @@ class FirestoreDB(FS):
     # ---------------------------------------------------------------- #
 
     @classmethod
+    def _make_info_from_root(cls, namespaces):
+        name = ""
+        parent = None
+        return cls._make_info_from_name_parent(name, parent, namespaces)
+
+    @classmethod
     def _make_info_from_resource(cls, _res, namespaces):
         if isinstance(_res, db.DocumentReference):
             return cls._make_info_from_doc_ref(_res, namespaces)
@@ -466,10 +497,15 @@ class FirestoreDB(FS):
     @classmethod
     def _make_info_from_collection(cls, coll_ref, namespaces):
         name = coll_ref.id
+        parent = coll_ref.parent
+        return cls._make_info_from_name_parent(name, parent, namespaces)
+
+    @classmethod
+    def _make_info_from_name_parent(cls, name, parent, namespaces):
         info = {"basic": {"name": name, "is_dir": True}}
         if "details" in namespaces:
             now = time.time()
-            st_size = 0
+            st_size = None
             st_atime = now
             st_mtime = now
             st_ctime = now
@@ -483,16 +519,20 @@ class FirestoreDB(FS):
                 "size": st_size,
                 "type": 1,
                 # from coll_ref properties
-                "id": coll_ref.id,
-                "parent": coll_ref.parent,
+                "id": name,
+                "parent": parent,
             }
 
         return Info(info)
 
     @classmethod
     def _make_info_from_doc_ref(cls, doc_ref, namespaces):
-        if "values" in namespaces or "details" in namespaces or "stat" in namespaces:
-            if "values" in namespaces:
+        if (
+            "properties" in namespaces
+            or "details" in namespaces
+            or "stat" in namespaces
+        ):
+            if "properties" in namespaces:
                 doc = doc_ref.get()
             else:
                 # select limited set of field_paths
@@ -501,8 +541,10 @@ class FirestoreDB(FS):
 
         name = doc_ref.id
         # CHECKME: this needs to be pre-configured or cached
-        has_colls = len(list(doc_ref.collections())) > 0
-        if has_colls:
+        coll_path = dirname(doc_ref.path)
+        if coll_path not in cls._has_colls:
+            cls._has_colls[coll_path] = len(list(doc_ref.collections())) > 0
+        if cls._has_colls[coll_path]:
             info = {"basic": {"name": name, "is_dir": True}}
         else:
             info = {"basic": {"name": name, "is_dir": False}}
@@ -514,20 +556,24 @@ class FirestoreDB(FS):
         name = doc.id
         doc_ref = doc.reference
         # CHECKME: this needs to be pre-configured or cached
-        has_colls = len(list(doc_ref.collections())) > 0
-        if has_colls:
+        coll_path = dirname(doc_ref.path)
+        if coll_path not in cls._has_colls:
+            cls._has_colls[coll_path] = len(list(doc_ref.collections())) > 0
+        if cls._has_colls[coll_path]:
             info = {"basic": {"name": name, "is_dir": True}}
         else:
             info = {"basic": {"name": name, "is_dir": False}}
         now = time.time()
-        st_size = doc.to_dict().get("size", 0)
+        # when combined with FS2DAVProvider(), size None tells WsgiDAV to read until EOF
+        # st_size = doc.to_dict().get("size", 0)
+        st_size = None
         st_atime = now
         st_mtime = doc.update_time.seconds + float(doc.update_time.nanos / 1000000000.0)
         st_ctime = doc.create_time.seconds + float(doc.create_time.nanos / 1000000000.0)
-        if "values" in namespaces:
-            info["values"] = doc.to_dict()
-            # add other doc properties to values too?
-            info["values"].update(doc.__dict__)
+        if "properties" in namespaces:
+            info["properties"] = doc.to_dict()
+            # add other doc properties too?
+            info["properties"].update(doc.__dict__)
         if "details" in namespaces:
             info["details"] = {
                 # "_write": ["accessed", "modified"],
@@ -546,7 +592,7 @@ class FirestoreDB(FS):
                 "parent": doc_ref.parent,
                 "path": doc_ref.path,
             }
-            if has_colls:
+            if cls._has_colls[coll_path]:
                 info["details"]["type"] = 1
             else:
                 info["details"]["type"] = 2
@@ -583,16 +629,27 @@ class FirestoreDB(FS):
 
     @classmethod
     def _scandir_from_collection(cls, coll_ref, namespaces, limit=None, offset=0):
-        if "values" in namespaces or "details" in namespaces or "stat" in namespaces:
-            if "values" in namespaces:
+        if (
+            "properties" in namespaces
+            or "details" in namespaces
+            or "stat" in namespaces
+        ):
+            if "properties" in namespaces:
                 query = coll_ref
             else:
                 # select limited set of field_paths
                 query = coll_ref.select(["size"])
+            if limit:
+                query = query.limit(limit)
+            if offset:
+                query = query.offset(offset)
             for doc in query.stream():
                 yield cls._make_info_from_document(doc, namespaces)
             return
-        for doc_ref in coll_ref.list_documents():
+        iter_info = coll_ref.list_documents()
+        if limit:
+            iter_info = itertools.islice(iter_info, offset, offset + limit)
+        for doc_ref in iter_info:
             yield cls._make_info_from_doc_ref(doc_ref, namespaces)
 
     @classmethod
@@ -623,15 +680,21 @@ class FirestoreDB(FS):
             log.info("Coll %s" % path)
             return db.get_coll_ref(_path)
 
-        if ":" not in _path:
+        if "[" not in _path or not _path.endswith("]"):
             log.info("Doc %s" % path)
             return db.get_doc_ref(_path)
 
+        # format: id[propname]
         log.info("Prop %s" % path)
-        _path, propname = _path.split(":")
+        _path, propname = _path[:-1].split("[", 1)
         doc_ref = db.get_doc_ref(_path)
         doc = doc_ref.get([propname])
-        data = doc.get(propname)
+        info = doc.to_dict()
+        # add other doc properties too?
+        info.update(doc.__dict__)
+        data = info.get(propname)
+        if not isinstance(data, (str, bytes)):
+            data = repr(data)
         if isinstance(data, str):
             data = data.encode("utf-8")
         stream = io.BytesIO(data)
@@ -666,31 +729,36 @@ def main(coll=None, id=None, *args):
     # path = "/"
     if coll is None:
         # result = fire_db.listdir(path)
-        # result = fire_db.tree()
+        # result = fire_db.tree(max_levels=6)
         result = fire_db.listdir("/")
         # result = list(fire_db.scandir("/", ["details"]))
         # for item in result:
         #     print(item.raw)
     else:
         # path += coll
-        fi_coll = fire_db.opendir(coll)
+        fire_coll = fire_db.opendir(coll)
         if id is None:
-            # result = fi_coll.getinfo("/", namespaces=["properties"]).raw
-            result = fi_coll.listdir("/")
+            # result = fire_coll.getinfo("/", namespaces=["properties"]).raw
+            result = fire_coll.listdir("/")
         else:
             # path += "/" + str(id)
             path = str(id)
             if len(args) < 1:
-                if ":" in path:
-                    fp = fi_coll.openbin(path, "rb")
+                # format: id[propname]
+                if "[" in path and path.endswith("]"):
+                    fp = fire_coll.openbin(path, "rb")
                     result = fp.read()
                     fp.close()
                 else:
-                    result = fi_coll.getinfo(path, namespaces=["values", "details"]).raw
+                    result = fire_coll.getinfo(
+                        path, namespaces=["properties", "details"]
+                    ).raw
             else:
                 path += "/" + "/".join(args)
-                result = fi_coll.getinfo(path, namespaces=["values", "details"]).raw
-                # fp = fi_coll.openbin(path, "rb")
+                result = fire_coll.getinfo(
+                    path, namespaces=["properties", "details"]
+                ).raw
+                # fp = fire_coll.openbin(path, "rb")
                 # result = fp.read()
                 # fp.close()
     fire_db.close()
@@ -708,7 +776,7 @@ if __name__ == "__main__":
             "%s [<coll> [<id> [<coll> [<id> [...]]]]]" % "python3 -m fire.firestore_db"
         )
         print(
-            "%s [<coll>[/<id>[/<coll> [<id>:propname]]]]"
+            "%s <coll>[/<id>[/<coll>]] <id>[<propname>]"
             % "python3 -m fire.firestore_db"
         )
         result = main()

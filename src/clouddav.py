@@ -18,7 +18,7 @@ from btfs.memcache_lock_storage import LockStorageMemcache
 standard_library.install_aliases()
 # logging.getLogger().setLevel(logging.DEBUG)
 
-__version__ = "0.3.0a1"
+__version__ = "0.5.0a1"
 
 
 def get_config():
@@ -63,7 +63,7 @@ def get_config():
         },
         "dir_browser": {
             "enable": True,  # Render HTML listing for GET requests on collections
-            "response_trailer": "<a href='https://github.com/mikespub-org/mar10-clouddav'>CloudDAV/%s</a> ${version} - ${time} - <a href='/auth/'>Login</a>"
+            "response_trailer": "<a href='https://github.com/mikespub-org/mp-fs-wsgidav'>CloudDAV/%s</a> ${version} - ${time} - <a href='/auth/'>Login</a>"
             % __version__,
             # "davmount": True,  # Send <dm:mount> response if request URL contains '?davmount'
             # "ms_mount": True,  # Add an 'open as webfolder' link (requires Windows)

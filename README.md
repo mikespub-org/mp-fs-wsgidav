@@ -150,7 +150,7 @@ Example using FirestoreDB() as read-only database explorer via command line:
 
 ```
     $ python3 -m fire.firestore_db [<coll> [<id> [<coll> [<id> [...]]]]]
-    $ python3 -m fire.firestore_db [<coll>[/<id>[/<coll> [<id>:<propname>]]]]
+    $ python3 -m fire.firestore_db <coll>[/<id>[/<coll>]] <id>[<propname>]
 ```
 
 Example using FirestoreDB() as read-only database explorer in PyFilesystem2:
@@ -173,7 +173,9 @@ Example using FirestoreDAV() as DAV provider in WsgiDAV:
 
 ### Try other combinations ###
 
-You can also combine DatastoreDB() with FS2DAVProvider() to provide a browser/WebDAV interface to your Datastore entities. Or try DatastoreDAVProvider() with DAVProvider2FS() as a slower alternative to DatastoreFS().
+You can also combine DatastoreDB() or FirestoreDB() with FS2DAVProvider() to provide a browser/WebDAV interface to your Datastore entities or Firestore documents - see try_db2dav.py.
+Or try DatastoreDAVProvider() with DAVProvider2FS() as a slower alternative to DatastoreFS() - see try_dav2fs.py.
+Or some other combination you can think of, like migrating from Datastore to Firestore via PyFilesystem2...
 
 ## Original CloudDAV Project ##
 
