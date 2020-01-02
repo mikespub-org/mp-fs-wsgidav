@@ -50,6 +50,7 @@ log = logging.getLogger(__name__)
 class DAVProvider2FS(FS):
     def __init__(self, dav_provider, dav_config=None):
         # self._meta = {}
+        super(DAVProvider2FS, self).__init__()
         self.provider = dav_provider
         self.provider.share_path = ""
         # TODO: get list of invalid characters from DAV Provider
@@ -63,7 +64,6 @@ class DAVProvider2FS(FS):
         self.environ["wsgidav.auth.user_name"] = ""
         self.environ["wsgidav.auth.roles"] = None
         self.environ["wsgidav.auth.permissions"] = None
-        super(DAVProvider2FS, self).__init__()
 
     # https://docs.pyfilesystem.org/en/latest/implementers.html#essential-methods
     # From https://github.com/PyFilesystem/pyfilesystem2/blob/master/fs/base.py
@@ -675,6 +675,34 @@ class DAVProvider2FS(FS):
                 _res = _dir_res.create_empty_resource(file_name)
 
             return True
+
+    def close(self):
+        # type: () -> None
+        """Close the filesystem and release any resources.
+
+        It is important to call this method when you have finished
+        working with the filesystem. Some filesystems may not finalize
+        changes until they are closed (archives for example). You may
+        call this method explicitly (it is safe to call close multiple
+        times), or you can use the filesystem as a context manager to
+        automatically close.
+
+        Example:
+            >>> with OSFS('~/Desktop') as desktop_fs:
+            ...    desktop_fs.writetext(
+            ...        'note.txt',
+            ...        "Don't forget to tape Game of Thrones"
+            ...    )
+
+        If you attempt to use a filesystem that has been closed, a
+        `~fs.errors.FilesystemClosed` exception will be thrown.
+
+        """
+        if not self._closed:
+            if hasattr(self.provider, "close") and callable(self.provider.close):
+                self.provider.close()
+            self.provider = None
+        return super(DAVProvider2FS, self).close()
 
     # ---------------------------------------------------------------- #
     # Internal methods                                                 #

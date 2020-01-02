@@ -32,6 +32,7 @@ from fs.opener import registry
 from functools import partial
 import time
 import itertools
+import json
 import logging
 
 # use the db module here
@@ -64,10 +65,10 @@ log = logging.getLogger(__name__)
 class DatastoreDB(FS):
     def __init__(self, limit=1000):
         # self._meta = {}
+        super(DatastoreDB, self).__init__()
         self._limit = limit
         # Initialize Datastore database if needed
         # db.initdb(self)
-        self._closed = False
         self._namespaces = db.list_namespaces()
         # include meta kinds here too
         self._kinds = db.list_kinds(True)
@@ -75,7 +76,6 @@ class DatastoreDB(FS):
         self._properties = db.get_properties()
         # for kind in self._kinds:
         #     self._properties[kind] = db.get_properties_for_kind(kind)
-        super(DatastoreDB, self).__init__()
 
     # https://docs.pyfilesystem.org/en/latest/implementers.html#essential-methods
     # From https://github.com/PyFilesystem/pyfilesystem2/blob/master/fs/base.py
@@ -216,7 +216,14 @@ class DatastoreDB(FS):
             raise errors.ResourceNotFound(path)
 
         if not isinstance(_res, io.RawIOBase):
-            raise TypeError("io stream expected")
+            if not isinstance(_res, db.Model):
+                raise TypeError("io stream expected")
+
+            # CHECKME: someone wants to read the whole entity, so let's give it to them as a json dump
+            data = json.dumps(_res.to_dict(True), indent=2, default=lambda o: repr(o))
+            stream = io.BytesIO(data.encode("utf-8"))
+            name = self._key_to_path(_res.key())
+            return make_stream(name, stream, "rb")
 
         return _res
 
@@ -473,7 +480,9 @@ class DatastoreDB(FS):
         # st_mtime = st_atime
         # st_ctime = epoch(_res.create_time)
         now = time.time()
-        st_size = 0
+        # when combined with FS2DAVProvider(), size None tells WsgiDAV to read until EOF
+        # st_size = 0
+        st_size = None
         st_atime = now
         st_mtime = st_atime
         st_ctime = now
@@ -482,13 +491,13 @@ class DatastoreDB(FS):
         if _res.isdir():
             name = _res._kind
             info = {"basic": {"name": name, "is_dir": True}}
+            if "properties" in namespaces:
+                info["properties"] = _res._properties
         else:
             name = cls._key_to_path(_res.key())
             info = {"basic": {"name": name, "is_dir": False}}
-        if "properties" in namespaces:
-            info["properties"] = _res._properties
-        if "values" in namespaces:
-            info["values"] = _res.to_dict(True)
+            if "properties" in namespaces:
+                info["properties"] = _res.to_dict(True)
         if "details" in namespaces:
             info["details"] = {
                 # "_write": ["accessed", "modified"],
@@ -533,7 +542,7 @@ class DatastoreDB(FS):
         for _child_res in db.ilist_entities(_res._kind, limit, offset):
             # yield cls._make_info_from_resource(_child_res, namespaces)
             instance = db.make_instance(_res._kind, _child_res)
-            instance._properties = _res._properties
+            # instance._properties = _res._properties
             yield cls._make_info_from_resource(instance, namespaces)
 
     @staticmethod
@@ -612,7 +621,7 @@ class DatastoreDB(FS):
             entity = db.get_entity(key)
         # entity = db.get_entity_by_id(kind, id_or_name)
         instance = db.make_instance(kind, entity)
-        instance._properties = self._properties[kind]
+        # instance._properties = self._properties[kind]
         if len(parts) > 0:
             propname = parts.pop(0)
             if not hasattr(instance, propname):
@@ -664,7 +673,7 @@ def main(kind=None, id=None, *args):
         else:
             # path += "/" + str(id)
             if len(args) < 1:
-                result = ds_kind.getinfo(str(id), namespaces=["values"]).raw
+                result = ds_kind.getinfo(str(id), namespaces=["properties"]).raw
             else:
                 # path += "/" + "/".join(args)
                 path = str(id) + "/" + "/".join(args)

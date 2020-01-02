@@ -259,6 +259,7 @@ class CachedModel(Model):
             cls.cache.set(cache_key, result)
         return result
 
+
 _CLASS_KEY_PROPERTY = "class"
 
 

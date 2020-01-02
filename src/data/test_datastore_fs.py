@@ -17,14 +17,15 @@ class TestDatastoreFS(FSTestCases, unittest.TestCase):
     def make_fs(self):
         global test_count
         test_count += 1
-        if "test_upload" in self.id() or "test_download" in self.id():
+        test_name = self.id().split(".")[-1]
+        if test_name in ("test_upload", "test_download"):
             pytest.skip("No time to waste...")
             return
-        if "test_settimes" in self.id():
+        if test_name in ("test_settimes"):
             pytest.xfail("Modify time is updated automatically on model.put()")
         # Return an instance of your FS object here - disable caching on client side for test
         data_fs = DatastoreFS(
-            root_path="/_playground_/%02d_%s" % (test_count, self.id().split(".")[-1]),
+            root_path="/_playground_/%02d_%s" % (test_count, test_name),
         )
         return data_fs
 

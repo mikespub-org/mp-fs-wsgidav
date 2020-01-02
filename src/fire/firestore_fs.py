@@ -63,6 +63,7 @@ log = logging.getLogger(__name__)
 class FirestoreFS(FS):
     def __init__(self, root_path=None, use_cache=True):
         # self._meta = {}
+        super(FirestoreFS, self).__init__()
         if root_path is None:
             root_path = "/_firestore_fs_"
         _root_path = self.validatepath(root_path)
@@ -86,7 +87,6 @@ class FirestoreFS(FS):
         log.info("Resource: %s" % _res)
         self.root_path = _root_path
         self.root_res = _res
-        super(FirestoreFS, self).__init__()
 
     # https://docs.pyfilesystem.org/en/latest/implementers.html#essential-methods
     # From https://github.com/PyFilesystem/pyfilesystem2/blob/master/fs/base.py
@@ -794,6 +794,33 @@ class FirestoreFS(FS):
 
             # Note: we always read in chunks here, regardless of the chunk_size
             _res.upload(file)
+
+    def close(self):
+        # type: () -> None
+        """Close the filesystem and release any resources.
+
+        It is important to call this method when you have finished
+        working with the filesystem. Some filesystems may not finalize
+        changes until they are closed (archives for example). You may
+        call this method explicitly (it is safe to call close multiple
+        times), or you can use the filesystem as a context manager to
+        automatically close.
+
+        Example:
+            >>> with OSFS('~/Desktop') as desktop_fs:
+            ...    desktop_fs.writetext(
+            ...        'note.txt',
+            ...        "Don't forget to tape Game of Thrones"
+            ...    )
+
+        If you attempt to use a filesystem that has been closed, a
+        `~fs.errors.FilesystemClosed` exception will be thrown.
+
+        """
+        if not self._closed:
+            if hasattr(fire_fs, "close") and callable(fire_fs.close):
+                fire_fs.close()
+        return super(FirestoreFS, self).close()
 
     # ---------------------------------------------------------------- #
     # Internal methods                                                 #

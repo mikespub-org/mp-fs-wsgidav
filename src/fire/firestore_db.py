@@ -60,13 +60,12 @@ log = logging.getLogger(__name__)
 class FirestoreDB(FS):
     def __init__(self, root_path=None, limit=1000):
         # self._meta = {}
+        super(FirestoreDB, self).__init__()
         self._root_path = root_path
         self._limit = limit
         # Initialize Firestore database if needed
         # db.initdb(self)
-        self._closed = False
         self._root_ref = None
-        super(FirestoreDB, self).__init__()
 
     # https://docs.pyfilesystem.org/en/latest/implementers.html#essential-methods
     # From https://github.com/PyFilesystem/pyfilesystem2/blob/master/fs/base.py
