@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Cloud Datastore Viewer{% endblock %}
+
+{% block header %}Cloud Datastore Viewer{% endblock %}
+
+{% block content %}
+	{% include "data_nav.html" %}
+
+	<p>Please select one of the Datastore kinds...</p>
+
+	<ul>
+	{% for kind, info in stats|dictsort %}
+		<li><a href="{{ data_url}}/{{ kind }}/">{{ kind }}</a>: <ul>
+		{% for attr, val in info|dictsort %}
+			<li>{{ attr }}: {{ val }}</li>
+		{% endfor %}
+		</ul></li>
+	{% endfor %}
+	</ul>
+
+	<p><a href="{{ data_url }}/?reset=1">Reset stats</a></p>
+
+{% endblock %}
+

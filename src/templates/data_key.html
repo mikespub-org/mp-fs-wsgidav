@@ -1,0 +1,21 @@
+{% extends "data_view.html" %}
+
+{% block content %}
+	{% include "data_nav.html" %}
+
+	<ul>
+		<li>Key: {{ key }}</li>
+		<li>Info: <ul>
+		{# Note: template filters is_key and key_link are defined in admin_handler #}
+		{% for attr, val in info|dictsort %}
+			{% if val|is_key %}
+				<li>{{ attr }}: <a href="{{ data_url }}/{{ val|key_link }}">{{ val.id_or_name }}</a></li>
+			{% else %}
+				<li>{{ attr }}: {{ val }}</li>
+			{% endif %}
+		{% endfor %}
+		</ul></li>
+	</ul>
+
+{% endblock %}
+

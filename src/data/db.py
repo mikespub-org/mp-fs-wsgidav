@@ -27,6 +27,13 @@ def get_client(project_id=None, cred_file=None):
     return _client
 
 
+def close():
+    global _client
+    if _client is not None:
+        # _client.close()
+        _client = None
+
+
 def make_entity(key, exclude_from_indexes=None, **kwargs):
     if exclude_from_indexes:
         entity = datastore.Entity(key, exclude_from_indexes=exclude_from_indexes)
@@ -43,6 +50,147 @@ def delete(keys):
     return get_client().delete(keys)
 
 
+# Partial keys with *path_args are ('Parent', 'parent_id', 'Child', ...)
+# Partial keys with **kwargs are ('Child', parent=parent_key)
+def get_key(kind, id_or_name=None, *path_args, **kwargs):
+    # namespace = kwargs.pop("namespace", None)
+    # project = kwargs.pop("project", None)
+    # parent = kwargs.pop("parent", None)
+    path = [*path_args]
+    path.append(kind)
+    if id_or_name is not None:
+        path.append(id_or_name)
+    return get_client().key(*path, **kwargs)
+
+
+def get_entity(key):
+    return get_client().get(key)
+
+
+def get_entity_by_id(kind, id_or_name, **kwargs):
+    key = get_key(kind, id_or_name, **kwargs)
+    entity = get_entity(key)
+    return entity
+
+
+def put_entity(entity):
+    return get_client().put(entity)
+
+
+def get_query(kind, **kwargs):
+    # namespace = kwargs.pop("namespace", None)
+    # project = kwargs.pop("project", None)
+    # ancestor = kwargs.pop("ancestor", None)
+    # filters = kwargs.pop("filters", None)
+    # projection = kwargs.pop("projection", None)
+    # order = kwargs.pop("order", None)
+    # distinct_on = kwargs.pop("distinct_on", None)
+    query = get_client().query(kind=kind, **kwargs)
+    return query
+
+
+def list_entities(kind, limit=1000, offset=0, **kwargs):
+    # TODO: use cursors in fetch() below if needed
+    start_cursor = kwargs.pop("start_cursor", None)
+    end_cursor = kwargs.pop("end_cursor", None)
+    query = get_query(kind=kind, **kwargs)
+    # result = {}
+    # for entity in query.fetch(limit, offset):
+    #     result[entity.key.id_or_name] = entity
+    result = list(query.fetch(limit, offset))
+    return result
+
+
+def ilist_entities(kind, limit=1000, offset=0, **kwargs):
+    # TODO: use cursors in fetch() below if needed
+    start_cursor = kwargs.pop("start_cursor", None)
+    end_cursor = kwargs.pop("end_cursor", None)
+    query = get_query(kind=kind, **kwargs)
+    for entity in query.fetch(limit, offset):
+        yield entity
+
+
+def list_entity_keys(kind, limit=1000, offset=0, **kwargs):
+    # TODO: use cursors in fetch() below if needed
+    start_cursor = kwargs.pop("start_cursor", None)
+    end_cursor = kwargs.pop("end_cursor", None)
+    query = get_query(kind=kind, **kwargs)
+    query.keys_only()
+    # result = [entity.key.id_or_name for entity in query.fetch(limit, offset)]
+    result = [entity.key for entity in query.fetch(limit, offset)]
+    return result
+
+
+def ilist_entity_keys(kind, limit=1000, offset=0, **kwargs):
+    # TODO: use cursors in fetch() below if needed
+    start_cursor = kwargs.pop("start_cursor", None)
+    end_cursor = kwargs.pop("end_cursor", None)
+    query = get_query(kind=kind, **kwargs)
+    query.keys_only()
+    for entity in query.fetch(limit, offset):
+        # yield entity.key.id_or_name
+        yield entity.key
+
+
+# https://cloud.google.com/datastore/docs/concepts/metadataqueries#namespace_queries
+def list_namespaces():
+    query = get_query(kind="__namespace__")
+    query.keys_only()
+
+    all_namespaces = [entity.key.id_or_name for entity in query.fetch()]
+    return all_namespaces
+
+
+def list_kinds(with_meta=False):
+    query = get_query(kind="__kind__")
+    query.keys_only()
+
+    kinds = [entity.key.id_or_name for entity in query.fetch()]
+    if with_meta:
+        kinds = list_metakinds() + kinds
+    return kinds
+
+
+def list_metakinds():
+    return ["__namespace__", "__kind__", "__property__"]
+
+
+def get_properties():
+    from collections import defaultdict
+
+    query = get_query(kind="__property__")
+    # query.keys_only()
+
+    # properties_by_kind = defaultdict(list)
+    properties_by_kind = defaultdict(dict)
+
+    for entity in query.fetch():
+        kind = entity.key.parent.name
+        property_name = entity.key.name
+        property_types = entity["property_representation"]
+
+        # properties_by_kind[kind].append(property_name)
+        properties_by_kind[kind][property_name] = property_types
+
+    return properties_by_kind
+
+
+def get_properties_for_kind(kind):
+    ancestor = get_key("__kind__", kind)
+    query = get_query(kind="__property__", ancestor=ancestor)
+
+    representations_by_property = {}
+
+    for entity in query.fetch():
+        property_name = entity.key.name
+        property_types = entity["property_representation"]
+
+        representations_by_property[property_name] = property_types
+        # representations_by_property[property_name] = dict(entity)
+
+    return representations_by_property
+
+
 _class_map = {}
 
 
@@ -50,6 +198,8 @@ _class_map = {}
 class ModelType(type):
     def __init__(cls, name, bases, dct):
         super(ModelType, cls).__init__(name, bases, dct)
+        # print("Getting properties for %s" % cls._kind)
+        # cls._properties = get_properties_for_kind(cls._kind)
         _class_map[cls.__name__] = cls
 
 
@@ -62,6 +212,7 @@ class Model(with_metaclass(ModelType, object)):
     _auto_now_add = None
     _auto_now = None
     _entity = None
+    _properties = {}
 
     # def __init__(self, parent=None, key_name=None, _app=None, _from_entity=False, **kwargs):
     def __init__(self, _from_entity=False, **kwargs):
@@ -150,6 +301,13 @@ class Model(with_metaclass(ModelType, object)):
     @classmethod
     def query(cls, **kwargs):
         # CHECKME: possibly overridden in PolyModel
+        # namespace = kwargs.pop("namespace", None)
+        # project = kwargs.pop("project", None)
+        # ancestor = kwargs.pop("ancestor", None)
+        # filters = kwargs.pop("filters", None)
+        # projection = kwargs.pop("projection", None)
+        # order = kwargs.pop("order", None)
+        # distinct_on = kwargs.pop("distinct_on", None)
         query = get_client().query(kind=cls._kind, **kwargs)
         return query
 
@@ -197,7 +355,9 @@ class Model(with_metaclass(ModelType, object)):
 
     @classmethod
     def properties(cls):
-        return []
+        if len(cls._properties) < 1:
+            cls._properties = get_properties_for_kind(cls._kind)
+        return cls._properties
 
     @classmethod
     def kind(cls):
@@ -294,143 +454,6 @@ class PolyModel(Model):
         return query
 
 
-# https://cloud.google.com/datastore/docs/concepts/metadataqueries#namespace_queries
-def list_namespaces():
-    query = get_query(kind="__namespace__")
-    query.keys_only()
-
-    all_namespaces = [entity.key.id_or_name for entity in query.fetch()]
-    return all_namespaces
-
-
-def list_kinds(with_meta=False):
-    query = get_query(kind="__kind__")
-    query.keys_only()
-
-    kinds = [entity.key.id_or_name for entity in query.fetch()]
-    if with_meta:
-        kinds = list_metakinds() + kinds
-    return kinds
-
-
-def list_metakinds():
-    return ["__namespace__", "__kind__", "__property__"]
-
-
-def get_properties():
-    from collections import defaultdict
-
-    query = get_query(kind="__property__")
-    # query.keys_only()
-
-    # properties_by_kind = defaultdict(list)
-    properties_by_kind = defaultdict(dict)
-
-    for entity in query.fetch():
-        kind = entity.key.parent.name
-        property_name = entity.key.name
-        property_types = entity["property_representation"]
-
-        # properties_by_kind[kind].append(property_name)
-        properties_by_kind[kind][property_name] = property_types
-
-    return properties_by_kind
-
-
-def get_properties_for_kind(kind):
-    ancestor = get_key("__kind__", kind)
-    query = get_query(kind="__property__", ancestor=ancestor)
-
-    representations_by_property = {}
-
-    for entity in query.fetch():
-        property_name = entity.key.name
-        # property_types = entity['property_representation']
-
-        # representations_by_property[property_name] = property_types
-        representations_by_property[property_name] = dict(entity)
-
-    return representations_by_property
-
-
-def list_entities(kind, limit=1000, offset=0, **kwargs):
-    # TODO: use cursors in fetch() below if needed
-    start_cursor = kwargs.pop("start_cursor", None)
-    end_cursor = kwargs.pop("end_cursor", None)
-    query = get_query(kind=kind, **kwargs)
-    # result = {}
-    # for entity in query.fetch(limit, offset):
-    #     result[entity.key.id_or_name] = entity
-    result = list(query.fetch(limit, offset))
-    return result
-
-
-def ilist_entities(kind, limit=1000, offset=0, **kwargs):
-    # TODO: use cursors in fetch() below if needed
-    start_cursor = kwargs.pop("start_cursor", None)
-    end_cursor = kwargs.pop("end_cursor", None)
-    query = get_query(kind=kind, **kwargs)
-    for entity in query.fetch(limit, offset):
-        yield entity
-
-
-def list_entity_keys(kind, limit=1000, offset=0, **kwargs):
-    # TODO: use cursors in fetch() below if needed
-    start_cursor = kwargs.pop("start_cursor", None)
-    end_cursor = kwargs.pop("end_cursor", None)
-    query = get_query(kind=kind, **kwargs)
-    query.keys_only()
-    # result = [entity.key.id_or_name for entity in query.fetch(limit, offset)]
-    result = [entity.key for entity in query.fetch(limit, offset)]
-    return result
-
-
-def ilist_entity_keys(kind, limit=1000, offset=0, **kwargs):
-    # TODO: use cursors in fetch() below if needed
-    start_cursor = kwargs.pop("start_cursor", None)
-    end_cursor = kwargs.pop("end_cursor", None)
-    query = get_query(kind=kind, **kwargs)
-    query.keys_only()
-    for entity in query.fetch(limit, offset):
-        # yield entity.key.id_or_name
-        yield entity.key
-
-
-def get_query(kind, **kwargs):
-    # namespace = kwargs.pop("namespace", None)
-    # project = kwargs.pop("project", None)
-    # ancestor = kwargs.pop("ancestor", None)
-    # filters = kwargs.pop("filters", None)
-    # projection = kwargs.pop("projection", None)
-    # order = kwargs.pop("order", None)
-    # distinct_on = kwargs.pop("distinct_on", None)
-    query = get_client().query(kind=kind, **kwargs)
-    return query
-
-
-def get_entity_by_id(kind, id_or_name, **kwargs):
-    key = get_key(kind, id_or_name, **kwargs)
-    entity = get_entity(key)
-    return entity
-
-
-def get_entity(key):
-    return get_client().get(key)
-
-
-# Partial keys with *path_args are ('Parent', 'parent_id', 'Child', ...)
-# Partial keys with **kwargs are ('Child', parent=parent_key)
-def get_key(kind, id_or_name=None, *path_args, **kwargs):
-    # namespace = kwargs.pop("namespace", None)
-    # project = kwargs.pop("project", None)
-    # parent = kwargs.pop("parent", None)
-    path = [*path_args]
-    path.append(kind)
-    if id_or_name is not None:
-        path.append(id_or_name)
-    return get_client().key(*path, **kwargs)
-
-
 class MakeModel(CachedModel):
     _kind = "MakeModel"
 
@@ -456,10 +479,3 @@ def make_instance(kind, entity=None):
     else:
         instance = MakeModel(kind=kind, _from_entity=entity)
     return instance
-
-
-def close():
-    global _client
-    if _client is not None:
-        # _client.close()
-        _client = None
