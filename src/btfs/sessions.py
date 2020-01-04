@@ -117,15 +117,20 @@ def finalize_headers(environ, response_headers):
         return
     # logging.debug("Headers: %r" % response_headers)
     header = "Set-Cookie"
+    value = make_session_id_value(session.session_id)
+    response_headers.append((header, value))
+    return
+
+
+def make_session_id_value(session_id):
     key = get_cookie_name("session_id")
-    val = session.session_id
+    val = session_id
     max_age = (
         EXPIRE_DAYS * 24 * 60 * 60
     )  # set to EXPIRE_DAYS days here (id_token expires in 1 hour)
     path = "/"
     value = "%s=%s; Max-Age=%s; Path=%s" % (key, val, max_age, path)
-    response_headers.append((header, value))
-    return
+    return value
 
 
 def get_cookie_name(cookie_type):

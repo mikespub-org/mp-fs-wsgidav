@@ -23,7 +23,7 @@
 			{% endfor %}
 			</tr>
 		</thead>
-		{# Note: template filters is_key and key_link are defined in admin_handler #}
+		{# Note: template filters is_key, key_link and show_date are defined in views.py #}
 		<tbody>
 		{% for row in rows %}
 			<tr>
@@ -40,8 +40,11 @@
 		</tbody>
 	</table>
 
-	{# Note: template global function kind_pager is defined in admin_handler #}
-	<p>{{ kind_pager(kind, page)|safe }}</p>
+	{# Note: template global function get_pager is defined in views.py #}
+	{% with pager_urls = get_pager(count, page) %}
+		{% set more = rows|length %}
+		{% include "pager.html" %}
+	{% endwith %}
 
 	{% include "data_nav.html" %}
 {% endblock %}

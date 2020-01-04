@@ -4,12 +4,12 @@
 	{% include "fire_nav.html" %}
 
 	<ul>
+		{# Note: template filters is_ref, ref_link and show_date are defined in views.py #}
 		{% if parent %}
 		<li>Parent: <a href="{{ fire_url }}/{{ parent|ref_link }}">{{ parent.id }}</a></li>
 		{% endif %}
 		<li>Ref: {{ ref }}</li>
 		<li>Info: <ul>
-		{# Note: template filters is_ref and ref_link are defined in admin_handler #}
 		{% for attr, val in info|dictsort %}
 			{% if val|is_ref %}
 				<li>{{ attr }}: <a href="{{ fire_url }}/{{ val|ref_link }}">{{ val.id }}</a></li>

@@ -27,7 +27,7 @@
 			{% endfor %}
 			</tr>
 		</thead>
-		{# Note: template filters is_ref and ref_link are defined in admin_handler #}
+		{# Note: template filters is_ref, ref_link and show_date are defined in views.py #}
 		<tbody>
 		{% for row in rows %}
 			<tr>
@@ -46,8 +46,11 @@
 		</tbody>
 	</table>
 
-	{# Note: template global function coll_pager is defined in admin_handler #}
-	<p>{{ coll_pager(coll, page)|safe }}</p>
+	{# Note: template global function get_pager is defined in views.py #}
+	{% with pager_urls = get_pager(count, page) %}
+		{% set more = rows|length %}
+		{% include "pager.html" %}
+	{% endwith %}
 
 	{% include "fire_nav.html" %}
 {% endblock %}

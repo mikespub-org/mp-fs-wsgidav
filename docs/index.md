@@ -100,6 +100,12 @@ Configure the service account credentials to use:
     $ export GOOGLE_APPLICATION_CREDENTIALS="~/datastore-user.cred.json"
 ```
 
+Example using Flask view functions as read-only database explorer via browser:
+
+```
+    $ python3 -m data.views
+```
+
 Example using DatastoreDB() as read-only database explorer via command line:
 
 ```
@@ -144,6 +150,12 @@ Configure the service account credentials to use:
 
 ```
     $ export GOOGLE_APPLICATION_CREDENTIALS="~/firestore-user.cred.json"
+```
+
+Example using Flask view functions as read-only database explorer via browser:
+
+```
+    $ python3 -m fire.views
 ```
 
 Example using FirestoreDB() as read-only database explorer via command line:

@@ -1,0 +1,38 @@
+
+{# with pager_urls = get_pager(count, page) #}
+{% if pager_urls %}
+	<p>
+	{% if pager_urls[0] or pager_urls[1] %}
+		{% if pager_urls[0] %}
+			<a href="{{ pager_urls[0] }}">First Page</a>
+		{% else %}
+			First Page
+		{% endif %}
+		{% if pager_urls[1] %}
+			- <a href="{{ pager_urls[1] }}">Prev Page</a>
+		{% else %}
+			- Prev Page
+		{% endif %}
+		-
+	{% endif %}
+	Page {{ page }}
+	{% if more and (pager_urls[2] or pager_urls[3]) %}
+		{% if pager_urls[2] %}
+			{% if pager_urls[3] %}
+				- <a href="{{ pager_urls[2] }}">Next Page</a>
+			{% else %}
+				- <a href="{{ pager_urls[2] }}">Next Page?</a>
+			{% endif %}
+		{% else %}
+			- Next Page
+		{% endif %}
+		{% if pager_urls[3] %}
+			- <a href="{{ pager_urls[3] }}">Last Page</a>
+		{% elif pager_urls[2] %}
+		{% else %}
+			- Last Page
+		{% endif %}
+	{% endif %}
+	</p>
+{% endif %}
+{# endwith #}

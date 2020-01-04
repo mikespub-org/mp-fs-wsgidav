@@ -4,9 +4,12 @@
 	{% include "data_nav.html" %}
 
 	<ul>
+		{# Note: template filters is_key, key_link and show_date are defined in views.py #}
+		{% if parent %}
+		<li>Parent: <a href="{{ data_url }}/{{ parent|key_link }}">{{ parent.id_or_name }}</a></li>
+		{% endif %}
 		<li>Key: {{ key }}</li>
 		<li>Info: <ul>
-		{# Note: template filters is_key and key_link are defined in admin_handler #}
 		{% for attr, val in info|dictsort %}
 			{% if val|is_key %}
 				<li>{{ attr }}: <a href="{{ data_url }}/{{ val|key_link }}">{{ val.id_or_name }}</a></li>
@@ -15,6 +18,13 @@
 			{% endif %}
 		{% endfor %}
 		</ul></li>
+		{% if chunks|length > 0 %}
+		<li>Chunks: <ul>
+		{% for chunk in chunks %}
+			<li><a href="{{ data_url }}/{{ chunk|key_link }}">{{ chunk.id_or_name }}</a></li>
+		{% endfor %}
+		</ul></li>
+		{% endif %}
 	</ul>
 
 {% endblock %}
