@@ -48,6 +48,8 @@ Example using FirestoreDAV() as DAV provider in WsgiDAV:
 ### Try other combinations ###
 
 You can also combine FirestoreDB() with FS2DAVProvider() to provide a browser/WebDAV interface to your Firestore documents - see try_db2dav.py.
+
 Or try FirestoreDAVProvider() with DAVProvider2FS() as a slower alternative to FirestoreFS() - see try_dav2fs.py.
+
 Or some other combination you can think of, like migrating from Datastore to Firestore via PyFilesystem2...
 

@@ -1,5 +1,17 @@
 # Mike's Pub - PyFilesystem2 and WsgiDAV Building Blocks
 
+## Table of Contents ##
+  * [Project Status](#project-status)
+  * [Installation](#installation)
+  * [Usage](#usage)
+    * [Use a PyFilesytem2 filesystem as DAV provider for WsgiDAV](#use-a-pyfilesytem2-filesystem-as-dav-provider-for-wsgidav)
+    * [Use a WsgiDAV DAV provider as filesystem for PyFilesystem2](#use-a-wsgidav-dav-provider-as-filesystem-for-pyfilesystem2)
+    * [Try out WsgiDAV on Google Cloud Platform](#try-out-wsgidav-on-google-cloud-platform)
+    * [Use the Datastore DAV provider, Datastore FS filesystem or Datastore DB explorer](#use-the-datastore-dav-provider-datastore-fs-filesystem-or-datastore-db-explorer)
+    * [Use the Firestore DAV provider, Firestore FS filesystem or Firestore DB explorer](#use-the-firestore-dav-provider-firestore-fs-filesystem-or-firestore-db-explorer)
+    * [Try other combinations](#try-other-combinations)
+  * [Original CloudDAV Project](#original-clouddav-project)
+
 ## Project Status ##
 The master branch here provides the following building blocks for [WsgiDAV](https://wsgidav.readthedocs.io/) 3.0.x and Python 3.7+ with current Google Cloud services as back-end.
   * Datastore DAV Provider for a virtual filesystem built on Google [Cloud Firestore in Datastore mode](https://cloud.google.com/datastore/docs/)
@@ -186,7 +198,9 @@ Example using FirestoreDAV() as DAV provider in WsgiDAV:
 ### Try other combinations ###
 
 You can also combine DatastoreDB() or FirestoreDB() with FS2DAVProvider() to provide a browser/WebDAV interface to your Datastore entities or Firestore documents - see try_db2dav.py.
+
 Or try DatastoreDAVProvider() with DAVProvider2FS() as a slower alternative to DatastoreFS() - see try_dav2fs.py.
+
 Or some other combination you can think of, like migrating from Datastore to Firestore via PyFilesystem2...
 
 ## Original CloudDAV Project ##
