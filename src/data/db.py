@@ -339,7 +339,9 @@ class Model(with_metaclass(ModelType, object)):
     def get_count(cls, limit=1000, offset=0, **kwargs):
         query = cls.query(**kwargs)
         query.keys_only()
-        result = len(list(query.fetch(limit, offset)))
+        result = 0
+        for entity in query.fetch(limit, offset):
+            result += 1
         return result
 
     @classmethod

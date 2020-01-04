@@ -78,7 +78,9 @@ def ref_link(ref):
 def show_date(timestamp, fmt="%Y-%m-%d %H:%M:%S"):
     if not timestamp:
         return
-    return time.strftime(fmt, time.gmtime(timestamp))
+    if isinstance(timestamp, (int, float)):
+        return time.strftime(fmt, time.gmtime(timestamp))
+    return timestamp.strftime(fmt)
 
 
 # @app.template_global()

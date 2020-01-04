@@ -543,7 +543,10 @@ class FirestoreDB(FS):
         # CHECKME: this needs to be pre-configured or cached
         coll_path = dirname(doc_ref.path)
         if coll_path not in cls._has_colls:
-            cls._has_colls[coll_path] = len(list(doc_ref.collections())) > 0
+            cls._has_colls[coll_path] = False
+            for coll_ref in doc_ref.collections():
+                cls._has_colls[coll_path] = True
+                break
         if cls._has_colls[coll_path]:
             info = {"basic": {"name": name, "is_dir": True}}
         else:
@@ -558,7 +561,10 @@ class FirestoreDB(FS):
         # CHECKME: this needs to be pre-configured or cached
         coll_path = dirname(doc_ref.path)
         if coll_path not in cls._has_colls:
-            cls._has_colls[coll_path] = len(list(doc_ref.collections())) > 0
+            cls._has_colls[coll_path] = False
+            for coll_ref in doc_ref.collections():
+                cls._has_colls[coll_path] = True
+                break
         if cls._has_colls[coll_path]:
             info = {"basic": {"name": name, "is_dir": True}}
         else:

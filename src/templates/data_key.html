@@ -13,6 +13,8 @@
 		{% for attr, val in info|dictsort %}
 			{% if val|is_key %}
 				<li>{{ attr }}: <a href="{{ data_url }}/{{ val|key_link }}">{{ val.id_or_name }}</a></li>
+			{% elif attr in ("create_time", "update_time", "modify_time", "timestamp") %}
+				<li>{{ attr }}: {{ val|show_date }}</li>
 			{% else %}
 				<li>{{ attr }}: {{ val }}</li>
 			{% endif %}
