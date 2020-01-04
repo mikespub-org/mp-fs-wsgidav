@@ -1,5 +1,5 @@
-# -*- coding: iso-8859-1 -*-
-
+#
+# Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
@@ -200,7 +200,7 @@ def admin_view():
         "request_env_dump": pformat(request.environ),
     }
 
-    return render_template("admin.html", **template_values)
+    return render_template("admin_data.html", **template_values)
 
 
 def run_tests():
@@ -317,7 +317,16 @@ def key_link(key):
     return "%s/%s" % (key.kind, key.id_or_name)
 
 
+@app.template_filter()
+def show_date(timestamp, fmt="%Y-%m-%d %H:%M:%S"):
+    if not timestamp:
+        return
+    return time.strftime(fmt, time.gmtime(timestamp))
+
+
+DATA_URL = "/_admin/data"
 PAGE_SIZE = 10
+KINDS_LIST = []
 
 
 @app.template_global()
@@ -362,6 +371,14 @@ def kind_pager(kind=None, page=1):
     return output
 
 
+def get_kinds(reset=False):
+    global KINDS_LIST
+    if len(KINDS_LIST) > 0 and not reset:
+        return KINDS_LIST
+    KINDS_LIST = sorted(db.list_kinds())
+    return KINDS_LIST
+
+
 @app.route("/_admin/data/")
 @app.route("/_admin/data/<string:kind>/")
 @app.route("/_admin/data/<string:kind>/<path:key>")
@@ -378,20 +395,19 @@ def data_view(kind=None, key=None):
     kinds_list = sorted(known_kinds.keys())
     kinds_list.append("Others")
     if kind is not None and kind not in known_kinds:
-        other_kinds = sorted(db.list_kinds())
+        other_kinds = get_kinds()
         for item in other_kinds:
             if item not in kinds_list:
                 kinds_list.append(item)
         if kind not in other_kinds:
             kind = None
-    data_url = "/_admin/data"
 
     if not kind and not key:
         reset = request.args.get("reset", False)
         stats = get_datastore_stats(reset)
         return render_template(
             "data_view.html",
-            data_url=data_url,
+            data_url=DATA_URL,
             kinds=kinds_list,
             kind=kind,
             stats=stats,
@@ -433,7 +449,7 @@ def data_view(kind=None, key=None):
                 rows.append(info)
         return render_template(
             "data_kind.html",
-            data_url=data_url,
+            data_url=DATA_URL,
             kinds=kinds_list,
             kind=kind,
             sort=sort,
@@ -469,7 +485,7 @@ def data_view(kind=None, key=None):
         info = instance.to_dict(True)
     return render_template(
         "data_key.html",
-        data_url=data_url,
+        data_url=DATA_URL,
         kinds=kinds_list,
         kind=kind,
         key=key,

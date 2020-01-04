@@ -1,5 +1,5 @@
-# -*- coding: iso-8859-1 -*-
-
+#
+# Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 

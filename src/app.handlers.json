@@ -1,7 +1,7 @@
 [
   {
     "url": "/_admin",
-    "script": "admin_handler.app",
+    "script": "admin_data.app",
     "login": "admin",
     "secure": "optional"
   },

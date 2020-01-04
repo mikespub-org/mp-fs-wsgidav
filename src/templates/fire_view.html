@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Cloud Firestore Viewer{% endblock %}
+
+{% block header %}Cloud Firestore Viewer{% endblock %}
+
+{% block content %}
+	{% include "fire_nav.html" %}
+
+	<p>Please select one of the Firestore collections...</p>
+
+	<ul>
+	{% for coll, info in stats|dictsort %}
+		<li><a href="{{ fire_url}}/{{ coll }}/">{{ coll }}</a>: <ul>
+		{% for attr, val in info|dictsort %}
+			<li>{{ attr }}: {{ val }}</li>
+		{% endfor %}
+		</ul></li>
+	{% endfor %}
+	</ul>
+
+	<p><a href="{{ fire_url }}/?reset=1">Reset stats</a></p>
+
+{% endblock %}
+

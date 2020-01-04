@@ -42,7 +42,7 @@ handlers:
 
 # Display Admin page at /_admin
 #- url: /_admin
-#  script: admin_handler.app
+#  script: admin_data.app
 #
 # User administration
 #- url: /auth/.*

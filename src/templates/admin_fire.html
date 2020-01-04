@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}CloudDAV Firestore Administration{% endblock %}
+
+{% block header %}CloudDAV Firestore Administration{% endblock %}
+
+{% block content %}
+	Hello {{ nickname }}.
+	<ul>
+		<li><a href="?run_tests">Run tests</a></li>
+	    <li><a href="?clear_cache">Clear cache</a> (also clears all locks!)</li>
+	    <li>THIS WILL IMMEDIATELY REMOVE ALL DRIVE CONTENTS: <a href="?clear_firestore">Clear firestore</a></li>
+		<li><a href="?check_orphans">Check orphans</a></li>
+		<li><a href="?expired_sessions">Expired sessions</a></li>
+    </ul>
+	<a href="/">Home</a>
+	<a href="{{ url }}">{{ url_linktext }}</a>
+	{#
+	<hr />
+	Memcache stats:
+	<pre>{{ memcache_stats }}</pre>
+	#}
+	<hr />
+	<a href="/_admin/fire/">Firestore stats</a>:
+	<pre>{{ firestore_stats }}</pre>
+	{#
+	<hr />
+	<a href="/_admin/fire/Path/">Path samples</a>:
+	<pre>{{ path_samples }}</pre>
+	<hr />
+	<a href="/_admin/fire/Chunk/">Chunk samples</a>:
+	<pre>{{ chunk_samples }}</pre>
+	<hr />
+	<a href="/_admin/fire/AuthorizedUser/">User samples</a>:
+	<pre>{{ user_samples }}</pre>
+	<hr />
+	<a href="/_admin/fire/AuthSession/">Session samples</a>:
+	<pre>{{ session_samples }}</pre>
+	#}
+    <hr />
+    OS Environment:
+    <pre>{{ environment_dump }}</pre>
+    <hr />
+    Request Environment:
+    <pre>{{ request_env_dump }}</pre>
+{% endblock %}
+

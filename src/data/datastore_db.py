@@ -555,7 +555,7 @@ class DatastoreDB(FS):
             name = str(id_or_name)
             while len(parts) > 0:
                 # Parent:id_or_name
-                name += "^" + parts.pop(0) + ":" + str(parts.pop(0))
+                name += ":" + parts.pop(0) + ":" + str(parts.pop(0))
             # name = "{URL:}" + key.to_legacy_urlsafe().decode("utf-8")
         else:
             name = str(key.id_or_name)
@@ -592,22 +592,11 @@ class DatastoreDB(FS):
         # id_or_name = "/".join(parts)
         id_or_name = parts.pop(0)
         id_or_name = id_or_name.replace("§", "/")
-        if "^" in id_or_name:
-            pieces = id_or_name.split("^")
-            id_or_name = pieces.pop(0)
+        if ":" in id_or_name:
+            id_or_name, parent = key.split(":", 1)
+            path_args = parent.split(":")
             if id_or_name.isdecimal():
                 id_or_name = int(id_or_name)
-            path_args = []
-            while len(pieces) > 0:
-                # k = pieces.pop(0)
-                # i = pieces.pop(0)
-                parent = pieces.pop(0)
-                # Parent:id_or_name
-                k, i = parent.split(":", 1)
-                if i.isdecimal():
-                    i = int(i)
-                path_args.append(k)
-                path_args.append(i)
             # put back the current kind
             key = db.get_key(kind, id_or_name, *path_args)
         else:

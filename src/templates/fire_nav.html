@@ -1,0 +1,15 @@
+	<p>
+		<a href="/_admin/">Back to Admin</a>
+		{% if coll %}
+			- <a href="{{ fire_url }}/">Stats</a>
+		{% else %}
+			- <a href="{{ fire_url }}/"><strong>Stats</strong></a>
+		{% endif %}
+		{% for item in colls %}
+			{% if item == coll %}
+				- <a href="{{ fire_url }}/{{ item }}/"><strong>{{ item }}</strong></a>
+			{% else %}
+				- <a href="{{ fire_url }}/{{ item }}/">{{ item }}</a>
+			{% endif %}
+		{% endfor %}
+	</p>
