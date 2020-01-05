@@ -192,11 +192,13 @@ def home_get():
 
 
 def home_post(info):
-    return "Create (document in) new top-level collection"
+    """Create (document in) new top-level collection"""
+    raise NotImplementedError("Create (document in) new top-level collection")
 
 
 def home_delete():
-    return "Delete all top-level collections!?"
+    """Delete all top-level collections!?"""
+    raise NotImplementedError("Delete all top-level collections!?")
 
 
 class ListAPI(MethodView):
@@ -225,6 +227,7 @@ class ListAPI(MethodView):
 
 
 def list_get(name, page=1, sort=None, fields=None, truncate=True):
+    """Get all documents in collection"""
     return list(ilist_get(name, page=page, sort=sort, fields=fields, truncate=truncate))
 
 
@@ -251,11 +254,15 @@ def ilist_get(name, page=1, sort=None, fields=None, truncate=True):
 
 
 def list_post(name, info):
-    return "Create new document in collection"
+    """Create new document in collection"""
+    coll_ref = db.get_coll_ref(name)
+    raise NotImplementedError("Create new document in collection")
 
 
 def list_delete(name):
-    return "Delete collection (and all its documents)"
+    """Delete collection (and all its documents)"""
+    coll_ref = db.get_coll_ref(name)
+    raise NotImplementedError("Delete collection (and all its documents)")
 
 
 class ItemAPI(MethodView):
@@ -322,19 +329,42 @@ def item_get(parent, item, fields=None, children=False):
 
 
 def item_post(parent, item, info):
-    return "Create subcollection/document in document (TBD)"
+    """Create subcollection/document in document (TBD)"""
+    doc_ref = item_get_ref(parent, item)
+    fields = info.keys()
+    doc = doc_ref.get(fields)
+    if not doc.exists:
+        raise ValueError("Invalid Document %r" % doc_ref.path)
+    raise NotImplementedError("Create subcollection/document in document (TBD)")
 
 
 def item_put(parent, item, info):
-    return "Save/replace document"
+    """Save/replace document"""
+    doc_ref = item_get_ref(parent, item)
+    fields = info.keys()
+    doc = doc_ref.get(fields)
+    if not doc.exists:
+        raise ValueError("Invalid Document %r" % doc_ref.path)
+    raise NotImplementedError("Save/replace document")
 
 
 def item_patch(parent, item, info):
-    return "Update document"
+    """Update document"""
+    doc_ref = item_get_ref(parent, item)
+    fields = info.keys()
+    doc = doc_ref.get(fields)
+    if not doc.exists:
+        raise ValueError("Invalid Document %r" % doc_ref.path)
+    raise NotImplementedError("Update document")
 
 
 def item_delete(parent, item):
-    return "Delete document (and all its subcollections)"
+    """Delete document (and all its subcollections)"""
+    doc_ref = item_get_ref(parent, item)
+    # doc = doc_ref.get(fields)
+    # if not doc.exists:
+    #     raise ValueError("Invalid Document %r" % doc_ref.path)
+    raise NotImplementedError("Delete document (and all its subcollections)")
 
 
 if __name__ == "__main__":

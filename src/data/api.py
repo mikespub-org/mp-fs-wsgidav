@@ -225,11 +225,13 @@ def home_get(name=None):
 
 
 def home_post(info):
-    return "Create new kind"
+    """Create new kind"""
+    raise NotImplementedError("Create new kind")
 
 
 def home_delete():
-    return "Delete all kinds!?"
+    """Delete all kinds"""
+    raise NotImplementedError("Delete all kinds!?")
 
 
 class ListAPI(MethodView):
@@ -287,11 +289,18 @@ def ilist_get(name, page=1, sort=None, fields=None, truncate=True):
 
 
 def list_post(name, info):
-    return "Create new entity of kind"
+    """Create new entity of kind"""
+    # is item id_or_name in info or not?
+    # key = item_get_key(name, item)
+    # key = db.get_key(name, int(id_or_name), *path_args)
+    # entity = db.make_entity(key, **info)
+    # db.put_entity(entity)
+    raise NotImplementedError("Create new entity of kind")
 
 
 def list_delete(name):
-    return "Delete kind (and all its entities)"
+    """Delete kind (and all its entities)"""
+    raise NotImplementedError("Delete kind (and all its entities)")
 
 
 class ItemAPI(MethodView):
@@ -372,19 +381,44 @@ def item_get(parent, item, fields=None, children=False):
 
 
 def item_post(parent, item, info):
-    return "Create ? in entity (TBD)"
+    """Create ? in entity (TBD)"""
+    key = item_get_key(parent, item)
+    entity = db.get_entity(key)
+    if not entity:
+        raise ValueError("Invalid Entity %r" % key)
+    raise NotImplementedError("Create ? in entity (TBD)")
 
 
 def item_put(parent, item, info):
-    return "Save/replace entity"
+    """Save/replace entity"""
+    key = item_get_key(parent, item)
+    entity = db.get_entity(key)
+    if not entity:
+        raise ValueError("Invalid Entity %r" % key)
+    # entity.update(info)
+    # db.put_entity(entity)
+    raise NotImplementedError("Save/replace entity")
 
 
 def item_patch(parent, item, info):
-    return "Update entity"
+    """Update entity"""
+    key = item_get_key(parent, item)
+    entity = db.get_entity(key)
+    if not entity:
+        raise ValueError("Invalid Entity %r" % key)
+    # entity.update(info)
+    # db.put_entity(entity)
+    raise NotImplementedError("Update entity")
 
 
 def item_delete(parent, item):
-    return "Delete entity"
+    """Delete entity"""
+    key = item_get_key(parent, item)
+    # entity = db.get_entity(key)
+    # if not entity:
+    #     raise ValueError("Invalid Entity %r" % key)
+    # db.delete(key)
+    raise NotImplementedError("Delete entity")
 
 
 # TODO: PropAPI to handle specific properties of entities?
