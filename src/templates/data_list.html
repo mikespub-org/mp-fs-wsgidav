@@ -1,4 +1,4 @@
-{% extends "data_view.html" %}
+{% extends "data_home.html" %}
 
 {% block content %}
 	{% include "data_nav.html" %}
@@ -7,30 +7,30 @@
 		<thead>
 			<tr>
 			{% for col_name in columns %}
-				{% if col_name == "__key__" %}
+				{% if col_name == "_key" %}
 					{% if sort %}
-						<th><a href="{{ data_url }}/{{ kind }}/">{{ col_name }}</a></th>
+						<th><a href="{{ base_url }}/{{ name }}/">{{ col_name }}</a></th>
 					{% else %}
 						<th><strong>{{ col_name }}</strong></th>
 					{% endif %}
 				{% elif col_name == sort %}
-					<th><strong>{{ col_name }}</strong> <a href="{{ data_url }}/{{ kind }}/?sort=-{{ col_name }}"> &uarr; </a></th>
+					<th><strong>{{ col_name }}</strong> <a href="{{ base_url }}/{{ name }}/?sort=-{{ col_name }}"> &uarr; </a></th>
 				{% elif "-" + col_name == sort %}
-					<th><strong>-{{ col_name }}</strong> <a href="{{ data_url }}/{{ kind }}/?sort={{ col_name }}"> &darr; </a></th>
+					<th><strong>-{{ col_name }}</strong> <a href="{{ base_url }}/{{ name }}/?sort={{ col_name }}"> &darr; </a></th>
 				{% else %}
-					<th><a href="{{ data_url }}/{{ kind }}/?sort={{ col_name }}">{{ col_name }}</a></th>
+					<th><a href="{{ base_url }}/{{ name }}/?sort={{ col_name }}">{{ col_name }}</a></th>
 				{% endif %}
 			{% endfor %}
 			</tr>
 		</thead>
-		{# Note: template filters is_key, key_link and show_date are defined in views.py #}
+		{# Note: template filters is_item, item_link and show_date are defined in views.py #}
 		<tbody>
 		{% for row in rows %}
 			<tr>
 			{% for col_name in columns %}
 				{% set val = row[col_name] %}
-				{% if val|is_key %}
-					<td><a href="{{ data_url }}/{{ val|key_link }}">{{ val.id_or_name }}</a></td>
+				{% if val|is_item %}
+					<td><a href="{{ base_url }}/{{ val|item_link }}">{{ val.id_or_name }}</a></td>
 				{% elif col_name in ("create_time", "update_time", "modify_time", "timestamp") %}
 					<td>{{ val|show_date }}</td>
 				{% else %}

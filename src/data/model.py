@@ -375,7 +375,7 @@ class Dir(Path):
         logging.debug("Dir.delete(%s): %r" % (recursive, self.path))
         if not recursive:
             # TODO: faster lookup (for __key__)
-            if len(self.get_content()) > 0:
+            for p in self.iget_content():
                 raise RuntimeError("Dir must be empty")
         else:
             for p in self.get_content():

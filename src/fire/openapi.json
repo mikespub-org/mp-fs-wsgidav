@@ -166,9 +166,9 @@
             }
           },
           {
-            "name": "subcolls",
+            "name": "children",
             "in": "query",
-            "description": "Get subcollections (default false)",
+            "description": "Get subcollections of document (default false)",
             "required": false,
             "schema": {
               "type": "string"
@@ -237,6 +237,82 @@
             "in": "query",
             "description": "Sort field (default none)",
             "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "Get comma-separated list of fields (default all truncated)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "children",
+            "in": "query",
+            "description": "Get subcollections of document (default false)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "foo": {
+                    "value": []
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fire/{coll}/{ref}/{subcoll}/{subref}": {
+      "get": {
+        "operationId": "getSubDocumentv1",
+        "summary": "Get document in subcollection",
+        "parameters": [
+          {
+            "name": "coll",
+            "in": "path",
+            "description": "Name of the top-level collection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ref",
+            "in": "path",
+            "description": "ID of the document in the collection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subcoll",
+            "in": "path",
+            "description": "Name of the subcollection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subref",
+            "in": "path",
+            "description": "ID of the document in the subcollection",
+            "required": true,
             "schema": {
               "type": "string"
             }

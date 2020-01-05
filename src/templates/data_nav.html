@@ -1,15 +1,15 @@
 	<p>
 		<a href="/_admin/">Back to Admin</a>
-		{% if kind %}
-			- <a href="{{ data_url }}/">Stats</a>
+		{% if name %}
+			- <a href="{{ base_url }}/">Stats</a>
 		{% else %}
-			- <a href="{{ data_url }}/"><strong>Stats</strong></a>
+			- <a href="{{ base_url }}/"><strong>Stats</strong></a>
 		{% endif %}
-		{% for item in kinds %}
-			{% if item == kind %}
-				- <a href="{{ data_url }}/{{ item }}/"><strong>{{ item }}</strong></a>
+		{% for item in lists %}
+			{% if item == name %}
+				- <a href="{{ base_url }}/{{ item }}/"><strong>{{ item }}</strong></a>
 			{% else %}
-				- <a href="{{ data_url }}/{{ item }}/">{{ item }}</a>
+				- <a href="{{ base_url }}/{{ item }}/">{{ item }}</a>
 			{% endif %}
 		{% endfor %}
 	</p>

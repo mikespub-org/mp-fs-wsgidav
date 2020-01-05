@@ -1,0 +1,34 @@
+{% extends "fire_home.html" %}
+
+{% block content %}
+	{% include "fire_nav.html" %}
+
+	<ul>
+		{# Note: template filters is_item, item_link and show_date are defined in views.py #}
+		<li>Parent: <a href="{{ base_url }}/{{ info["_parent"]|item_link }}">{{ info["_parent"].id }}</a></li>
+		<li>Ref: <a href="{{ base_url }}/{{ info["_reference"]|item_link }}">{{ info["_reference"].path }}</a></li>
+		<li>Info: <ul>
+		{% for attr, val in info|dictsort %}
+			{% if attr in ("_parent", "_reference", "_children") %}
+			{% else %}
+				{% if val|is_item %}
+					<li>{{ attr }}: <a href="{{ base_url }}/{{ val|item_link }}">{{ val.id }}</a></li>
+				{% elif attr in ("create_time", "update_time", "read_time") %}
+					<li>{{ attr }}: {{ val|show_date }}</li>
+				{% else %}
+					<li>{{ attr }}: {{ val }}</li>
+				{% endif %}
+			{% endif %}
+		{% endfor %}
+		</ul></li>
+		{% if "_children" in info and info["_children"]|length > 0 %}
+		<li>Collections: <ul>
+		{% for subcoll in info["_children"] %}
+			<li><a href="{{ base_url }}/{{ subcoll|item_link }}">{{ subcoll.id }}</a></li>
+		{% endfor %}
+		</ul></li>
+		{% endif %}
+	</ul>
+
+{% endblock %}
+

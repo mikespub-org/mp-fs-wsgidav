@@ -1,40 +1,40 @@
-{% extends "fire_view.html" %}
+{% extends "fire_home.html" %}
 
 {% block content %}
 	{% include "fire_nav.html" %}
 
 	{% if parent %}
-	<p>Parent: <a href="{{ fire_url }}/{{ parent|ref_link }}">{{ parent.id }}</a></p>
+	<p>Parent: <a href="{{ base_url }}/{{ parent|item_link }}">{{ parent.id }}</a></p>
 	{% endif %}
 
 	<table border="0" cellpadding="5">
 		<thead>
 			<tr>
 			{% for col_name in columns %}
-				{% if col_name == "__ref__" %}
+				{% if col_name == "_reference" %}
 					{% if sort %}
-						<th><a href="{{ fire_url }}/{{ coll }}/">{{ col_name }}</a></th>
+						<th><a href="{{ base_url }}/{{ name }}/">{{ col_name }}</a></th>
 					{% else %}
 						<th><strong>{{ col_name }}</strong></th>
 					{% endif %}
 				{% elif col_name == sort %}
-					<th><strong>{{ col_name }}</strong> <a href="{{ fire_url }}/{{ coll }}/?sort=-{{ col_name }}"> &uarr; </a></th>
+					<th><strong>{{ col_name }}</strong> <a href="{{ base_url }}/{{ name }}/?sort=-{{ col_name }}"> &uarr; </a></th>
 				{% elif "-" + col_name == sort %}
-					<th><strong>-{{ col_name }}</strong> <a href="{{ fire_url }}/{{ coll }}/?sort={{ col_name }}"> &darr; </a></th>
+					<th><strong>-{{ col_name }}</strong> <a href="{{ base_url }}/{{ name }}/?sort={{ col_name }}"> &darr; </a></th>
 				{% else %}
-					<th><a href="{{ fire_url }}/{{ coll }}/?sort={{ col_name }}">{{ col_name }}</a></th>
+					<th><a href="{{ base_url }}/{{ name }}/?sort={{ col_name }}">{{ col_name }}</a></th>
 				{% endif %}
 			{% endfor %}
 			</tr>
 		</thead>
-		{# Note: template filters is_ref, ref_link and show_date are defined in views.py #}
+		{# Note: template filters is_item, item_link and show_date are defined in views.py #}
 		<tbody>
 		{% for row in rows %}
 			<tr>
 			{% for col_name in columns %}
 				{% set val = row[col_name] %}
-				{% if val|is_ref %}
-					<td><a href="{{ fire_url }}/{{ val|ref_link }}">{{ val.id }}</a></td>
+				{% if val|is_item %}
+					<td><a href="{{ base_url }}/{{ val|item_link }}">{{ val.id }}</a></td>
 				{% elif col_name in ("create_time", "update_time", "read_time") %}
 					<td>{{ val|show_date }}</td>
 				{% else %}

@@ -1,0 +1,195 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Datastore API overview",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8080/api/v1"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "listVersionsv1",
+        "summary": "List API versions",
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "foo": {
+                    "value": {
+                      "versions": [
+                        {
+                          "status": "CURRENT",
+                          "updated": "2020-01-05T11:33:21Z",
+                          "id": "v1.0",
+                          "links": [
+                            {
+                              "href": "http://127.0.0.1:8080/api/v1/",
+                              "rel": "self"
+                            }
+                          ]
+                        },
+                        {
+                          "status": "EXPERIMENTAL",
+                          "updated": "2020-01-05T11:33:21Z",
+                          "id": "v2.0",
+                          "links": [
+                            {
+                              "href": "http://127.0.0.1:8080/api/v2/",
+                              "rel": "self"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/": {
+      "get": {
+        "operationId": "getKindsv1",
+        "summary": "Get kinds",
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "foo": {
+                    "value": []
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/{kind}/": {
+      "get": {
+        "operationId": "getKindv1",
+        "summary": "Get entities of kind",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "Name of the kind",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Get page result (default 1)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field (default none)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "Get comma-separated list of fields (default all truncated)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "foo": {
+                    "value": []
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/{kind}/{key}": {
+      "get": {
+        "operationId": "getEntityv1",
+        "summary": "Get entity",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "Name of the kind",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "description": "ID of the entity",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "Get comma-separated list of fields (default all)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "children",
+            "in": "query",
+            "description": "Get chunks for file path (default false)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "foo": {
+                    "value": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -8,6 +8,7 @@ import os.path
 
 from future.utils import with_metaclass
 from google.cloud import datastore
+from google.cloud.datastore import Key
 
 from .cache import NamespacedCache
 
@@ -280,7 +281,7 @@ class Model(with_metaclass(ModelType, object)):
     def to_dict(self, include_key=False):
         info = dict(self._entity)
         if include_key:
-            info["__key__"] = self.key()
+            info["_key"] = self.key()
         return info
 
     def __str__(self):
