@@ -13,7 +13,7 @@ from flask import Flask, render_template, request
 
 from btfs import sessions
 from btfs.auth import AuthorizedUser
-from data import db, views
+from data import db, views, api
 from data.cache import memcache3
 from data.model import Chunk, Dir, File, Path
 
@@ -127,7 +127,7 @@ def admin_view():
     env = []
     for k, v in list(os.environ.items()):
         env.append("%s: '%s'" % (k, v))
-    stats = views.get_stats()
+    stats = api.get_stats()
     nickname = "stranger"
     if session.is_user():
         nickname = session.nickname
@@ -160,8 +160,8 @@ def clear_cache():
 
 
 def reset_stats():
-    logging.warning("reset_stats: views.get_stats(True)")
-    views.get_stats(True)
+    logging.warning("reset_stats: api.get_stats(True)")
+    api.get_stats(True)
     output = "Stats reset! <a href='?'>Back</a>"
     return output
 
@@ -178,7 +178,7 @@ def clear_datastore():
     # data_fs.getdir("/").delete(recursive=True)
     memcache3.reset()
     data_fs.initfs()
-    views.get_stats(True)
+    api.get_stats(True)
     output = "Removed '/'. <a href='?'>Back</a>"
     return output
 
@@ -191,7 +191,7 @@ def expired_sessions():
         % (result, sessions.EXPIRE_DAYS)
     )
     if result > 0:
-        views.get_stats(True)
+        api.get_stats(True)
     return output
 
 
@@ -222,6 +222,6 @@ def delete_orphans():
         total += len(chunk_orphans)
         db.delete(chunk_orphans)
     if total > 0:
-        views.get_stats(True)
+        api.get_stats(True)
     output = "Deleted %s orphans. <a href='?'>Back</a>" % total
     return output
