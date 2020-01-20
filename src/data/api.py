@@ -5,26 +5,14 @@
 import logging
 import time
 import os.path
+import pickle
 
 from flask import Flask, render_template, request, jsonify
 from flask.views import MethodView
 import flask.json
 
-from btfs import sessions
-from btfs.auth import AuthorizedUser
 from . import db
-from .model import Chunk, Dir, File, Path
-
-
-PAGE_SIZE = 10
-KNOWN_MODELS = {
-    "Path": Path,
-    "Dir": Dir,
-    "File": File,
-    "Chunk": Chunk,
-    "AuthorizedUser": AuthorizedUser,
-    "AuthSession": sessions.AuthSession,
-}
+from .config import PAGE_SIZE, KNOWN_MODELS, KIND_CONFIG
 
 
 def create_app(debug=True, base_url="/api/v1/data"):
@@ -86,7 +74,12 @@ def item_to_path(key):
     if key.kind in ("Path", "Dir", "File"):
         # drop the first / of the id_or_name = path
         return "%s/%s" % (key.kind, key.id_or_name[1:])
-    elif key.kind in ("Chunk") and key.parent:
+    # elif key.kind in ("Chunk") and key.parent:
+    elif (
+        key.kind in KIND_CONFIG
+        and KIND_CONFIG[key.kind].get("parent", None)
+        and key.parent
+    ):
         # add the :parent:path
         return "%s/%s:%s:%s" % (
             key.kind,
@@ -100,24 +93,37 @@ def item_to_path(key):
 def item_to_dict(entity, truncate=False):
     info = dict(entity)
     info["_key"] = entity.key
-    if entity.key.parent:
+    if entity.kind in KIND_CONFIG and KIND_CONFIG[entity.kind].get("parent", None):
         info["_parent"] = entity.key.parent
-    if (
-        truncate
-        and "data" in info
-        and isinstance(info["data"], bytes)
-        and len(info["data"]) > 20
-    ):
-        info["data"] = "%s... (%s bytes)" % (info["data"][:20], len(info["data"]))
+    elif entity.key.parent:
+        info["_parent"] = entity.key.parent
+    if truncate:
+        if entity.kind in KIND_CONFIG:
+            truncate_list = KIND_CONFIG[entity.kind].get("truncate_list", [])
+        else:
+            truncate_list = list(info.keys())
+        for attr in truncate_list:
+            if attr in info and isinstance(info[attr], bytes) and len(info[attr]) > 20:
+                info[attr] = "%s... (%s bytes)" % (info[attr][:20], len(info[attr]))
     return info
 
 
 def instance_to_dict(instance, truncate=False):
     info = instance.to_dict(True)
-    if instance._kind == "Chunk":
+    # if instance._kind == "Chunk":
+    if instance._kind in KIND_CONFIG and KIND_CONFIG[instance._kind].get(
+        "parent", None
+    ):
         info["_parent"] = instance.key().parent
-    if truncate and instance._kind == "Chunk" and len(info["data"]) > 20:
-        info["data"] = "%s... (%s bytes)" % (info["data"][:20], len(info["data"]))
+    # if truncate and instance._kind == "Chunk" and len(info["data"]) > 20:
+    if truncate:
+        if instance._kind in KIND_CONFIG:
+            truncate_list = KIND_CONFIG[instance._kind].get("truncate_list", [])
+        else:
+            truncate_list = list(info.keys())
+        for attr in truncate_list:
+            if attr in info and isinstance(info[attr], bytes) and len(info[attr]) > 20:
+                info[attr] = "%s... (%s bytes)" % (info[attr][:20], len(info[attr]))
     return info
 
 
@@ -157,7 +163,12 @@ def get_stats(reset=False):
     else:
         info = {"timestamp": time.time()}
     list_stats["Stats"] = {}
-    list_stats["Stats"]["Total"] = info
+    list_stats["Stats"][kind] = info
+    kind = "__Stat_Kind__"
+    list_stats["Stats"][kind] = {}
+    for entity in db.ilist_entities(kind):
+        info = item_to_dict(entity)
+        list_stats["Stats"][kind][info["kind_name"]] = info
     # for stat in stats.KindPropertyNamePropertyTypeStat.list_all():
     #    list_stats['Stats'].append(stat)
     kind = "__Stat_PropertyType_PropertyName_Kind__"
@@ -189,6 +200,16 @@ def get_list_count(model, reset=False):
     if model in list_stats and list_stats[model]["count"] is not None and not reset:
         return list_stats[model]["count"]
     if model not in KNOWN_MODELS:
+        # initialize stats if needed
+        stats = get_stats()
+        if (
+            "Stats" in stats
+            and "__Stat_Kind__" in stats["Stats"]
+            and model in stats["Stats"]["__Stat_Kind__"]
+        ):
+            stats_count = stats["Stats"]["__Stat_Kind__"][model]["count"]
+            if stats_count > 0:
+                return stats_count
         return
     if model not in list_stats:
         list_stats[model] = get_list_stats(KNOWN_MODELS[model])
@@ -274,10 +295,15 @@ def ilist_get(name, page=1, sort=None, fields=None, truncate=True):
     offset = (page - 1) * limit
     kwargs = {}
     if sort:
-        kwargs["order"] = [sort]
+        if not isinstance(sort, list):
+            sort = sort.split(",")
+        if len(sort) > 0:
+            kwargs["order"] = sort
     if fields:
         if not isinstance(fields, list):
             fields = fields.split(",")
+        if len(fields) > 0:
+            kwargs["projection"] = fields
     if name not in KNOWN_MODELS:
         for entity in db.ilist_entities(name, limit, offset, **kwargs):
             info = item_to_dict(entity, truncate=truncate)
@@ -313,8 +339,28 @@ class ItemAPI(MethodView):
             if parent not in kinds_list:
                 raise ValueError("Invalid Kind %r" % parent)
         fields = request.args.get("fields", None)
-        children = request.args.get("children", False)
-        result = item_get(parent, item, fields=fields, children=children)
+        children = request.args.get("children", True)
+        unpickle = request.args.get("unpickle", True)
+        result = item_get(
+            parent, item, fields=fields, children=children, unpickle=unpickle
+        )
+        # return individual property of this item!?
+        if fields and isinstance(fields, str) and "," not in fields:
+            result = result[fields]
+            # TODO: specify content-type if available/known
+            if isinstance(result, str):
+                return result, 200, {"Content-Type": "text/plain"}
+            # https://stackoverflow.com/questions/20508788/do-i-need-content-type-application-octet-stream-for-file-download
+            if isinstance(result, bytes):
+                if parent in KIND_CONFIG and fields in KIND_CONFIG[parent].get(
+                    "image", []
+                ):
+                    return result, 200, {"Content-Type": "image/png"}
+                # return result, 200, {"Content-Type": "application/octet-stream"}
+            if parent in KIND_CONFIG and fields in KIND_CONFIG[parent].get(
+                "pickled", []
+            ):
+                return jsonify(result)
         return jsonify(result)
 
     def post(self, parent, item):
@@ -348,7 +394,8 @@ def item_get_key(kind, item):
         else:
             id_or_name = item
         key = db.get_key(kind, id_or_name)
-    elif kind in ("Chunk") and ":" in item:
+    # elif kind in ("Chunk") and ":" in item:
+    elif kind in KIND_CONFIG and KIND_CONFIG[kind].get("parent", None) and ":" in item:
         id_or_name, parent = item.split(":", 1)
         path_args = parent.split(":")
         key = db.get_key(kind, int(id_or_name), *path_args)
@@ -361,22 +408,74 @@ def item_get_key(kind, item):
     return key
 
 
-def item_get(parent, item, fields=None, children=False):
+def item_get(parent, item, fields=None, children=False, unpickle=False):
     """Get entity"""
     if fields and not isinstance(fields, list):
         fields = fields.split(",")
     key = item_get_key(parent, item)
+    # TODO: retrieve with query + key_filter if fields!?
     entity = db.get_entity(key)
     if not entity:
         raise ValueError("Invalid Entity %r" % key)
     if parent not in KNOWN_MODELS:
         info = item_to_dict(entity)
+        parent_key = entity.key
     else:
         instance = db.make_instance(parent, entity)
         info = instance_to_dict(instance)
+        parent_key = instance.key()
         # if children and parent == "Path" and hasattr(instance, "size"):
-        if parent == "Path" and hasattr(instance, "size"):
-            info["_children"] = Chunk.list_keys_by_file(instance)
+        # if parent == "Path" and hasattr(instance, "size"):
+        #     info["_children"] = Chunk.list_keys_by_file(instance)
+        #     info["_children"] = db.list_entity_keys("Chunk", limit=PAGE_SIZE, ancestor=instance.key())
+    if unpickle:
+        if parent in KIND_CONFIG:
+            pickled_list = KIND_CONFIG[parent].get("pickled", [])
+        else:
+            # pickled_list = list(info.keys())
+            pickled_list = []
+        # See https://github.com/python/cpython/blob/master/Lib/pickle.py
+        # and https://github.com/python/cpython/blob/master/Lib/pickletools.py
+        for attr in pickled_list:
+            if attr in info and isinstance(info[attr], bytes) and len(info[attr]) > 0:
+                # https://stackoverflow.com/questions/4523505/chr-equivalent-returning-a-bytes-object-in-py3k
+                char = b"%c" % info[attr][0]
+                # logging.debug("%s %r" % (attr, char))
+                # based on use cases for InfoStore
+                if char not in (pickle.MARK, pickle.PROTO):
+                    continue
+                try:
+                    info[attr] = pickle.loads(info[attr], encoding="latin1")
+                except Exception as e:
+                    logging.info(e)
+    if fields:
+        result = {}
+        result["_key"] = info["_key"]
+        # if len(fields) == 1 and fields[0] in info:
+        for attr in fields:
+            if attr in info:
+                result[attr] = info[attr]
+        return result
+    # handle ancestor
+    if children and parent in KIND_CONFIG and KIND_CONFIG[parent].get("children", None):
+        child_list = KIND_CONFIG[parent].get("children")
+        info["_children"] = {}
+        for child in child_list:
+            info["_children"][child] = db.list_entity_keys(
+                child, limit=PAGE_SIZE, ancestor=parent_key
+            )
+    # handle ReferenceProperty
+    if (
+        children
+        and parent in KIND_CONFIG
+        and KIND_CONFIG[parent].get("references", None)
+    ):
+        ref_dict = KIND_CONFIG[parent].get("references")
+        info["_references"] = {}
+        for ref in ref_dict.keys():
+            info["_references"][ref] = db.list_entity_keys(
+                ref, limit=PAGE_SIZE, filters=[(ref_dict[ref], "=", parent_key)]
+            )
     return info
 
 

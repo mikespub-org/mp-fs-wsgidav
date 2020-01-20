@@ -11,12 +11,14 @@
 		<li>Key: <a href="{{ base_url }}/{{ info["_key"]|item_link }}">{{ info["_key"].id_or_name }}</a></li>
 		<li>Info: <ul>
 		{% for attr, val in info|dictsort %}
-			{% if attr in ("_parent", "_key", "_children") %}
+			{% if attr in ("_parent", "_key", "_children", "_references") %}
 			{% else %}
 				{% if val|is_item %}
 					<li>{{ attr }}: <a href="{{ base_url }}/{{ val|item_link }}">{{ val.id_or_name }}</a></li>
 				{% elif attr in ("create_time", "update_time", "modify_time", "timestamp") %}
 					<li>{{ attr }}: {{ val|show_date }}</li>
+				{% elif val is string and "?fields=" in val %}
+					<li>{{ attr }}: <a href="{{ val }}"><img src="{{ val }}" border="0"></a></li>
 				{% else %}
 					<li>{{ attr }}: {{ val }}</li>
 				{% endif %}
@@ -24,9 +26,20 @@
 		{% endfor %}
 		</ul></li>
 		{% if "_children" in info and info["_children"]|length > 0 %}
-		<li>Chunks: <ul>
-		{% for chunk in info["_children"] %}
-			<li><a href="{{ base_url }}/{{ chunk|item_link }}">{{ chunk.id_or_name }}</a></li>
+		<li>Children: <ul>
+		{% for child in info["_children"].keys() %}
+			{% for item in info["_children"][child] %}
+				<li><a href="{{ base_url }}/{{ child }}/">{{ child }}</a>: <a href="{{ base_url }}/{{ item|item_link }}">{{ item.id_or_name }}</a></li>
+			{% endfor %}
+		{% endfor %}
+		</ul></li>
+		{% endif %}
+		{% if "_references" in info and info["_references"]|length > 0 %}
+		<li>References: <ul>
+		{% for ref in info["_references"].keys() %}
+			{% for item in info["_references"][ref] %}
+				<li><a href="{{ base_url }}/{{ ref }}/">{{ ref }}</a>: <a href="{{ base_url }}/{{ item|item_link }}">{{ item.id_or_name }}</a></li>
+			{% endfor %}
 		{% endfor %}
 		</ul></li>
 		{% endif %}

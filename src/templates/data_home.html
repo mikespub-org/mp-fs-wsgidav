@@ -12,9 +12,21 @@
 	<ul>
 	{% for name, info in stats|dictsort %}
 		<li><a href="{{ base_url}}/{{ name }}/">{{ name }}</a>: <ul>
-		{% for attr, val in info|dictsort %}
-			<li>{{ attr }}: {{ val }}</li>
-		{% endfor %}
+		{% if name == "Stats" %}
+			{% for attr, val in info|dictsort %}
+				<li><a href="{{ base_url }}/{{ attr }}/">{{ attr }}</a>: <ul>
+				{# if isinstance(val, dict) #}
+				{# if val is mapping #}
+				{% for k, v in val|dictsort %}
+					<li>{{ k }}: {{ v }}</li>
+				{% endfor %}
+				</ul></li>
+			{% endfor %}
+		{% else %}
+			{% for attr, val in info|dictsort %}
+				<li>{{ attr }}: {{ val }}</li>
+			{% endfor %}
+		{% endif %}
 		</ul></li>
 	{% endfor %}
 	</ul>

@@ -48,6 +48,7 @@ def configure_app(app, base_url="/data", authorize_wrap=None):
     app.add_template_filter(item_link)
     app.add_template_filter(show_link)
     app.add_template_filter(show_date)
+    app.add_template_filter(show_image)
     app.add_template_global(get_pager)
     # app.add_template_global(get_lists)
     # app.add_template_global(get_stats)
@@ -79,6 +80,11 @@ def show_date(timestamp, fmt="%Y-%m-%d %H:%M:%S"):
     if isinstance(timestamp, (int, float)):
         return time.strftime(fmt, time.gmtime(timestamp))
     return timestamp.strftime(fmt)
+
+
+# @app.template_filter()
+def show_image(val):
+    return '<a href="%s"><img src="%s" border="0"></a>' % (val, val)
 
 
 # @app.template_global()
@@ -169,12 +175,36 @@ def item_view(parent, item):
         kinds_list = api.get_lists()
         if parent not in kinds_list or parent == "Others":
             return home_view(parent)
+    image_list = []
+    if parent in api.KIND_CONFIG and api.KIND_CONFIG[parent].get("image", None):
+        image_list = api.KIND_CONFIG[parent].get("image", [])
     fields = request.args.get("fields", None)
-    children = request.args.get("children", False)
-    info = api.item_get(parent, item, fields=fields, children=children)
+    if fields and fields in image_list:
+        return image_view(parent, item, fields)
+    # if ";" in item:
+    #     for attr in image_list:
+    #         if item.endswith(";%s" % attr):
+    #             return image_view(parent, item.replace(";%s" % attr), attr)
+    children = request.args.get("children", True)
+    unpickle = request.args.get("unpickle", True)
+    info = api.item_get(
+        parent, item, fields=fields, children=children, unpickle=unpickle
+    )
+    for attr in image_list:
+        info[attr] = "?fields=%s" % attr
     return render_template(
         "data_item.html", base_url=BASE_URL, lists=kinds_list, name=parent, info=info,
     )
+
+
+def image_view(parent, item, attr):
+    fields = [attr]
+    children = False
+    unpickle = False
+    info = api.item_get(
+        parent, item, fields=fields, children=children, unpickle=unpickle
+    )
+    return info[attr], 200, {"Content-Type": "image/png"}
 
 
 if __name__ == "__main__":

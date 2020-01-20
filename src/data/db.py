@@ -12,12 +12,14 @@ from google.cloud.datastore import Key
 
 from .cache import NamespacedCache
 
+GOOGLE_APPLICATION_CREDENTIALS = None
+
 cached_model = NamespacedCache("model")
 
 _client = None
 
 
-def get_client(project_id=None, cred_file=None):
+def get_client(project_id=None, cred_file=GOOGLE_APPLICATION_CREDENTIALS):
     global _client
     if _client is not None:
         return _client

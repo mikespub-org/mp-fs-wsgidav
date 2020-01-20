@@ -1,0 +1,30 @@
+{
+  "Chunk": {
+    "parent": "Path",
+    "truncate": [
+      "data"
+    ]
+  },
+  "Path": {
+    "children": [
+      "Chunk"
+    ],
+    "references": {
+      "Path": "parent_path"
+    }
+  },
+  "Album": {
+    "references": {
+      "Picture": "album"
+    }
+  },
+  "Picture": {
+    "image": [
+      "data",
+      "thumbnail_data"
+    ],
+    "pickled": [
+      "info"
+    ]
+  }
+}
