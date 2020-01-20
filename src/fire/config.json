@@ -1,0 +1,42 @@
+{
+  "chunks": {
+    "truncate": [
+      "data"
+    ]
+  },
+  "paths": {
+    "references": {
+	  "chunks": "parent_ref",
+      "paths": "parent_ref"
+    }
+  },
+  "root": {
+  },
+  "_": {
+    "truncate": [
+      "data"
+    ]
+  },
+  "albums": {
+    "references": {
+      "pictures": "album_ref"
+    }
+  },
+  "pictures": {
+    "image": [
+      "data",
+      "thumbnail_data"
+    ]
+  },
+  "images": {
+    "image": [
+      "data",
+      "thumbnail_data"
+    ]
+  },
+  "infostore": {
+    "pickled": [
+      "info"
+    ]
+  }
+}

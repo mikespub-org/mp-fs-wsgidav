@@ -56,8 +56,12 @@ def configure_app(app, base_url="/api/v1/data", authorize_wrap=None):
 
 class MyJSONEncoder(flask.json.JSONEncoder):
     def default(self, obj):
+        # if isinstance(obj, db.Entity):
+        #     return item_to_dict(obj)
         if isinstance(obj, db.Key):
             return item_to_path(obj)
+        # if isinstance(obj, datetime.datetime):
+        #     return obj.isoformat(" ")
         if isinstance(obj, bytes):
             # TODO: we should use base64 encoding here
             return repr(obj)
@@ -95,7 +99,7 @@ def item_to_dict(entity, truncate=False):
     info["_key"] = entity.key
     if entity.kind in KIND_CONFIG and KIND_CONFIG[entity.kind].get("parent", None):
         info["_parent"] = entity.key.parent
-    elif entity.key.parent:
+    elif entity.key and entity.key.parent:
         info["_parent"] = entity.key.parent
     if truncate:
         if entity.kind in KIND_CONFIG:

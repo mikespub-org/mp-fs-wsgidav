@@ -5,15 +5,14 @@
 import logging
 import time
 import os.path
+import pickle
 
 from flask import Flask, render_template, request, jsonify
 from flask.views import MethodView
 import flask.json
 
 from . import db
-
-
-PAGE_SIZE = 10
+from .config import PAGE_SIZE, COLL_CONFIG
 
 
 def create_app(debug=True, base_url="/api/v1/fire"):
@@ -55,11 +54,34 @@ def configure_app(app, base_url="/api/v1/fire", authorize_wrap=None):
     app.json_encoder = MyJSONEncoder
 
 
+# def dt2epoch(dt):
+#     # return time.mktime(dt.utctimetuple())
+#     return (
+#         dt - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+#     ) / datetime.timedelta(seconds=1)
+
+
+# def epoch2dt(timestamp):
+#     return datetime.datetime.fromtimestamp(timestamp, datetime.timezone.utc)
+
+
 class MyJSONEncoder(flask.json.JSONEncoder):
     def default(self, obj):
+        # if isinstance(obj, db.DocumentSnapshot):
+        #     return item_to_dict(obj)
         # subcollections always end with / - see item_to_path and templates/fire_item.html
         if isinstance(obj, (db.DocumentReference, db.CollectionReference)):
             return item_to_path(obj)
+        # if isinstance(obj, google.api_core.datetime_helpers.DatetimeWithNanoseconds):
+        #    return repr(obj)
+        # In objects/some-id: from firestore.SERVER_TIMESTAMP
+        # In data/one: from datetime.datetime.now()
+        # https://github.com/googleapis/google-cloud-python/blob/master/api_core/tests/unit/test_datetime_helpers.py
+        # https://github.com/googleapis/google-cloud-python/blob/master/api_core/google/api_core/datetime_helpers.py
+        # if type(obj).__name__.endswith("DatetimeWithNanoseconds"):
+        # if isinstance(obj, datetime.datetime):
+        #     return obj.isoformat(" ")
+        #     # return obj.rfc3339()
         if isinstance(obj, bytes):
             # TODO: we should use base64 encoding here
             return repr(obj)
@@ -84,27 +106,43 @@ def item_to_path(ref):
 
 def item_to_dict(doc, truncate=False):
     info = doc.to_dict()
-    if hasattr(doc, "create_time") and doc.create_time:
+    if (
+        hasattr(doc, "create_time")
+        and doc.create_time
+        and not isinstance(doc.create_time, float)
+    ):
         doc.create_time = doc.create_time.seconds + float(
             doc.create_time.nanos / 1000000000.0
         )
-    if hasattr(doc, "update_time") and doc.update_time:
+    if (
+        hasattr(doc, "update_time")
+        and doc.update_time
+        and not isinstance(doc.update_time, float)
+    ):
         doc.update_time = doc.update_time.seconds + float(
             doc.update_time.nanos / 1000000000.0
         )
-    if hasattr(doc, "read_time") and doc.read_time:
+    if (
+        hasattr(doc, "read_time")
+        and doc.read_time
+        and not isinstance(doc.read_time, float)
+    ):
         doc.read_time = doc.read_time.seconds + float(
             doc.read_time.nanos / 1000000000.0
         )
     info.update(doc.__dict__)
     del info["_data"]
-    if (
-        truncate
-        and "data" in info
-        and isinstance(info["data"], bytes)
-        and len(info["data"]) > 20
-    ):
-        info["data"] = "%s... (%s bytes)" % (info["data"][:20], len(info["data"]))
+    if truncate:
+        coll_ref = doc.reference.parent
+        # coll_path = item_to_path(coll_ref)
+        coll_id = coll_ref.id
+        if coll_id in COLL_CONFIG:
+            truncate_list = COLL_CONFIG[coll_id].get("truncate_list", [])
+        else:
+            truncate_list = list(info.keys())
+        for attr in truncate_list:
+            if attr in info and isinstance(info[attr], bytes) and len(info[attr]) > 20:
+                info[attr] = "%s... (%s bytes)" % (info[attr][:20], len(info[attr]))
     if doc.reference.parent:
         info["_parent"] = doc.reference.parent
     return info
@@ -280,7 +318,27 @@ class ItemAPI(MethodView):
             return jsonify(list_get(parent, page, sort, fields))
         fields = request.args.get("fields", None)
         children = request.args.get("children", False)
-        result = item_get(parent, item, fields=fields, children=children)
+        unpickle = request.args.get("unpickle", True)
+        result = item_get(
+            parent, item, fields=fields, children=children, unpickle=unpickle
+        )
+        # return individual property of this item!?
+        if fields and isinstance(fields, str) and "," not in fields:
+            result = result[fields]
+            # TODO: specify content-type if available/known
+            if isinstance(result, str):
+                return result, 200, {"Content-Type": "text/plain"}
+            # https://stackoverflow.com/questions/20508788/do-i-need-content-type-application-octet-stream-for-file-download
+            if isinstance(result, bytes):
+                if parent in COLL_CONFIG and fields in COLL_CONFIG[parent].get(
+                    "image", []
+                ):
+                    return result, 200, {"Content-Type": "image/png"}
+                # return result, 200, {"Content-Type": "application/octet-stream"}
+            if parent in COLL_CONFIG and fields in COLL_CONFIG[parent].get(
+                "pickled", []
+            ):
+                return jsonify(result)
         return jsonify(result)
 
     def post(self, parent, item):
@@ -314,7 +372,7 @@ def item_get_ref(coll, item):
     return doc_ref
 
 
-def item_get(parent, item, fields=None, children=False):
+def item_get(parent, item, fields=None, children=False, unpickle=False):
     """Get document"""
     if fields and not isinstance(fields, list):
         fields = fields.split(",")
@@ -323,8 +381,66 @@ def item_get(parent, item, fields=None, children=False):
     if not doc.exists:
         raise ValueError("Invalid Document %r" % doc_ref.path)
     info = item_to_dict(doc)
+    if unpickle:
+        if parent in COLL_CONFIG:
+            pickled_list = COLL_CONFIG[parent].get("pickled", [])
+        else:
+            # pickled_list = list(info.keys())
+            pickled_list = []
+        # See https://github.com/python/cpython/blob/master/Lib/pickle.py
+        # and https://github.com/python/cpython/blob/master/Lib/pickletools.py
+        for attr in pickled_list:
+            if attr in info and isinstance(info[attr], bytes) and len(info[attr]) > 0:
+                # https://stackoverflow.com/questions/4523505/chr-equivalent-returning-a-bytes-object-in-py3k
+                char = b"%c" % info[attr][0]
+                # logging.debug("%s %r" % (attr, char))
+                # based on use cases for InfoStore
+                if char not in (pickle.MARK, pickle.PROTO):
+                    continue
+                try:
+                    info[attr] = pickle.loads(info[attr], encoding="latin1")
+                except Exception as e:
+                    logging.info(e)
+    if fields:
+        result = {}
+        result["_reference"] = info["_reference"]
+        # if len(fields) == 1 and fields[0] in info:
+        for attr in fields:
+            if attr in info:
+                result[attr] = info[attr]
+        return result
+    # handle ancestor
+    # if children and parent in COLL_CONFIG and COLL_CONFIG[parent].get("children", None):
+    #     child_list = COLL_CONFIG[parent].get("children")
+    #     info["_children"] = {}
+    #     for child in child_list:
+    #         info["_children"][child] = db.list_entity_keys(
+    #             child, limit=PAGE_SIZE, ancestor=parent_key
+    #         )
+    # handle subcollections
     if children:
         info["_children"] = list(doc_ref.collections())
+    # handle references
+    if (
+        children
+        and parent in COLL_CONFIG
+        and COLL_CONFIG[parent].get("references", None)
+    ):
+        ref_dict = COLL_CONFIG[parent].get("references")
+        info["_references"] = {}
+        for ref in ref_dict.keys():
+            coll_ref = db.get_coll_ref(ref)
+            query = (
+                coll_ref.select([ref_dict[ref]])
+                .where(ref_dict[ref], "==", doc_ref)
+                .limit(PAGE_SIZE)
+            )
+            child_refs = []
+            for child_doc in query.stream():
+                # print(item_to_dict(child_doc))
+                child_refs.append(child_doc.reference)
+            if len(child_refs) > 0:
+                info["_references"][ref] = child_refs
     return info
 
 

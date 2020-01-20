@@ -170,9 +170,23 @@ def item_view(parent, item):
     if item.endswith("/"):
         parent += "/" + item[:-1]
         return list_view(parent)
+    image_list = []
+    if parent in api.COLL_CONFIG and api.COLL_CONFIG[parent].get("image", None):
+        image_list = api.COLL_CONFIG[parent].get("image", [])
     fields = request.args.get("fields", None)
-    # children = request.args.get("children", False)
-    info = api.item_get(parent, item, fields=fields, children=True)
+    if fields and fields in image_list:
+        return image_view(parent, item, fields)
+    # if ";" in item:
+    #     for attr in image_list:
+    #         if item.endswith(";%s" % attr):
+    #             return image_view(parent, item.replace(";%s" % attr), attr)
+    children = request.args.get("children", True)
+    unpickle = request.args.get("unpickle", True)
+    info = api.item_get(
+        parent, item, fields=fields, children=children, unpickle=unpickle
+    )
+    for attr in image_list:
+        info[attr] = "?fields=%s" % attr
     return render_template(
         "fire_item.html",
         base_url=BASE_URL,
@@ -180,6 +194,16 @@ def item_view(parent, item):
         name=parent,
         info=info,
     )
+
+
+def image_view(parent, item, attr):
+    fields = [attr]
+    children = False
+    unpickle = False
+    info = api.item_get(
+        parent, item, fields=fields, children=children, unpickle=unpickle
+    )
+    return info[attr], 200, {"Content-Type": "image/png"}
 
 
 if __name__ == "__main__":

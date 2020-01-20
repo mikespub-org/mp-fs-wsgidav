@@ -10,6 +10,8 @@ from future.utils import with_metaclass
 from google.cloud import datastore
 from google.cloud.datastore import Key
 
+# from google.cloud.datastore import Entity
+
 from .cache import NamespacedCache
 
 GOOGLE_APPLICATION_CREDENTIALS = None
