@@ -138,11 +138,16 @@ def item_to_dict(doc, truncate=False):
         coll_id = coll_ref.id
         if coll_id in COLL_CONFIG:
             truncate_list = COLL_CONFIG[coll_id].get("truncate_list", [])
+            array_list = COLL_CONFIG[coll_id].get("array", [])
         else:
             truncate_list = list(info.keys())
+            array_list = []
         for attr in truncate_list:
             if attr in info and isinstance(info[attr], bytes) and len(info[attr]) > 20:
                 info[attr] = "%s... (%s bytes)" % (info[attr][:20], len(info[attr]))
+        for attr in array_list:
+            if attr in info and isinstance(info[attr], list) and len(info[attr]) > 1:
+                info[attr] = [info[attr][0], "... (%s items)" % len(info[attr])]
     if doc.reference.parent:
         info["_parent"] = doc.reference.parent
     return info
@@ -169,8 +174,15 @@ def get_stats(reset=False):
         return list_stats
     list_stats = {}
     list_stats["Stats"] = {"timestamp": time.time()}
+    # TODO: load stats from Firestore + check timestamp
+    coll_ref = db.get_coll_ref("_Stat_Coll_")
+    for doc in coll_ref.stream():
+        info = doc.to_dict()
+        info["coll_ref"] = db.get_coll_ref(info["name"])
+        list_stats[info["name"]] = info
     for coll_ref in db.list_root():
-        list_stats[coll_ref.id] = get_list_stats(coll_ref)
+        if coll_ref.id not in list_stats:
+            list_stats[coll_ref.id] = get_list_stats(coll_ref)
     return list_stats
 
 
@@ -182,27 +194,49 @@ def get_list_stats(coll_ref, limit=1000):
         "coll_ref": coll_ref,
         # "properties": {},
         "count": count,
+        "timestamp": time.time(),
     }
     if stats["count"] == limit:
         stats["count"] = str(limit) + "+"
     return stats
 
 
-def get_list_count(name, reset=False):
+def get_list_count(name, reset=False, limit=1000):
     global list_stats
     if name in list_stats and list_stats[name]["count"] is not None and not reset:
         return list_stats[name]["count"]
-    if name not in get_lists():
-        return
+    # if name not in get_lists():
+    #     return
     if name not in list_stats:
         coll_ref = db.get_coll_ref(name)
         list_stats[name] = get_list_stats(coll_ref)
     else:
         coll_ref = list_stats[name]["coll_ref"]
+    # https://github.com/googleapis/google-cloud-python/issues/10186
+    # count = None
     count = 0
-    for doc_ref in coll_ref.list_documents():
+    # for doc_ref in coll_ref.list_documents():
+    # select [] fields to count the documents!? - is equivalent to selecting ["__name__"], see
+    # https://github.com/googleapis/google-cloud-python/pull/6735
+    # for doc in coll_ref.select([]).limit(limit).stream():
+    for doc in coll_ref.select(["__name__"]).limit(limit).stream():
         count += 1
+    return set_list_count(name, count)
+
+
+def set_list_count(name, count):
+    global list_stats
+    if name not in list_stats:
+        coll_ref = db.get_coll_ref(name)
+        list_stats[name] = get_list_stats(coll_ref)
     list_stats[name]["count"] = count
+    now = time.time()
+    list_stats[name]["timestamp"] = now
+    # save stats to Firestore
+    # doc_id = name.replace("/", ":")
+    if "/" not in name:
+        coll_ref = db.get_coll_ref("_Stat_Coll_")
+        coll_ref.document(name).set({"name": name, "count": count, "timestamp": now})
     return list_stats[name]["count"]
 
 
@@ -275,6 +309,13 @@ def ilist_get(name, page=1, sort=None, fields=None, truncate=True):
     limit = PAGE_SIZE
     offset = (page - 1) * limit
     coll_ref = db.get_coll_ref(name)
+    coll_id = coll_ref.id
+    if (
+        not fields
+        and coll_id in COLL_CONFIG
+        and COLL_CONFIG[coll_id].get("fields", None)
+    ):
+        fields = COLL_CONFIG[coll_id].get("fields", [])
     if fields:
         if not isinstance(fields, list):
             fields = fields.split(",")
@@ -324,18 +365,23 @@ class ItemAPI(MethodView):
         )
         # return individual property of this item!?
         if fields and isinstance(fields, str) and "," not in fields:
+            if "_parent" in result and result["_parent"]:
+                coll_id = result["_parent"].id
+            else:
+                coll_id = parent
             result = result[fields]
             # TODO: specify content-type if available/known
             if isinstance(result, str):
                 return result, 200, {"Content-Type": "text/plain"}
             # https://stackoverflow.com/questions/20508788/do-i-need-content-type-application-octet-stream-for-file-download
             if isinstance(result, bytes):
-                if parent in COLL_CONFIG and fields in COLL_CONFIG[parent].get(
+                if coll_id in COLL_CONFIG and fields in COLL_CONFIG[coll_id].get(
                     "image", []
                 ):
                     return result, 200, {"Content-Type": "image/png"}
                 # return result, 200, {"Content-Type": "application/octet-stream"}
-            if parent in COLL_CONFIG and fields in COLL_CONFIG[parent].get(
+
+            if coll_id in COLL_CONFIG and fields in COLL_CONFIG[coll_id].get(
                 "pickled", []
             ):
                 return jsonify(result)
@@ -381,9 +427,10 @@ def item_get(parent, item, fields=None, children=False, unpickle=False):
     if not doc.exists:
         raise ValueError("Invalid Document %r" % doc_ref.path)
     info = item_to_dict(doc)
+    coll_id = doc_ref.parent.id
     if unpickle:
-        if parent in COLL_CONFIG:
-            pickled_list = COLL_CONFIG[parent].get("pickled", [])
+        if coll_id in COLL_CONFIG:
+            pickled_list = COLL_CONFIG[coll_id].get("pickled", [])
         else:
             # pickled_list = list(info.keys())
             pickled_list = []
@@ -404,14 +451,15 @@ def item_get(parent, item, fields=None, children=False, unpickle=False):
     if fields:
         result = {}
         result["_reference"] = info["_reference"]
+        result["_parent"] = info["_parent"]
         # if len(fields) == 1 and fields[0] in info:
         for attr in fields:
             if attr in info:
                 result[attr] = info[attr]
         return result
     # handle ancestor
-    # if children and parent in COLL_CONFIG and COLL_CONFIG[parent].get("children", None):
-    #     child_list = COLL_CONFIG[parent].get("children")
+    # if children and coll_id in COLL_CONFIG and COLL_CONFIG[coll_id].get("children", None):
+    #     child_list = COLL_CONFIG[coll_id].get("children")
     #     info["_children"] = {}
     #     for child in child_list:
     #         info["_children"][child] = db.list_entity_keys(
@@ -423,10 +471,10 @@ def item_get(parent, item, fields=None, children=False, unpickle=False):
     # handle references
     if (
         children
-        and parent in COLL_CONFIG
-        and COLL_CONFIG[parent].get("references", None)
+        and coll_id in COLL_CONFIG
+        and COLL_CONFIG[coll_id].get("references", None)
     ):
-        ref_dict = COLL_CONFIG[parent].get("references")
+        ref_dict = COLL_CONFIG[coll_id].get("references")
         info["_references"] = {}
         for ref in ref_dict.keys():
             coll_ref = db.get_coll_ref(ref)

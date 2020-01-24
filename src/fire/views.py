@@ -144,6 +144,9 @@ def list_view(name):
     rows = api.list_get(name, page, sort, fields)
     if len(rows) > 0:
         columns = sorted(rows[0].keys())
+        if count is None and len(rows) < api.PAGE_SIZE:
+            count = len(rows) + (page - 1) * api.PAGE_SIZE
+            api.set_list_count(name, count)
     # TODO: can we get rid of this too?
     coll_ref = db.get_coll_ref(name)
     parent = coll_ref.parent
@@ -171,8 +174,14 @@ def item_view(parent, item):
         parent += "/" + item[:-1]
         return list_view(parent)
     image_list = []
-    if parent in api.COLL_CONFIG and api.COLL_CONFIG[parent].get("image", None):
-        image_list = api.COLL_CONFIG[parent].get("image", [])
+    # extract coll_id from item if needed: parent main_doc/sub_coll/sub_doc -> sub_coll
+    if "/" in item:
+        coll_id = item.split("/")[-2]
+    else:
+        coll_id = parent
+    if coll_id in api.COLL_CONFIG and api.COLL_CONFIG[coll_id].get("image", None):
+        image_list = api.COLL_CONFIG[coll_id].get("image", [])
+    # if we only select an image field, show the image
     fields = request.args.get("fields", None)
     if fields and fields in image_list:
         return image_view(parent, item, fields)

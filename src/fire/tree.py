@@ -59,6 +59,10 @@ class BaseStructure(object):
         # /my_coll/my_doc/your_coll/your_doc -> /my_coll/my_doc/your_coll
         return os.path.dirname(doc_ref.path)
 
+    def get_parent_ref(self, doc_ref):
+        ref_path = self.get_parent_path(doc_ref)
+        raise NotImplementedError("TODO: doc or coll?")
+
     def add_doc(self, doc_path, info=None):
         # doc_ref = self.client.document(doc_path)
         if isinstance(doc_path, str):
@@ -244,6 +248,11 @@ class FileStructure(BaseStructure):
         # /test/my_dir/your_dir/my_file -> /test/my_dir/your_dir
         return os.path.dirname(doc_ref.path)
 
+    def get_parent_ref(self, doc_ref):
+        ref_path = self.get_parent_path(doc_ref)
+        # TODO: what if we need file_ref for chunk someday?
+        return self.get_dir_ref(ref_path)
+
     def add_chunk(self, file_ref, data, offset=0):
         # info = {'data': data, 'size': len(data), 'offset': offset}
         info = {"size": len(data), "offset": offset, "data": data}
@@ -260,14 +269,14 @@ class FileStructure(BaseStructure):
         logging.debug("Creating file %s" % file_ref.path)
         info = {"size": len(data)}
         if self.with_parent_path:
-            parent = self.get_parent_path(file_ref)
-            info.update({"parent_path": parent})
+            parent = self.get_parent_ref(file_ref)
+            info.update({"parent_ref": parent})
         file_ref.set(info)
         offset = 0
         self.add_chunk(file_ref, data, offset)
         # file_ref.collection('c').add({'offset': 0, 'size': len(data), 'data': data})
         # TODO: update count of file_ref.parent.parent (= document that owns the collection this file belongs to)
-        # self.client.collection(self.chunks).add({'offset': offset, 'size': len(data), 'data': data, 'parent_path': file_ref.id})
+        # self.client.collection(self.chunks).add({'offset': offset, 'size': len(data), 'data': data, 'parent_ref': file_ref})
         # TODO: update count of parent
         # see firestore.transactional or washington_ref.update({"population": firestore.Increment(50)})
         return file_ref.get()
@@ -308,8 +317,8 @@ class FileStructure(BaseStructure):
         logging.debug("Creating dir %s" % dir_ref.path)
         info = {"count": 0}
         if self.with_parent_path:
-            parent = self.get_parent_path(dir_ref)
-            info.update({"parent_path": parent})
+            parent = self.get_parent_ref(dir_ref)
+            info.update({"parent_ref": parent})
         dir_ref.set(info)
         # dir_ref.collection('d').document('.empty').set({'size': 0})
         return dir_ref.get()
@@ -317,7 +326,7 @@ class FileStructure(BaseStructure):
     def get_dir_query(self, dir_ref, field_paths=["size", "count"]):
         # for doc in dir_ref.collection('d').select(['size', 'count']).stream():
         # return dir_ref.collection('d').stream()
-        # return self.client.collection(self.paths).select(['size', 'count']).where('parent_path', '==', dir_ref.id).stream()
+        # return self.client.collection(self.paths).select(['size', 'count']).where('parent_ref', '==', dir_ref).stream()
         # return []
         return dir_ref.collection("_").select(field_paths)
 
@@ -518,6 +527,11 @@ class TreeStructure(TestStructure):
         # files/test/d/my_dir/d/your_dir/d/my_file -> files/test/d/my_dir/d/your_dir
         return "/".join(doc_ref.path.split("/")[:-2])
 
+    def get_parent_ref(self, doc_ref):
+        ref_path = self.get_parent_path(doc_ref)
+        doc_ref = self.client.document(ref_path)
+        return doc_ref
+
     def add_chunk(self, file_ref, data, offset=0):
         result = file_ref.collection("c").add(
             {"offset": offset, "size": len(data), "data": data}
@@ -582,14 +596,14 @@ class FlatStructure(TestStructure):
         # test:my_dir:your_dir:my_file -> test:my_dir:your_dir
         return ":".join(doc_ref.id.split(":")[:-1])
 
+    def get_parent_ref(self, doc_ref):
+        ref_path = self.get_parent_path(doc_ref)
+        doc_ref = self.client.collection(self.paths).document(ref_path)
+        return doc_ref
+
     def add_chunk(self, file_ref, data, offset=0):
         result = self.client.collection(self.chunks).add(
-            {
-                "offset": offset,
-                "size": len(data),
-                "data": data,
-                "parent_path": file_ref.id,
-            }
+            {"offset": offset, "size": len(data), "data": data, "parent_ref": file_ref}
         )
         return result
 
@@ -597,25 +611,25 @@ class FlatStructure(TestStructure):
         return (
             self.client.collection(self.chunks)
             .select(["offset", "size"])
-            .where("parent_path", "==", file_ref.id)
+            .where("parent_ref", "==", file_ref)
             .order_by("offset")
         )
 
     def iget_chunks_data(self, file_ref):
         query = (
             self.client.collection(self.chunks)
-            .where("parent_path", "==", file_ref.id)
+            .where("parent_ref", "==", file_ref)
             .order_by("offset")
         )
         for chunk in query.stream():
             yield chunk.get("data")
 
     def get_dir_query(self, dir_ref, field_paths=["size", "count"]):
-        # return self.client.collection(self.paths).where('parent_path', '==', dir_ref.id).stream()
+        # return self.client.collection(self.paths).where('parent_ref', '==', dir_ref).stream()
         return (
             self.client.collection(self.paths)
             .select(field_paths)
-            .where("parent_path", "==", dir_ref.id)
+            .where("parent_ref", "==", dir_ref)
         )
 
     # the following methods only apply when dealing with a dir collection supporting .list_documents(), i.e. not flat

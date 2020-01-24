@@ -2,6 +2,11 @@
   "chunks": {
     "truncate": [
       "data"
+    ],
+    "fields": [
+      "parent_ref",
+      "offset",
+      "size"
     ]
   },
   "paths": {
@@ -37,6 +42,44 @@
   "infostore": {
     "pickled": [
       "info"
+    ]
+  },
+  "channels": {
+    "references": {
+      "programs": "channel_ref"
+    }
+  },
+  "programs": {
+    "fields": [
+      "channel_ref",
+      "view_date",
+      "entries"
+    ]
+  },
+  "sites": {
+    "fields": [
+      "site_id",
+      "host",
+      "url",
+      "entries"
+    ],
+    "references": {
+      "url_data": "site_ref",
+      "url_distr": "site_ref"
+    }
+  },
+  "url_data": {
+    "fields": [
+      "site_ref",
+      "month",
+      "entries"
+    ]
+  },
+  "url_distr": {
+    "fields": [
+      "site_ref",
+      "month",
+      "entries"
     ]
   }
 }
