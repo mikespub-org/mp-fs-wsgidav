@@ -28,7 +28,7 @@ def test_my_fs(my_fs):
     #
     # Create/delete a test filesystem
     # my_fs.make_dir("/test")
-    # my_fs.make_tree("/test", 0)
+    my_fs.make_tree("/test", 0)
     # my_fs.clean_tree("/test", 0)
     # my_fs.make_tree("/test", 0)
     # result = my_fs.count

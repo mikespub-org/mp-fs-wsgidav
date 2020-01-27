@@ -598,6 +598,8 @@ class FlatStructure(TestStructure):
 
     def get_parent_ref(self, doc_ref):
         ref_path = self.get_parent_path(doc_ref)
+        if not ref_path:
+            return None
         doc_ref = self.client.collection(self.paths).document(ref_path)
         return doc_ref
 
