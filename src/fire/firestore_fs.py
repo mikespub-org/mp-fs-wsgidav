@@ -7,14 +7,14 @@
 
 Example opening directly with FirestoreFS():
     >>> from firestore_fs import FirestoreFS
-    >>> fi_fs = FirestoreFS()
-    >>> fi_fs.listdir("/")
+    >>> fire_fs = FirestoreFS()
+    >>> fire_fs.listdir("/")
 
 Example opening via a FS URL "firestore://"
     >>> import fs
     >>> import firestore_fs  # not registered by default, so we need to import first
-    >>> fi_fs = fs.open_fs("firestore://")
-    >>> fi_fs.listdir("/")
+    >>> fire_fs = fs.open_fs("firestore://")
+    >>> fire_fs.listdir("/")
 
 For more information on PyFilesystem2, see https://docs.pyfilesystem.org/
 """
@@ -36,11 +36,11 @@ from fs.opener import Opener
 from fs.opener import registry
 
 # use the fire_fs module here
-from . import fire_fs  # TODO
+from . import fs as fire_fs  # TODO
 
 # from .doc import Path as PathDoc
 # TODO: replace with more advanced IO class - see e.g. _MemoryFile in fs.memoryfs
-# from .fire_fs import BtIO
+# from .fs import BtIO
 
 #
 # Specify location of your service account credentials in environment variable before you start:
@@ -969,16 +969,17 @@ class FirestoreOpener(Opener):
     protocols = ["firestore"]
 
     def open_fs(self, fs_url, parse_result, writeable, create, cwd):
-        fi_fs = FirestoreFS()
-        return fi_fs
+        fire_fs = FirestoreFS()
+        return fire_fs
 
 
 def main():
-    fi_fs = FirestoreFS("/")
-    # fi_fs = WrapFirestoreFS()
-    # fi_fs = open_fs("firestore://")
-    fi_fs.tree()
-    return fi_fs
+    fire_fs = FirestoreFS("/")
+    # fire_fs = WrapFirestoreFS()
+    # fire_fs = open_fs("firestore://")
+    fire_fs.tree()
+    fire_fs.close()
+    return fire_fs
 
 
 if __name__ == "__main__":
