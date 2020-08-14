@@ -11,11 +11,11 @@
        ***************************************************************************************** -->
 
 <!-- The core Firebase JS SDK is always required and must be listed first -->
-<script src="https://www.gstatic.com/firebasejs/7.5.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/{{ FIREBASEJS_SDK_VERSION }}/firebase-app.js"></script>
 
 <!-- TODO: Add SDKs for Firebase products that you want to use
      https://firebase.google.com/docs/web/setup#available-libraries -->
-<script src="https://www.gstatic.com/firebasejs/7.5.2/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/{{ FIREBASEJS_SDK_VERSION }}/firebase-auth.js"></script>
 
 <script>
   // Your web app's Firebase configuration
@@ -39,8 +39,8 @@
   </script>
   <!-- [START gae_python37_auth_include_firebaseui] -->
   <!-- updated from https://github.com/firebase/firebaseui-web -->
-  <script src="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.js"></script>
-  <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.css" />
+  <script src="https://www.gstatic.com/firebasejs/ui/{{ FIREBASEJS_UI_VERSION }}/firebase-ui-auth.js"></script>
+  <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/{{ FIREBASEJS_UI_VERSION }}/firebase-ui-auth.css" />
   <!-- [END gae_python37_auth_include_firebaseui] -->
   <script src="/static/auth_script.js"></script>
   <link type="text/css" rel="stylesheet" href="/static/auth_style.css">

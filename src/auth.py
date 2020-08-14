@@ -130,4 +130,6 @@ def user_token():
         FIREBASE_PROJECT_ID=os.environ.get("FIREBASE_PROJECT_ID", "MY_PROJECT_ID"),
         FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY", "MY_API_KEY"),
         FIREBASE_ID_TOKEN=sessions.get_cookie_name("id_token"),
+        FIREBASEJS_SDK_VERSION=os.environ.get("FIREBASEJS_SDK_VERSION", "7.18.0"),
+        FIREBASEJS_UI_VERSION=os.environ.get("FIREBASEJS_UI_VERSION", "4.6.1"),
     )
