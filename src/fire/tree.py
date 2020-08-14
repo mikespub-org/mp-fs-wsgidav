@@ -589,6 +589,8 @@ class FlatStructure(TestStructure):
 
     def get_doc_ref(self, path, kind="Base"):
         ref_path = self.convert_path_to_ref(path)
+        if not ref_path:
+            return None
         doc_ref = self.client.collection(self.paths).document(ref_path)
         return doc_ref
 
