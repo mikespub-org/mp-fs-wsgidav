@@ -4,7 +4,7 @@
 
 {% block styles %}
   <!-- See https://github.com/firebase/firebaseui-web. -->
-  <!-- [START gae_python37_auth_init_firebase] -->
+  <!-- [START gae_python38_auth_init_firebase] -->
   <!-- *******************************************************************************************
        * TODO(DEVELOPER): Paste the initialization snippet from:
        * http://console.firebase.google.com > Overview > Add Firebase to your web app.
@@ -29,7 +29,7 @@
   const FIREBASE_ID_TOKEN = "{{ FIREBASE_ID_TOKEN }}";
 </script>
 
-  <!-- [END gae_python37_auth_init_firebase] -->
+  <!-- [END gae_python38_auth_init_firebase] -->
   <script>
     if (typeof firebase === 'undefined') {
       const msg = "Please set the Firebase project ID and API key as environment variables in app.yaml. See the application setup details at https://console.cloud.google.com > Identity Platform > Providers, or the initialization snippet at https://console.firebase.google.com > Overview > Add Firebase to your web app.";
@@ -37,11 +37,11 @@
       alert(msg);
     }
   </script>
-  <!-- [START gae_python37_auth_include_firebaseui] -->
+  <!-- [START gae_python38_auth_include_firebaseui] -->
   <!-- updated from https://github.com/firebase/firebaseui-web -->
   <script src="https://www.gstatic.com/firebasejs/ui/{{ FIREBASEJS_UI_VERSION }}/firebase-ui-auth.js"></script>
   <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/{{ FIREBASEJS_UI_VERSION }}/firebase-ui-auth.css" />
-  <!-- [END gae_python37_auth_include_firebaseui] -->
+  <!-- [END gae_python38_auth_include_firebaseui] -->
   <script src="/static/auth_script.js"></script>
   <link type="text/css" rel="stylesheet" href="/static/auth_style.css">
 {% endblock %}
@@ -49,7 +49,7 @@
 {% block header %}Google Cloud Identity Platform{% endblock %}
 
 {% block content %}
-<!-- [START gae_python37_auth_firebase_html] -->
+<!-- [START gae_python38_auth_firebase_html] -->
 <div id="firebaseui-auth-container"></div>
 
 <button id="sign-out" hidden=true>Sign Out</button>
@@ -77,6 +77,6 @@
     <p>Error: {{ error_message }}</p>
   {% endif %}
 </div>
-<!-- [END gae_python37_auth_firebase_html] -->
+<!-- [END gae_python38_auth_firebase_html] -->
 {% endblock %}
 
