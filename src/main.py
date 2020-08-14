@@ -17,6 +17,8 @@ from werkzeug.wsgi import get_path_info, peek_path_info, pop_path_info
 # Import default app here + preset TRUSTED_AUTH_HEADER in environ for non-wsgidav applications too
 from clouddav import app as default_app
 
+# from sample import app as default_app
+
 
 class PathDispatcher(object):
     def __init__(self, default_app, handlers=None, root="/"):
