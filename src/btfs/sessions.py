@@ -230,6 +230,8 @@ class AuthSession(db.CachedModel):
         query.add_filter("update_time", "<", expired)
         result = []
         for entity in query.fetch(limit, offset):
+            if len(result) > 499:
+                break
             result.append(entity.key)
         logging.debug("GC: %s" % len(result))
         if len(result) > 0:
