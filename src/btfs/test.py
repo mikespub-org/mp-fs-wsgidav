@@ -19,34 +19,6 @@ from btfs.memcache_lock_storage import LockStorageMemcache
 
 standard_library.install_aliases()
 
-count = 0
-
-
-def make_tree(parent, depth=0):
-    global count
-    dirname = os.path.basename(parent).replace("test", "dir")
-    filename = dirname.replace("dir", "file")
-    data = b"x" * 1024
-    for i in range(1, 10):
-        name = "%s.%s.txt" % (filename, i)
-        path = os.path.join(parent, name)
-        print("  " * depth, path)
-        f1 = data_fs.btopen(path, "w")
-        f1.write(data)
-        f1.close()
-        assert data_fs.isfile(path)
-        count += 1
-    if depth > 1:
-        return
-    for i in range(1, 10):
-        name = "%s.%s" % (dirname, i)
-        path = os.path.join(parent, name)
-        print("  " * depth, path)
-        data_fs.mkdir(path)
-        assert data_fs.isdir(path)
-        make_tree(path, depth + 1)
-    return count
-
 
 def test():
     logging.info("test.test()")
@@ -78,9 +50,6 @@ def test():
     # assert not data_fs.isfile(rootpath+"/dir1/file1.txt")
 
     print("*** data_fs tests passed ***")
-
-    # make_tree("/test", 0)
-    # print(count)
 
     # Test providers
     provider = BTFSResourceProvider()
@@ -160,6 +129,5 @@ def profile_test():
 
 
 if __name__ == "__main__":
-    # print(make_tree('/test'))
     # test()
     profile_test()
