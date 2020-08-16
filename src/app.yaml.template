@@ -23,6 +23,8 @@ env_variables:
   FIREBASEJS_SDK_VERSION: '7.18.0'
   # Current version of the FirebaseUI JavaScript library for use in templates/auth_token.html
   FIREBASEJS_UI_VERSION: '4.6.1'
+  # For local testing behind a reverse proxy
+  # PROXY_PREFIX: ''
   # For local admin testing using trusted_auth_header
   # USER_EMAIL: 'test@example.com'
   # No longer relevant for python 3

@@ -13,6 +13,7 @@ cred_file = "../datastore-admin.cred.json"
 # cred_file = "../firestore-admin.cred.json"
 if os.path.isfile(cred_file):
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_file
+    # os.environ["PROXY_PREFIX"] = "/test"
 
 with open("app.yaml", "r") as fp:
     info = yaml.safe_load(fp)

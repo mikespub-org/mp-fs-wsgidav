@@ -27,6 +27,11 @@
     "static_dir": "static"
   },
   {
+    "url": "/tmp/.*",
+    "script": "sample.app",
+    "secure": "always"
+  },
+  {
     "url": ".*",
     "script": "clouddav.app",
     "secure": "always"
