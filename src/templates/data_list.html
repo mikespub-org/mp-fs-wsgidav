@@ -3,6 +3,18 @@
 {% block content %}
 	{% include "data_nav.html" %}
 
+	{% if filters %}
+	<p>Filters:
+	{% for where in filters %}
+	{% if where[2]|is_item %}
+		{{ where[0] }}{{ where[1] }}<a href="{{ base_url }}/{{ where[2]|item_link }}">{{ where[2].id_or_name }}</a>
+	{% else %}
+		{{ where[0] }}{{ where[1] }}{{ where[2] }}
+	{% endif %}
+	{% endfor %}
+	</p>
+	{% endif %}
+
 	<table border="0" cellpadding="5">
 		<thead>
 			<tr>

@@ -98,6 +98,9 @@ def get_pager(count=None, page=1, size=None):
     next_url = None
     last_url = None
     url = request.url
+    # undo URL encoding for filter params, mainly for cosmetic reasons
+    if "filters" in url:
+        url = url.replace("%5B", "[").replace("%5D", "]").replace("%2F", "/")
     if "page=" in url:
         page_url = url.replace("page=%s" % page, "page=")
         if "&page=" in page_url:
@@ -149,11 +152,19 @@ def list_view(name):
     page = int(request.args.get("page", 1))
     sort = request.args.get("sort", None)
     fields = request.args.get("fields", None)
-    rows = api.list_get(name, page, sort, fields)
+    filters = api.parse_filter_args(request.args, name)
+    if filters:
+        rows = api.list_get(name, page, sort, fields, filters=filters)
+    else:
+        rows = api.list_get(name, page, sort, fields)
+    count = api.get_list_count(name)
     columns = []
     if len(rows) > 0:
         columns = sorted(rows[0].keys())
-    count = api.get_list_count(name)
+        if len(rows) < api.PAGE_SIZE:
+            count = len(rows) + (page - 1) * api.PAGE_SIZE
+        elif filters is not None:
+            count = None
     return render_template(
         "data_list.html",
         base_url=BASE_URL,
@@ -164,6 +175,7 @@ def list_view(name):
         count=count,
         columns=columns,
         rows=rows,
+        filters=filters,
     )
 
 

@@ -26,5 +26,48 @@
     "pickled": [
       "info"
     ]
+  },
+  "SessionStore": {
+    "pickled": [
+      "session"
+    ]
+  },
+  "InfoStore": {
+    "pickled": [
+      "info"
+    ]
+  },
+  "UserStore": {
+    "pickled": [
+      "user"
+    ]
+  },
+  "ServiceCatalog": {
+    "references": {
+      "ServiceEntry": "catalog"
+    }
+  },
+  "ServiceEntry": {
+    "image": [
+      "data",
+      "thumbnail_data"
+    ]
+  },
+  "TaskList": {
+    "references": {
+      "Task": "task_list",
+      "TaskListMember": "task_list"
+    }
+  },
+  "Greeting": {
+    "parent": "Guestbook",
+    "truncate": [
+      "data"
+    ]
+  },
+  "Guestbook": {
+    "children": [
+      "Greeting"
+    ]
   }
 }

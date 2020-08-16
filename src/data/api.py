@@ -221,6 +221,40 @@ def get_list_count(model, reset=False):
     return list_stats[model]["count"]
 
 
+def parse_filter_args(args, kind):
+    filters = None
+    for key, value in list(args.items()):
+        if not key.startswith("filters["):
+            continue
+        if filters is None:
+            filters = []
+        prop_name = key[8:-1]
+        # TODO: look at first char for <, >, etc.
+        operator = "="
+        # CHECKME: assuming this is a Path entity here!?
+        if "/" in value:
+            parent = "Path"
+            parent_key = item_get_key(parent, value)
+            filters.append((prop_name, operator, parent_key))
+            continue
+        # /data/Picture/?filters[album]=3846051 -> parent = "Album"
+        found = False
+        for parent in KIND_CONFIG:
+            if not KIND_CONFIG[parent].get("references", None):
+                continue
+            ref_dict = KIND_CONFIG[parent].get("references")
+            for ref in ref_dict.keys():
+                if ref == kind and ref_dict[ref] == prop_name:
+                    # print("Found", parent, ref, prop_name)
+                    parent_key = item_get_key(parent, value)
+                    filters.append((prop_name, operator, parent_key))
+                    found = True
+                    break
+        if not found:
+            filters.append((prop_name, operator, value))
+    return filters
+
+
 class HomeAPI(MethodView):
     def get(self):
         """Get all models/kinds"""
@@ -272,7 +306,11 @@ class ListAPI(MethodView):
         page = int(request.args.get("page", 1))
         sort = request.args.get("sort", None)
         fields = request.args.get("fields", None)
-        result = list_get(name, page, sort, fields)
+        filters = parse_filter_args(request.args, name)
+        if filters:
+            result = list_get(name, page, sort, fields, filters=filters)
+        else:
+            result = list_get(name, page, sort, fields)
         return jsonify(result)
 
     def post(self, name):
@@ -287,12 +325,12 @@ class ListAPI(MethodView):
         return result
 
 
-def list_get(name, page=1, sort=None, fields=None, truncate=True):
+def list_get(name, page=1, sort=None, fields=None, truncate=True, filters=None):
     """Get all entities of kind"""
-    return list(ilist_get(name, page=page, sort=sort, fields=fields, truncate=truncate))
+    return list(ilist_get(name, page=page, sort=sort, fields=fields, truncate=truncate, filters=filters))
 
 
-def ilist_get(name, page=1, sort=None, fields=None, truncate=True):
+def ilist_get(name, page=1, sort=None, fields=None, truncate=True, filters=None):
     if page < 1:
         page = 1
     limit = PAGE_SIZE
@@ -308,6 +346,9 @@ def ilist_get(name, page=1, sort=None, fields=None, truncate=True):
             fields = fields.split(",")
         if len(fields) > 0:
             kwargs["projection"] = fields
+    if filters:
+        if len(filters) > 0:
+            kwargs["filters"] = filters
     if name not in KNOWN_MODELS:
         for entity in db.ilist_entities(name, limit, offset, **kwargs):
             info = item_to_dict(entity, truncate=truncate)
@@ -477,9 +518,14 @@ def item_get(parent, item, fields=None, children=False, unpickle=False):
         ref_dict = KIND_CONFIG[parent].get("references")
         info["_references"] = {}
         for ref in ref_dict.keys():
-            info["_references"][ref] = db.list_entity_keys(
+            child_refs = db.list_entity_keys(
                 ref, limit=PAGE_SIZE, filters=[(ref_dict[ref], "=", parent_key)]
             )
+            if len(child_refs) > 0:
+                # info["_references"][ref] = child_refs
+                if ref not in info["_references"]:
+                    info["_references"][ref] = {}
+                info["_references"][ref][ref_dict[ref]] = child_refs
     return info
 
 
