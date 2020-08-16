@@ -86,6 +86,9 @@ def get_pager(count=None, page=1, size=None):
     next_url = None
     last_url = None
     url = request.url
+    # undo URL encoding for filter params, mainly for cosmetic reasons
+    if "filters" in url:
+        url = url.replace("%5B", "[").replace("%5D", "]").replace("%2F", "/")
     if "page=" in url:
         page_url = url.replace("page=%s" % page, "page=")
         if "&page=" in page_url:
@@ -137,16 +140,24 @@ def list_view(name):
     sort = request.args.get("sort", None)
     page = int(request.args.get("page", 1))
     fields = request.args.get("fields", None)
+    # filters = request.args.get("filters", None)
+    filters = api.parse_filter_args(request.args, name)
     if page < 1:
         page = 1
     count = api.get_list_count(name)
     columns = []
-    rows = api.list_get(name, page, sort, fields)
+    if filters is not None:
+        rows = api.list_get(name, page, sort, fields, filters=filters)
+    else:
+        rows = api.list_get(name, page, sort, fields)
     if len(rows) > 0:
         columns = sorted(rows[0].keys())
-        if count is None and len(rows) < api.PAGE_SIZE:
+        if len(rows) < api.PAGE_SIZE:
             count = len(rows) + (page - 1) * api.PAGE_SIZE
-            api.set_list_count(name, count)
+            if count is None and filters is None:
+                api.set_list_count(name, count)
+        elif filters is not None:
+            count = None
     # TODO: can we get rid of this too?
     coll_ref = db.get_coll_ref(name)
     parent = coll_ref.parent
@@ -161,6 +172,7 @@ def list_view(name):
         columns=columns,
         rows=rows,
         parent=parent,
+        filters=filters,
     )
 
 

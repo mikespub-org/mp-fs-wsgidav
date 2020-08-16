@@ -33,9 +33,13 @@
 		{% if "_references" in info and info["_references"]|length > 0 %}
 		<li>References: <ul>
 		{% for ref in info["_references"].keys() %}
-			{% for item in info["_references"][ref] %}
-				<li><a href="{{ base_url }}/{{ ref }}/">{{ ref }}</a>: <a href="{{ base_url }}/{{ item|item_link }}">{{ item.id }}</a></li>
+		{% for key in info["_references"][ref].keys() %}
+			<li><a href="{{ base_url }}/{{ ref }}/?filters[{{ key }}]={{ info["_reference"].path }}">{{ ref }}.{{ key }}</a>:<ol>
+			{% for item in info["_references"][ref][key] %}
+				<li><a href="{{ base_url }}/{{ item|item_link }}">{{ item.id }}</a></li>
 			{% endfor %}
+			</ol></li>
+		{% endfor %}
 		{% endfor %}
 		</ul></li>
 		{% endif %}

@@ -240,6 +240,25 @@ def set_list_count(name, count):
     return list_stats[name]["count"]
 
 
+def parse_filter_args(args, name):
+    filters = None
+    for key, value in list(args.items()):
+        if not key.startswith("filters["):
+            continue
+        if filters is None:
+            filters = []
+        field_path = key[8:-1]
+        # TODO: look at first char for <, >, etc.
+        op_string = "=="
+        # CHECKME: assuming this is a doc path here!?
+        if "/" in value:
+            filters.append((field_path, op_string, db.get_doc_ref(value)))
+        # TODO: do something with name, cfr. data kind
+        else:
+            filters.append((field_path, op_string, value))
+    return filters
+
+
 class HomeAPI(MethodView):
     def get(self):
         """Get all top-level collections"""
@@ -283,7 +302,11 @@ class ListAPI(MethodView):
         page = int(request.args.get("page", 1))
         sort = request.args.get("sort", None)
         fields = request.args.get("fields", None)
-        result = list_get(name, page, sort, fields)
+        filters = parse_filter_args(request.args, name)
+        if filters:
+            result = list_get(name, page, sort, fields, filters=filters)
+        else:
+            result = list_get(name, page, sort, fields)
         return jsonify(result)
 
     def post(self, name):
@@ -298,12 +321,12 @@ class ListAPI(MethodView):
         return result
 
 
-def list_get(name, page=1, sort=None, fields=None, truncate=True):
+def list_get(name, page=1, sort=None, fields=None, truncate=True, filters=None):
     """Get all documents in collection"""
-    return list(ilist_get(name, page=page, sort=sort, fields=fields, truncate=truncate))
+    return list(ilist_get(name, page=page, sort=sort, fields=fields, truncate=truncate, filters=filters))
 
 
-def ilist_get(name, page=1, sort=None, fields=None, truncate=True):
+def ilist_get(name, page=1, sort=None, fields=None, truncate=True, filters=None):
     if page < 1:
         page = 1
     limit = PAGE_SIZE
@@ -319,14 +342,19 @@ def ilist_get(name, page=1, sort=None, fields=None, truncate=True):
     if fields:
         if not isinstance(fields, list):
             fields = fields.split(",")
-        query = coll_ref.select(fields).limit(limit).offset(offset)
+        query = coll_ref.select(fields)
     else:
-        query = coll_ref.limit(limit).offset(offset)
+        query = coll_ref
+    if filters:
+        # [(field_path, op_string, value)]
+        for field_path, op_string, value in filters:
+            query = query.where(field_path, op_string, value)
     if sort:
         if sort.startswith("-"):
             query = query.order_by(sort[1:], direction="DESCENDING")
         else:
             query = query.order_by(sort)
+    query = query.limit(limit).offset(offset)
     for doc in query.stream():
         info = item_to_dict(doc, truncate=truncate)
         yield info
@@ -356,6 +384,9 @@ class ItemAPI(MethodView):
             page = int(request.args.get("page", 1))
             sort = request.args.get("sort", None)
             fields = request.args.get("fields", None)
+            filters = parse_filter_args(request.args, parent)
+            if filters:
+                return jsonify(list_get(parent, page, sort, fields, filters=filters))
             return jsonify(list_get(parent, page, sort, fields))
         fields = request.args.get("fields", None)
         children = request.args.get("children", False)
@@ -488,7 +519,10 @@ def item_get(parent, item, fields=None, children=False, unpickle=False):
                 # print(item_to_dict(child_doc))
                 child_refs.append(child_doc.reference)
             if len(child_refs) > 0:
-                info["_references"][ref] = child_refs
+                # info["_references"][ref] = child_refs
+                if ref not in info["_references"]:
+                    info["_references"][ref] = {}
+                info["_references"][ref][ref_dict[ref]] = child_refs
     return info
 
 
