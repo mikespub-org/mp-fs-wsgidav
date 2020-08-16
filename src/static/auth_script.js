@@ -17,6 +17,8 @@
 
 // Set in templates/auth_token.html based on environment variable in app.yaml
 // const FIREBASE_ID_TOKEN = 'id_token';
+// Set proxy prefix for local testing behind a reverse proxy
+// const PROXY_PREFIX = '';
 
 window.addEventListener('load', function () {
   
@@ -31,7 +33,7 @@ window.addEventListener('load', function () {
   // [START gae_python38_auth_UIconfig_variable]
   // FirebaseUI config.
   var uiConfig = {
-    signInSuccessUrl: '/auth/',
+    signInSuccessUrl: PROXY_PREFIX + '/auth/',
     signInOptions: [
       // Remove any lines corresponding to providers you did not check in
       // the Firebase console.
@@ -57,7 +59,7 @@ window.addEventListener('load', function () {
         // SECURITY NOTE: As cookies can easily be modified, only put the
         // token (which is verified server-side) in a cookie; do not add other
         // user information.
-        document.cookie = FIREBASE_ID_TOKEN + "=" + token + "; path=/";
+        document.cookie = FIREBASE_ID_TOKEN + "=" + token + "; path=" + PROXY_PREFIX + "/";
       });
     } else {
       // User is signed out.
@@ -73,7 +75,7 @@ window.addEventListener('load', function () {
       document.getElementById('sign-out').hidden = true;
       document.getElementById('login-info').hidden = true;
       // Clear the token cookie.
-      document.cookie = FIREBASE_ID_TOKEN + "=" + "; path=/";
+      document.cookie = FIREBASE_ID_TOKEN + "=" + "; path=" + PROXY_PREFIX + "/";
     }
   }, function (error) {
     console.log(error);

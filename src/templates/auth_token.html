@@ -27,6 +27,8 @@
   firebase.initializeApp(firebaseConfig);
   // Set cookie name of Firebase id token for use in static/auth_script.js
   const FIREBASE_ID_TOKEN = "{{ FIREBASE_ID_TOKEN }}";
+  // Set proxy prefix for local testing behind a reverse proxy, for use in static/auth_script.js
+  const PROXY_PREFIX = "{{ PROXY_PREFIX }}";
 </script>
 
   <!-- [END gae_python38_auth_init_firebase] -->

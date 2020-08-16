@@ -95,15 +95,17 @@ def user_home():
     max_age = (
         sessions.EXPIRE_DAYS * 24 * 60 * 60
     )  # set to EXPIRE_DAYS days here (id_token expires in 1 hour)
-    resp.set_cookie(key, value, max_age=max_age, path="/")
+    PROXY_PREFIX = os.environ.get("PROXY_PREFIX", "")
+    path = "%s/" % PROXY_PREFIX
+    resp.set_cookie(key, value, max_age=max_age, path=path)
     key = sessions.get_cookie_name("id_token")
-    resp.set_cookie(key, "", max_age=None, path="/")
+    resp.set_cookie(key, "", max_age=None, path=path)
     return resp
 
 
 @app.route("/auth/nologin", methods=["GET", "POST"])
 def user_login():
-    return redirect(sessions.AUTH_URL + "?hello")
+    return redirect("/auth/?hello")
 
 
 @app.route("/auth/logout", methods=["GET", "POST"])
@@ -111,7 +113,7 @@ def user_logout():
     session = sessions.get_current_session(request.environ)
     if session.is_user():
         session.delete()
-    return redirect(sessions.AUTH_URL + "?goodbye")
+    return redirect("/auth/?goodbye")
 
 
 @app.route("/auth/login", methods=["GET", "POST"])
@@ -132,4 +134,5 @@ def user_token():
         FIREBASE_ID_TOKEN=sessions.get_cookie_name("id_token"),
         FIREBASEJS_SDK_VERSION=os.environ.get("FIREBASEJS_SDK_VERSION", "7.18.0"),
         FIREBASEJS_UI_VERSION=os.environ.get("FIREBASEJS_UI_VERSION", "4.6.1"),
+        PROXY_PREFIX=os.environ.get("PROXY_PREFIX", ""),
     )
