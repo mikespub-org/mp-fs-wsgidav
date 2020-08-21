@@ -31,6 +31,7 @@ from fs.opener import registry
 
 from functools import partial
 import time
+import datetime
 import itertools
 import json
 import logging
@@ -469,11 +470,11 @@ class DatastoreDB(FS):
 
     @classmethod
     def _make_info_from_resource(cls, _res, namespaces):
-        # def epoch(dt):
-        #     # return time.mktime(dt.utctimetuple())
-        #     return (
-        #         dt - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
-        #     ) / datetime.timedelta(seconds=1)
+        def epoch(dt):
+            # return time.mktime(dt.utctimetuple())
+            return (
+                dt - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+            ) / datetime.timedelta(seconds=1)
 
         # st_size = _res.size
         # st_atime = epoch(_res.modify_time)
@@ -498,6 +499,19 @@ class DatastoreDB(FS):
             info = {"basic": {"name": name, "is_dir": False}}
             if "properties" in namespaces:
                 info["properties"] = _res.to_dict(True)
+                # skip setting size if we want to read a property
+                if "size" in info["properties"]:
+                    st_size = info["properties"]["size"]
+                else:
+                    st_size = 0
+                    for value in list(info["properties"].values()):
+                        st_size += value.__sizeof__()
+                if "create_time" in info["properties"]:
+                    st_ctime = epoch(info["properties"]["create_time"])
+                if "update_time" in info["properties"]:
+                    st_mtime = epoch(info["properties"]["update_time"])
+                elif "modify_time" in info["properties"]:
+                    st_mtime = epoch(info["properties"]["modify_time"])
         if "details" in namespaces:
             info["details"] = {
                 # "_write": ["accessed", "modified"],
