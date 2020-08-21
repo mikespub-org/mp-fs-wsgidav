@@ -191,6 +191,8 @@ def expired_sessions():
         % (result, sessions.EXPIRE_DAYS)
     )
     if result > 0:
+        if result == 500:
+            output += " <a href='?expired_sessions'>Delete more...</a>"
         api.get_stats(True)
     return output
 
