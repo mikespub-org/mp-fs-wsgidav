@@ -48,7 +48,8 @@ from builtins import object
 from future import standard_library
 from wsgidav.dc.base_dc import BaseDomainController
 
-from .auth import find_auth_user, users
+from .auth import find_auth_user
+from . import users
 
 standard_library.install_aliases()
 

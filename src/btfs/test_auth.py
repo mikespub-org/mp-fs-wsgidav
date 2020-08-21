@@ -16,7 +16,7 @@ standard_library.install_aliases()
 
 def test_auth():
 
-    from .auth import users
+    from . import users
     from .google_dc import xAppAuth
 
     # auth = xAppAuth("moogle@wwwendt.de", "test", "clouddav")
@@ -26,7 +26,7 @@ def test_auth():
     print(user)
 
     auth = xAppAuth("moogle@wwwendt.de", "mc.martin", "clouddav-mar10")
-    print(auth.getAuthtoken())
+    print(auth.getAuthtoken())  # urllib.error.HTTPError: HTTP Error 404: Not Found
     user = users.get_current_user()
     print(user)
 
