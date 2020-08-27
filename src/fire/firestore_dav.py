@@ -30,7 +30,7 @@ from wsgidav import util
 from wsgidav.dav_error import HTTP_FORBIDDEN, DAVError
 from wsgidav.dav_provider import DAVProvider, _DAVResource
 
-# from .model import Dir, File, Path
+from .model import Dir, File, Path
 
 # from . import sessions
 from . import fs as fire_fs
@@ -408,6 +408,9 @@ class FirestoreDAVProvider(DAVProvider):
             res = None
         logging.debug("get_resource_inst(%r): %s" % (path, res))
         return res
+
+    def __repr__(self):
+        return "%s()" % (self.__class__.__name__)
 
     # called by wsgidav.request_server to handle all do_* methods
     # def custom_request_handler(self, environ, start_response, default_handler):

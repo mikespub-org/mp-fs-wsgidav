@@ -580,6 +580,20 @@ class FirestoreDB(FS):
             info["properties"] = doc.to_dict()
             # add other doc properties too?
             info["properties"].update(doc.__dict__)
+            del info["properties"]["_data"]
+            # skip setting size if we want to read a property
+            if "size" in info["properties"]:
+                st_size = info["properties"]["size"]
+            else:
+                st_size = 0
+                for value in list(info["properties"].values()):
+                    st_size += value.__sizeof__()
+            # if "create_time" in info["properties"]:
+            #     st_ctime = epoch(info["properties"]["create_time"])
+            # if "update_time" in info["properties"]:
+            #     st_mtime = epoch(info["properties"]["update_time"])
+            # elif "modify_time" in info["properties"]:
+            #     st_mtime = epoch(info["properties"]["modify_time"])
         if "details" in namespaces:
             info["details"] = {
                 # "_write": ["accessed", "modified"],
@@ -705,6 +719,9 @@ class FirestoreDB(FS):
             data = data.encode("utf-8")
         stream = io.BytesIO(data)
         return make_stream(propname, stream, "rb")
+
+    def __repr__(self):
+        return "%s()" % (self.__class__.__name__)
 
 
 class WrapFirestoreDB(WrapFS):

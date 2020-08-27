@@ -16,6 +16,7 @@ def get_structure(name="base", client=None):
         "test": TestStructure,
         "tree": TreeStructure,
         "flat": FlatStructure,
+        "hash": HashStructure,
     }
     if name not in structures:
         raise ValueError
@@ -59,7 +60,7 @@ class BaseStructure(object):
         # /my_coll/my_doc/your_coll/your_doc -> /my_coll/my_doc/your_coll
         return os.path.dirname(doc_ref.path)
 
-    def get_parent_ref(self, doc_ref):
+    def get_parent_ref(self, doc_ref, path):
         ref_path = self.get_parent_path(doc_ref)
         raise NotImplementedError("TODO: doc or coll?")
 
@@ -207,7 +208,9 @@ def _build_tree(root, doc_path, kind):
 #
 class FileStructure(BaseStructure):
 
+    chunk_size = 800 * 1024  # split file to chunks at most 800K
     with_parent_path = False
+    with_path = False
 
     def __init__(self, client):
         super(FileStructure, self).__init__(client)
@@ -248,7 +251,7 @@ class FileStructure(BaseStructure):
         # /test/my_dir/your_dir/my_file -> /test/my_dir/your_dir
         return os.path.dirname(doc_ref.path)
 
-    def get_parent_ref(self, doc_ref):
+    def get_parent_ref(self, doc_ref, path):
         ref_path = self.get_parent_path(doc_ref)
         # TODO: what if we need file_ref for chunk someday?
         return self.get_dir_ref(ref_path)
@@ -265,21 +268,68 @@ class FileStructure(BaseStructure):
         # chunk_ref.update()
         return chunk_ref.get()
 
-    def create_file(self, file_ref, data):
+    def create_file(self, file_ref, path, data):
         logging.debug("Creating file %s" % file_ref.path)
-        info = {"size": len(data)}
+        size = len(data)
+        info = {"size": size}
+        if self.with_path:
+            info.update({"path": path})
         if self.with_parent_path:
-            parent = self.get_parent_ref(file_ref)
+            parent = self.get_parent_ref(file_ref, path)
             info.update({"parent_ref": parent})
         file_ref.set(info)
-        offset = 0
-        self.add_chunk(file_ref, data, offset)
+        for offset in range(0, size, self.chunk_size):
+            chunk = data[offset : offset + self.chunk_size]
+            self.add_chunk(file_ref, chunk, offset)
         # file_ref.collection('c').add({'offset': 0, 'size': len(data), 'data': data})
         # TODO: update count of file_ref.parent.parent (= document that owns the collection this file belongs to)
         # self.client.collection(self.chunks).add({'offset': offset, 'size': len(data), 'data': data, 'parent_ref': file_ref})
         # TODO: update count of parent
         # see firestore.transactional or washington_ref.update({"population": firestore.Increment(50)})
         return file_ref.get()
+
+    def update_file(self, file_ref, data):
+        logging.debug("Updating file %s" % file_ref.path)
+        size = len(data)
+        info = {"size": size}
+        # CHECKME: use update() here
+        file_ref.update(info)
+        # we need to retrieve the list first here, before deleting chunks
+        chunk_list = list(self.get_chunks_query(file_ref).stream())
+        for chunk in chunk_list:
+            logging.debug("Deleting Chunk %s" % chunk.id)
+            chunk.reference.delete()
+        for offset in range(0, size, self.chunk_size):
+            chunk = data[offset : offset + self.chunk_size]
+            self.add_chunk(file_ref, chunk, offset)
+        # return file_ref.get()
+        return size
+
+    def append_file(self, file_ref, iterable, truncate=False):
+        logging.debug("Appending file %s" % file_ref.path)
+        if truncate:
+            # we need to retrieve the list first here, before deleting chunks
+            chunk_list = list(self.get_chunks_query(file_ref).stream())
+            for chunk in chunk_list:
+                logging.debug("Deleting Chunk %s" % chunk.id)
+                chunk.reference.delete()
+            offset = 0
+        else:
+            doc = file_ref.get()
+            offset = doc.get("size")
+        for data in iterable:
+            logging.debug("Adding chunk at offset %s" % offset)
+            size = len(data)
+            for i in range(0, size, self.chunk_size):
+                chunk = data[i : i + self.chunk_size]
+                self.add_chunk(file_ref, chunk, offset)
+                offset += len(chunk)
+        logging.debug("New offset is %s" % offset)
+        info = {"size": offset}
+        # CHECKME: use update() here
+        file_ref.update(info)
+        # return file_ref.get()
+        return offset
 
     def get_chunks_query(self, file_ref):
         return file_ref.collection("_").select(["offset", "size"]).order_by("offset")
@@ -313,11 +363,13 @@ class FileStructure(BaseStructure):
         file_ref = self.get_file_ref(path)
         return self.get_chunks_data(file_ref)
 
-    def create_dir(self, dir_ref):
+    def create_dir(self, dir_ref, path):
         logging.debug("Creating dir %s" % dir_ref.path)
         info = {"count": 0}
+        if self.with_path:
+            info.update({"path": path})
         if self.with_parent_path:
-            parent = self.get_parent_ref(dir_ref)
+            parent = self.get_parent_ref(dir_ref, path)
             info.update({"parent_ref": parent})
         dir_ref.set(info)
         # dir_ref.collection('d').document('.empty').set({'size': 0})
@@ -338,6 +390,7 @@ class FileStructure(BaseStructure):
         dir_ref.update({"count": count})
         return dir_ref.get()
 
+    # note: this returns info dicts
     def list_dir_docs(self, path, recursive=False):
         dir_ref = self.get_dir_ref(path)
         print("Stream Documents %s" % dir_ref.path)
@@ -349,6 +402,7 @@ class FileStructure(BaseStructure):
         for doc in query.stream():
             info = doc.to_dict()
             info.update(doc.__dict__)
+            del info["_data"]
             # info['create_time'] = doc.create_time
             # info['update_time'] = doc.update_time
             result.append(info)
@@ -363,6 +417,20 @@ class FileStructure(BaseStructure):
             else:
                 print("  " * depth, "File", doc.id, doc.to_dict())
         return result
+
+    # note: this returns docs for model
+    def ilist_dir_docs(self, path):
+        dir_ref = self.get_dir_ref(path)
+        query = self.get_dir_query(dir_ref)
+        for doc in query.stream():
+            yield doc
+
+    # note: this returns docs for model
+    def ilist_file_chunks(self, path):
+        file_ref = self.get_file_ref(path)
+        query = self.get_chunks_query(file_ref)
+        for doc in query.stream():
+            yield doc
 
     # the following methods aren't really the best way to walk through a hierarchy - better to get all docs at once
     def list_dirs(self, dir_path):
@@ -406,7 +474,7 @@ class TestStructure(FileStructure):
         doc = file_ref.get()
         # CHECKME: if some of the parent dirs don't exist, they won't really be created as documents - ghost :-)
         if not doc.exists:
-            doc = self.create_file(file_ref, data)
+            doc = self.create_file(file_ref, path, data)
         else:
             logging.debug("Found file %s" % file_ref.path)
         # if doc.to_dict()['size'] == 0:
@@ -414,7 +482,10 @@ class TestStructure(FileStructure):
             doc = self.update_file_size(file_ref)
         assert doc.exists
         # print(path, doc.reference.path, self.convert_ref_to_path(doc.reference.path))
-        assert path == self.convert_ref_to_path(doc.reference.path)
+        if self.with_path:
+            assert self.convert_path_to_ref(path) == doc.reference.id
+        else:
+            assert path == self.convert_ref_to_path(doc.reference.path)
         # assert data == self.get_file_data(path)
         assert doc.get("size") == len(data)
         return doc
@@ -423,13 +494,16 @@ class TestStructure(FileStructure):
         dir_ref = self.get_dir_ref(path)
         doc = dir_ref.get()
         if not doc.exists:
-            doc = self.create_dir(dir_ref)
+            doc = self.create_dir(dir_ref, path)
         else:
             logging.debug("Found dir %s" % dir_ref.path)
         if doc.get("count") == 0:
             doc = self.update_dir_count(dir_ref)
         assert doc.exists
-        assert path == self.convert_ref_to_path(doc.reference.path)
+        if self.with_path:
+            assert self.convert_path_to_ref(path) == doc.reference.id
+        else:
+            assert path == self.convert_ref_to_path(doc.reference.path)
         # assert doc.get('count') > 0
         return doc
 
@@ -498,6 +572,7 @@ class TestStructure(FileStructure):
 class TreeStructure(TestStructure):
 
     with_parent_path = False
+    with_path = False
 
     def __init__(self, client, files="files"):
         super(TreeStructure, self).__init__(client)
@@ -527,7 +602,7 @@ class TreeStructure(TestStructure):
         # files/test/d/my_dir/d/your_dir/d/my_file -> files/test/d/my_dir/d/your_dir
         return "/".join(doc_ref.path.split("/")[:-2])
 
-    def get_parent_ref(self, doc_ref):
+    def get_parent_ref(self, doc_ref, path):
         ref_path = self.get_parent_path(doc_ref)
         doc_ref = self.client.document(ref_path)
         return doc_ref
@@ -546,7 +621,7 @@ class TreeStructure(TestStructure):
         for chunk in query.stream():
             yield chunk.get("data")
 
-    def create_dir(self, dir_ref):
+    def create_dir(self, dir_ref, path):
         logging.debug("Creating dir %s" % dir_ref.path)
         dir_ref.set({"count": 0})
         # CHECKME: do we really need this?
@@ -569,6 +644,7 @@ class TreeStructure(TestStructure):
 class FlatStructure(TestStructure):
 
     with_parent_path = True
+    with_path = False
 
     def __init__(self, client, paths="paths", chunks="chunks"):
         super(FlatStructure, self).__init__(client)
@@ -598,7 +674,7 @@ class FlatStructure(TestStructure):
         # test:my_dir:your_dir:my_file -> test:my_dir:your_dir
         return ":".join(doc_ref.id.split(":")[:-1])
 
-    def get_parent_ref(self, doc_ref):
+    def get_parent_ref(self, doc_ref, path):
         ref_path = self.get_parent_path(doc_ref)
         if not ref_path:
             return None
@@ -639,3 +715,56 @@ class FlatStructure(TestStructure):
     # the following methods only apply when dealing with a dir collection supporting .list_documents(), i.e. not flat
     def get_dir_coll(self, dir_ref):
         raise NotImplementedError
+
+#
+# In HashStructure, no subcollections are used but we have 'hashes' and 'pieces' collections with documents
+# containing a parent path field like with Google Cloud Firestore in Datastore mode + the actual path field
+#
+class HashStructure(FlatStructure):  # WIP
+
+    with_parent_path = True
+    with_path = True
+
+    def __init__(self, client, paths="hashes", chunks="pieces"):
+        super(HashStructure, self).__init__(client, paths, chunks)
+        # self.paths = paths
+        # self.chunks = chunks
+
+    def convert_path_to_ref(self, path):
+        if path[0] == "/":
+            path = path[1:]
+        if path == "":
+            return
+        # /test/my_dir/your_dir/my_file -> 5c5fbf220df80bcf6388c827b2180351
+        ref_path = hashlib.md5(path.encode("utf-8")).hexdigest()
+        return ref_path
+
+    def convert_ref_to_path(self, ref_path):
+        # 5c5fbf220df80bcf6388c827b2180351 -> ???
+        raise NotImplementedError
+
+    def get_parent_path(self, doc_ref):
+        # 5c5fbf220df80bcf6388c827b2180351 -> ???
+        raise NotImplementedError
+
+    def get_parent_ref(self, doc_ref, path):  # we need to pass along the path here, to find the parent
+        # ref_path = self.get_parent_path(doc_ref)
+        # test/my_dir/your_dir/my_file -> test/my_dir/your_dir
+        parent_path = "/".join(path.split("/")[:-1])
+        if not parent_path:
+            return None
+        ref_path = self.convert_path_to_ref(parent_path)
+        if not ref_path:
+            return None
+        doc_ref = self.client.collection(self.paths).document(ref_path)
+        return doc_ref
+
+    def get_dir_query(self, dir_ref, field_paths=["path", "size", "count"]):
+        # return self.client.collection(self.paths).where('parent_ref', '==', dir_ref).stream()
+        return (
+            self.client.collection(self.paths)
+            .select(field_paths)
+            .where("parent_ref", "==", dir_ref)
+            .order_by("path")
+        )
+

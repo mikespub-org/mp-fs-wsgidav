@@ -39,7 +39,10 @@ def test_my_fs(my_fs):
     # result = my_fs.list_dir_refs("/test")
     # result = my_fs.list_dir_refs("/test", True)
     # result = my_fs.list_dir_docs("/test")
-    result = my_fs.list_dir_docs("/test", True)
+    # result = my_fs.list_dir_docs("/test", True)
+    #
+    data = my_fs.get_file_data("/test/dir.7/dir.7.3/file.7.3.6.txt")
+    print(len(data))
     #
     my_fs.close()
 
@@ -58,7 +61,7 @@ def main():
     #
     # test_my_fs(my_fs)
     #
-    for struct in ["test", "tree", "flat"]:
+    for struct in ["test", "tree", "flat", "hash"]:
         my_fs = get_structure(struct, client)
         test_my_fs(my_fs)
     client = None

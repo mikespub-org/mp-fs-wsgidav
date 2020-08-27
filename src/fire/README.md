@@ -1,7 +1,7 @@
 ## PyFilesystem2 and WsgiDAV Building Blocks for Google Cloud Firestore in native mode
 
   * Firestore DAV Provider for a virtual filesystem built on Google [Cloud Firestore in native mode](https://cloud.google.com/firestore/docs/) for WsgiDAV
-  * Firestore FS for basic support of Google Cloud Firestore in native mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
+  * [Firestore FS](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/fire/firestore_fs.py) for basic support of Google Cloud Firestore in native mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
   * [Firestore DB](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/fire/firestore_db.py) for a read-only database explorer of Google Cloud Firestore in native mode with [PyFilestem2](https://docs.pyfilesystem.org/)
 
 ### Use the Firestore DAV provider, Firestore FS filesystem or Firestore DB explorer ###
@@ -38,11 +38,23 @@ Example using FirestoreDB() as read-only database explorer in PyFilesystem2:
 Example using FirestoreFS() as filesystem in PyFilesystem2:
 
 ```
+    from .fire.firestore_fs import FirestoreFS
+    fire_fs = FirestoreFS("/")
+    fire_fs.listdir("/")
 ```
 
-Example using FirestoreDAV() as DAV provider in WsgiDAV:
+Example using FirestoreDAVProvider() as DAV provider in WsgiDAV:
 
 ```
+    from wsgidav.wsgidav_app import WsgiDAVApp
+    from .fire.firestore_dav import FirestoreDAVProvider
+    
+    dav_provider = FirestoreDAVProvider()
+    config = {"provider_mapping": {"/": dav_provider}}
+    config["simple_dc"] = {"user_mapping": {"*": True}}  # allow anonymous access or use domain controller
+    
+    app = WsgiDAVApp(config)
+    # run_wsgi_app(app)
 ```
 
 ### Try other combinations ###

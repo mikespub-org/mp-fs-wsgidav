@@ -7,34 +7,6 @@ import os
 
 from . import fs as fire_fs
 
-count = 0
-
-
-def make_tree(parent, depth=0):
-    global count
-    dirname = os.path.basename(parent).replace("test", "dir")
-    filename = dirname.replace("dir", "file")
-    data = b"x" * 1024
-    for i in range(1, 10):
-        name = "%s.%s.txt" % (filename, i)
-        path = os.path.join(parent, name)
-        print("  " * depth, path)
-        f1 = fire_fs.btopen(path, "w")
-        f1.write(data)
-        f1.close()
-        assert fire_fs.isfile(path)
-        count += 1
-    if depth > 1:
-        return
-    for i in range(1, 10):
-        name = "%s.%s" % (dirname, i)
-        path = os.path.join(parent, name)
-        print("  " * depth, path)
-        fire_fs.mkdir(path)
-        assert fire_fs.isdir(path)
-        make_tree(path, depth + 1)
-    return count
-
 
 def test():
     logging.info("test.test()")
@@ -62,13 +34,18 @@ def test():
     f1.close()
     assert fire_fs.isfile(rootpath + "/dir1/file1.txt")
 
+    size = fire_fs.copyfile(rootpath + "/dir1/file1.txt", rootpath + "/dir1/file2.txt")
+    assert size == len(data)
+
+    f2 = fire_fs.btopen(rootpath + "/dir1/file2.txt", "r")
+    data2 = f2.read()
+    f2.close()
+    assert data == data2
+
     # fire_fs.unlink(rootpath+"/dir1/file1.txt")
     # assert not fire_fs.isfile(rootpath+"/dir1/file1.txt")
 
     print("*** fire_fs tests passed ***")
-
-    # make_tree("/test", 0)
-    # print(count)
 
 
 def profile_test():

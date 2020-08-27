@@ -28,13 +28,17 @@ DO_EXPENSIVE_CHECKS = False
 
 class DocModel(object):
     _tree = get_structure("flat", db.get_client())
+    # _tree = get_structure("hash", db.get_client())
 
     def __init__(self, _from_doc=False, **kwargs):
         # _from_doc = kwargs.pop('_from_doc', False)
         if _from_doc is not False:
             self._doc = _from_doc
             self._doc_ref = self._doc.reference
-            self.path = self._tree.convert_ref_to_path(self._doc_ref.path)
+            if self._tree.with_path:
+                self.path = self._doc.get("path")
+            else:
+                self.path = self._tree.convert_ref_to_path(self._doc_ref.path)
         else:
             self._init_doc_ref(**kwargs)
 
@@ -48,6 +52,20 @@ class DocModel(object):
             if self._doc_ref is not None:
                 self._doc = self._doc_ref.get()
         return self._doc
+
+    def is_saved(self):
+        doc = self.get_doc()
+        if not doc or not doc.exists:
+            return False
+        return True
+
+    @classmethod
+    def from_doc(cls, doc):
+        return cls(_from_doc=doc)
+
+    @classmethod
+    def class_name(cls):
+        return cls.__name__
 
 
 # TODO: may apply the technique described here:
@@ -108,7 +126,11 @@ class Path(DocModel):
             raise RuntimeError("Though shalt not delete root")
         # self.cache.delete(self.path)
         # self.cache.del_list(os.path.dirname(self.path))
-        return db.Model.delete(self)
+        # return db.Model.delete(self)
+        if self._doc_ref is not None:
+            return self._doc_ref.delete()
+        raise RuntimeError("Invalid doc_ref to delete for path: %r" % self.path)
+        return
 
     def __repr__(self):
         return "%s('%s')" % (type(self).class_name(), self.path)
@@ -118,47 +140,6 @@ class Path(DocModel):
 
     def isfile(self):
         return type(self) is File
-
-    @classmethod
-    def list_by_path(cls, path):
-        # result = list(cls.gql("WHERE path = :1", path))
-        query = db.get_client().query(kind=cls._kind)
-        query.add_filter("path", "=", path)
-        result = []
-        for entity in query.fetch():
-            instance = cls.from_entity(entity)
-            result.append(instance)
-        return result
-
-    # CHECKME: always calling Path here (to avoid asking once for Dir and once for File)
-    @classmethod
-    def list_by_parent_path(cls, parent_path):
-        # result = list(Path.gql("WHERE parent_path=:1", self))
-        # query = db.get_client().query(kind=cls._kind)
-        query = db.get_client().query(kind="Path")
-        # CHECKME: don't use parent here - ancestor queries return all descendants (at all levels)
-        if isinstance(parent_path, db.Model):
-            query.add_filter("parent_path", "=", parent_path.key())
-        else:
-            query.add_filter("parent_path", "=", parent_path)
-        result = []
-        for entity in query.fetch():
-            instance = cls.from_entity(entity)
-            result.append(instance)
-        return result
-
-    @classmethod
-    def ilist_by_parent_path(cls, parent_path):
-        # result = list(Path.gql("WHERE parent_path=:1", self))
-        # query = db.get_client().query(kind=cls._kind)
-        query = db.get_client().query(kind="Path")
-        # CHECKME: don't use parent here - ancestor queries return all descendants (at all levels)
-        if isinstance(parent_path, db.Model):
-            query.add_filter("parent_path", "=", parent_path.key())
-        else:
-            query.add_filter("parent_path", "=", parent_path)
-        for entity in query.fetch():
-            yield cls.from_entity(entity)
 
     @classmethod
     def normalize(cls, p):
@@ -214,35 +195,27 @@ class Path(DocModel):
         assert cls is Path
         path = cls.normalize(path)
         assert path.startswith("/")
+        # result = cls.cache.get(path)
+        # if result:
+        #     # logging.debug('Cached result: %s' % result)
+        #     return result
         doc_ref = cls._tree.get_doc_ref(path)
         if doc_ref is None:
-            return Dir(path=path)
+            if path == "/":
+                return Dir(path=path)
+            return None
         print(doc_ref.path)
         doc = doc_ref.get()
         if doc.exists:
             info = doc.to_dict()
             if "size" in info:
-                return File(_from_doc=doc)
-            return Dir(_from_doc=doc)
-        return
-        # result = cls.cache.get(path)
-        # if result:
-        #     # logging.debug('Cached result: %s' % result)
-        #     return result
-        # result = list(cls.gql("WHERE path = :1", path))
-        result = cls.list_by_path(path)
-        if len(result) == 1:
-            result = result[0]
-            # assert type(result) in (Path, cls)
+                return File.from_doc(doc)
+            return Dir.from_doc(doc)
             # cls.cache.set(path, result)
             # logging.debug('New result: %s' % result)
-            return result
-        elif len(result) == 0:
-            # TODO: cache 'Not found' also
-            # logging.debug('No result')
-            return None
-        else:
-            raise ValueError("The given path has more than one entities", path)
+        # TODO: cache 'Not found' also
+        # logging.debug('No result')
+        return
 
     @classmethod
     def new(cls, path):
@@ -250,29 +223,11 @@ class Path(DocModel):
         assert cls in (Dir, File)
         logging.debug("%s.new(%r)" % (cls.__name__, path))
         path = cls.normalize(path)
-        doc = cls._tree.make_dir(path)
-        return Dir(_from_doc=doc)
-        # here we use Dir.retrieve because the parent must be a Dir.
-        # parent_path = Dir.retrieve(cls.get_parent_path(path))
-        parent_path = Path.retrieve(cls.get_parent_path(path))
-        if path != "/":
-            if not parent_path:
-                raise RuntimeError("Parent path does not exists for: %r" % path)
-            if type(parent_path) is not Dir:
-                raise RuntimeError("Parent must be a Dir for: %r" % path)
-        if DO_EXPENSIVE_CHECKS:
-            if Path.retrieve(path):
-                raise RuntimeError("Path exists: %r" % path)
-        # CHECKME: don't use parent here - ancestor queries return all descendants (at all levels)
-        if isinstance(parent_path, DocModel):
-            result = cls(path=path, parent_path=parent_path.key())
-        else:
-            result = cls(path=path, parent_path=parent_path)
-        if not result.is_saved():
-            logging.debug("No complete key available yet")
-            result.set_key()
-        result.put()
-        return result
+        if cls == Dir:
+            doc = cls._tree.make_dir(path)
+            return Dir.from_doc(doc)
+        doc = cls._tree.make_file(path)
+        return File.from_doc(doc)
 
     @staticmethod
     def _getresource(path):
@@ -371,7 +326,17 @@ class Dir(Path):
         # if result:
         #     logging.debug("Dir.get_content: HIT %r" % result)
         #     return result
-        result = Path.list_by_parent_path(self)
+        # result = Path.list_by_parent_path(self)
+        result = []
+        for doc in self._tree.ilist_dir_docs(self.path):
+            # CHECKME: do we need to differentiate between File and Dir here?
+            info = doc.to_dict()
+            if "size" in info:
+                instance = File.from_doc(doc)
+            else:
+                instance = Dir.from_doc(doc)
+            # instance = Path.from_doc(doc)
+            result.append(instance)
         # logging.debug("Dir.get_content: MISS %r" % result)
         # self.cache.set_list(self.path, result)
         # preset items in cache since we will probably need them right after this
@@ -393,9 +358,18 @@ class Dir(Path):
         #         yield item
         #     return
         # result = []
-        for item in Path.ilist_by_parent_path(self):
-            # result.append(item)
-            yield item
+        # for item in Path.ilist_by_parent_path(self):
+        #     # result.append(item)
+        #     yield item
+        for doc in self._tree.ilist_dir_docs(self.path):
+            # CHECKME: do we need to differentiate between File and Dir here?
+            info = doc.to_dict()
+            if "size" in info:
+                instance = File.from_doc(doc)
+            else:
+                instance = Dir.from_doc(doc)
+            # instance = Path.from_doc(doc)
+            yield instance
         # logging.debug("Dir.iget_content: MISS %r" % result)
         # self.cache.set_list(self.path, result)
         # preset items in cache since we will probably need them right after this
@@ -486,10 +460,12 @@ class File(Path):
         """
         if self.is_saved():
             # chunks = Chunk.gql("WHERE file=:1 ORDER BY offset ASC", self)
-            chunks = Chunk.fetch_entities_by_file(self)
+            # chunks = Chunk.fetch_entities_by_file(self)
+            chunks = Chunk.iget_chunks_data(self)
         else:
             chunks = []
-        result = b"".join(chunk["data"] for chunk in chunks)
+        # result = b"".join(chunk["data"] for chunk in chunks)
+        result = b"".join(data for data in chunks)
         # logging.debug('Content: %s' % repr(result))
         return result
 
@@ -499,11 +475,12 @@ class File(Path):
         """
         if self.is_saved():
             # chunks = Chunk.gql("WHERE file=:1 ORDER BY offset ASC", self)
-            chunks = Chunk.fetch_entities_by_file(self)
+            # chunks = Chunk.fetch_entities_by_file(self)
+            chunks = Chunk.iget_chunks_data(self)
         else:
             chunks = []
-        for chunk in chunks:
-            yield chunk["data"]
+        for data in chunks:
+            yield data
 
     def put_content(self, s):
         """
@@ -518,7 +495,9 @@ class File(Path):
             # raise Exception
         else:
             # clear old chunks
-            self.truncate()
+            # self.truncate()
+            self.size = size
+            return self._tree.update_file(self._doc_ref, s)
 
         # put new datas
         for i in range(0, size, self.ChunkSize):
@@ -544,7 +523,9 @@ class File(Path):
             # raise Exception
         else:
             # clear old chunks
-            self.truncate()
+            # self.truncate()
+            self.size = self._tree.append_file(self._doc_ref, iterable, True)
+            return self.size
 
         # put new datas
         i = 0
@@ -577,9 +558,11 @@ class File(Path):
         # clear old chunks
         # for chunk in self.chunk_set:  # use ancestor instead?
         #    chunk.delete()
-        chunk_keys = Chunk.list_keys_by_file(self)
-        if chunk_keys and len(chunk_keys) > 0:
-            db.get_client().delete_multi(chunk_keys)
+        chunk_refs = Chunk.list_refs_by_file(self)
+        if chunk_refs and len(chunk_refs) > 0:
+            for doc_ref in chunk_refs:
+                logging.debug("Chunk.delete %s" % repr(doc_ref.path))
+                doc_ref.delete()
         self.size = 0
         # self.cache.delete(self.path)
         return 0
@@ -598,9 +581,11 @@ class File(Path):
         logging.debug("File.delete %s" % repr(self.path))
         # for chunk in self.chunk_set:  # use ancestor instead?
         #    chunk.delete()
-        chunk_keys = Chunk.list_keys_by_file(self)
-        if chunk_keys and len(chunk_keys) > 0:
-            db.get_client().delete_multi(chunk_keys)
+        chunk_refs = Chunk.list_refs_by_file(self)
+        if chunk_refs and len(chunk_refs) > 0:
+            for doc_ref in chunk_refs:
+                logging.debug("Chunk.delete %s" % repr(doc_ref.path))
+                doc_ref.delete()
         Path.delete(self)
         return
 
@@ -652,14 +637,12 @@ class Chunk(DocModel):
         return query.fetch()
 
     @classmethod
-    def list_keys_by_file(cls, file):
-        # chunks = Chunk.gql("WHERE file=:1 ORDER BY offset ASC", self)
-        # query = db.get_client().query(kind=cls._kind)  # use ancestor instead?
-        query = db.get_client().query(kind=cls._kind, ancestor=file.key())
-        query.keys_only()
-        # query.add_filter('file', '=', file.key())
+    def iget_chunks_data(cls, file):
+        return cls._tree.iget_chunks_data(file._doc_ref)
+
+    @classmethod
+    def list_refs_by_file(cls, file):
         result = []
-        for entity in query.fetch():
-            result.append(entity.key)
+        for doc in cls._tree.ilist_file_chunks(file.path):
+            result.append(doc.reference)
         return result
-        # return db.list_entity_keys(cls._kind, ancestor=file.key())

@@ -30,6 +30,7 @@ from functools import partial
 import datetime
 import itertools
 import logging
+import io
 
 # for opener
 from fs.opener import Opener
@@ -376,7 +377,8 @@ class FirestoreFS(FS):
                         _res.modify_time = datetime.datetime.fromtimestamp(
                             modified_time, datetime.timezone.utc
                         )
-                    _res.put()
+                    # CHECKME: no way to change create/update times for documents unless we add them as fields
+                    # _res.put()
 
     # ---------------------------------------------------------------- #
     # Optional methods                                                 #
@@ -835,16 +837,24 @@ class FirestoreFS(FS):
                 dt - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
             ) / datetime.timedelta(seconds=1)
 
-        st_size = _res.size
-        st_atime = epoch(_res.modify_time)
-        st_mtime = st_atime
-        st_ctime = epoch(_res.create_time)
+        doc = _res.get_doc()
+        # if _res.isdir():
+        #     st_size = 0
+        # else:
+        #     st_size = _res.size
+        # when combined with FS2DAVProvider(), size None tells WsgiDAV to read until EOF
+        st_size = doc.to_dict().get("size", 0)
+        # st_size = None
+        st_mtime = doc.update_time.seconds + float(doc.update_time.nanos / 1000000000.0)
+        st_ctime = doc.create_time.seconds + float(doc.create_time.nanos / 1000000000.0)
+        st_atime = st_mtime
 
         info = {"basic": {"name": _res.basename(_res.path), "is_dir": _res.isdir()}}
         if "details" in namespaces:
             info["details"] = {
                 # "_write": ["accessed", "modified"],
-                "_write": ["created", "modified"],
+                # "_write": ["created", "modified"],
+                "_write": [],
                 "accessed": st_atime,
                 "modified": st_mtime,
                 "created": st_ctime,
@@ -935,19 +945,28 @@ class FirestoreFS(FS):
         _path = self.validatepath(path)
         return fire_fs._getresource(self._prep_path(_path))
 
+    def __repr__(self):
+        return "%s('%s')" % (self.__class__.__name__, self.root_path)
+
     @staticmethod
     def _btopen(path, mode="r"):
         """Open the file (eg. return a BtIO object)"""
         stream = fire_fs.btopen(path, mode)
         _mode = Mode(mode)
-        if not _mode.reading:
-            stream.readable = lambda: False  # mock a write-only stream
-        if not _mode.writing:
-            stream.writable = lambda: False  # mock a read-only stream
         if _mode.truncate:
             stream.seek(0)
             stream.truncate()
-        elif _mode.appending:
+        if _mode.reading and _mode.writing:
+            stream = io.BufferedRandom(stream)
+        elif _mode.reading:
+            stream = io.BufferedReader(stream)
+        elif _mode.writing or _mode.appending:
+            stream = io.BufferedWriter(stream)
+        # if not _mode.reading:
+        #     stream.readable = lambda: False  # mock a write-only stream
+        # if not _mode.writing:
+        #     stream.writable = lambda: False  # mock a read-only stream
+        if _mode.appending:
             stream.seek(0, 2)  # io.SEEK_END
         io_object = RawWrapper(stream, mode=mode, name=path)
         return io_object

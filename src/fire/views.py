@@ -230,4 +230,5 @@ def image_view(parent, item, attr):
 if __name__ == "__main__":
     # python3 -m fire.views
     app = create_app()
+    app.add_url_rule("/", view_func=home_view)
     app.run(host="0.0.0.0", port=8080, use_reloader=False)

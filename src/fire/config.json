@@ -11,8 +11,24 @@
   },
   "paths": {
     "references": {
-	  "chunks": "parent_ref",
+      "chunks": "parent_ref",
       "paths": "parent_ref"
+    }
+  },
+  "pieces": {
+    "truncate": [
+      "data"
+    ],
+    "fields": [
+      "parent_ref",
+      "offset",
+      "size"
+    ]
+  },
+  "hashes": {
+    "references": {
+      "pieces": "parent_ref",
+      "hashes": "parent_ref"
     }
   },
   "root": {

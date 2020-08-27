@@ -94,10 +94,17 @@ def stat(s):
         return time.mktime(tm.utctimetuple())
 
     p = _getresource(s)
-    size = p.size
-    atime = epoch(p.modify_time)
-    mtime = atime
-    ctime = epoch(p.create_time)
+    doc = p.get_doc()
+    if doc and doc.exists:
+        size = doc.to_dict().get("size", 0)
+        mtime = doc.update_time.seconds + float(doc.update_time.nanos / 1000000000.0)
+        ctime = doc.create_time.seconds + float(doc.create_time.nanos / 1000000000.0)
+    else:
+        now = time.time()
+        size = 0
+        mtime = now
+        ctime = now
+    atime = mtime
 
     def itemgetter(n):
         return lambda self: self[n]
@@ -189,7 +196,7 @@ def copyfile(s, d):
     if not dst.isfile():
         raise ValueError("destination not a File %r" % d)
     # TODO: copyfile2 without downloading/uploading chunk data at all?
-    dst.iput_content(src.iget_content())
+    size = dst.iput_content(src.iget_content())
     # raise, if not exists:
     # sio = btopen(s, "rb")
     # overwrite destination, if exists:
@@ -201,7 +208,7 @@ def copyfile(s, d):
     #     dio.write(buf)
     # dio.close()
     # sio.close()
-    return
+    return size
 
 
 def unlink(s):
