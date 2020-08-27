@@ -338,6 +338,7 @@ class DatastoreDB(FS):
         #     for name in self.listdir(path)
         # )
         # iter_info = iter(info)
+        # iter_info = self._scandir_from_resource(_res, namespaces)
         if page is not None:
             start, end = page
             iter_info = self._scandir_from_resource(
@@ -495,7 +496,8 @@ class DatastoreDB(FS):
             if "properties" in namespaces:
                 info["properties"] = _res._properties
         else:
-            name = cls._key_to_path(_res.key())
+            # name = cls._key_to_path(_res.key())
+            name = str(_res.get_key_name()).replace("/", "§")
             info = {"basic": {"name": name, "is_dir": False}}
             if "properties" in namespaces:
                 info["properties"] = _res.to_dict(True)
@@ -553,11 +555,13 @@ class DatastoreDB(FS):
 
     @classmethod
     def _scandir_from_resource(cls, _res, namespaces, limit=None, offset=0):
-        for _child_res in db.ilist_entities(_res._kind, limit, offset):
-            # yield cls._make_info_from_resource(_child_res, namespaces)
-            instance = db.make_instance(_res._kind, _child_res)
-            # instance._properties = _res._properties
-            yield cls._make_info_from_resource(instance, namespaces)
+        # for _child_res in db.ilist_entities(_res._kind, limit, offset):
+        #     # yield cls._make_info_from_resource(_child_res, namespaces)
+        #     instance = db.make_instance(_res._kind, _child_res)
+        #     # instance._properties = _res._properties
+        #     yield cls._make_info_from_resource(instance, namespaces)
+        for _child_res in _res.iget_content():
+            yield cls._make_info_from_resource(_child_res, namespaces)
 
     @staticmethod
     def _key_to_path(key):
@@ -638,6 +642,9 @@ class DatastoreDB(FS):
             stream = io.BytesIO(data)
             return make_stream(propname, stream, "rb")
         return instance
+
+    def __repr__(self):
+        return "%s()" % (self.__class__.__name__)
 
 
 class WrapDatastoreDB(WrapFS):

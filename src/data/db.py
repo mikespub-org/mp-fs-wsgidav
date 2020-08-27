@@ -377,6 +377,8 @@ class CachedModel(Model):
     cache = cached_model
 
     def get_key_name(self):
+        if self.key() is None:
+            return
         return self.key().id_or_name
 
     def set_key(self):
@@ -394,6 +396,29 @@ class CachedModel(Model):
         cache_key = self._kind + "." + str(self.get_key_name())
         self.cache.delete(cache_key)
         return super(CachedModel, self).delete()
+
+    # https://stackoverflow.com/questions/4566769/can-i-memoize-a-python-generator/10726355
+    def iget_content(self):
+        cache_key = self._kind + "." + str(self.get_key_name())
+        result = self.cache.get_list(cache_key)
+        if result:
+            logging.debug("CachedModel.iget_content: HIT %r" % result)
+            for item in result:
+                yield item
+            return
+        result = []
+        for entity in ilist_entities(self._kind):
+            instance = make_instance(self._kind, entity)
+            result.append(instance)
+            yield instance
+        logging.debug("CachedModel.iget_content: MISS %r" % result)
+        self.cache.set_list(cache_key, result)
+        # preset items in cache since we will probably need them right after this
+        # if isinstance(result, list) and len(result) > 0 and isinstance(result[0], CachedModel):
+        #     for item in result:
+        #         cache_key = item._kind + "." + str(item.get_key_name())
+        #         self.cache.set(cache_key, item)
+        return
 
     @classmethod
     def get(cls, key):
@@ -471,7 +496,17 @@ class MakeModel(CachedModel):
             self._kind = kind
         else:
             raise ValueError("Missing kind")
+        self._cached_key = False
+        if _from_entity and _from_entity.key and _from_entity.key.id_or_name:
+            self._cached_key = _from_entity.key
+        else:
+            self._cached_key = None
         super(MakeModel, self).__init__(_from_entity=_from_entity, **kwargs)
+
+    def key(self):
+        if self._cached_key is False:
+            self._cached_key = super(MakeModel, self).key()
+        return self._cached_key
 
     def set_key(self):
         pass

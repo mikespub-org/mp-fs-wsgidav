@@ -2,8 +2,8 @@
 # Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
-from btfs import sessions
-from btfs.auth import AuthorizedUser
+# from btfs import sessions
+# from btfs.auth import AuthorizedUser
 from .model import Chunk, Dir, File, Path
 import os.path
 import json
@@ -15,8 +15,8 @@ KNOWN_MODELS = {
     "Dir": Dir,
     "File": File,
     "Chunk": Chunk,
-    "AuthorizedUser": AuthorizedUser,
-    "AuthSession": sessions.AuthSession,
+    # "AuthorizedUser": AuthorizedUser,
+    # "AuthSession": sessions.AuthSession,
 }
 KIND_CONFIG = {}
 config_file = os.path.join(os.path.dirname(__file__), "config.json")

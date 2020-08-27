@@ -35,15 +35,6 @@ class TestDatastoreFS(FSTestCases, unittest.TestCase):
         if test_name in ("test_create"):
             # self.assertEqual(self.fs.getsize("foo"), 0)  # AssertionError: 3 != 0
             pytest.xfail("Test wipe existing file")
-        if test_name in ("test_open"):
-            # self.assertFalse(f.readable())  # AssertionError: True is not false
-            pytest.xfail("Create a new text file - for self.fs.open('foo/hello', 'wt')")
-        if test_name in ("test_openbin"):
-            # self.assertFalse(write_file.readable())  # AssertionError: True is not false
-            pytest.xfail("Write a binary file - for self.fs.openbin('file.bin', 'wb')")
-        if test_name in ("test_openbin_rw"):
-            # self.assertFalse(f.readable())  # AssertionError: True is not false
-            pytest.xfail("Create a new text file - for self.fs.openbin('foo/hello', 'w')")
         if test_name in ("test_invalid_chars"):
             # self.fs.open("invalid\0file", "wb")  # AssertionError: InvalidCharsInPath not raised
             pytest.xfail("Test invalid path method.")

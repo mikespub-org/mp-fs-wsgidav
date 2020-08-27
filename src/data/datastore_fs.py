@@ -30,6 +30,7 @@ from functools import partial
 import datetime
 import itertools
 import logging
+import io
 
 # for opener
 from fs.opener import Opener
@@ -934,19 +935,28 @@ class DatastoreFS(FS):
         _path = self.validatepath(path)
         return data_fs._getresource(self._prep_path(_path))
 
+    def __repr__(self):
+        return "%s('%s')" % (self.__class__.__name__, self.root_path)
+
     @staticmethod
     def _btopen(path, mode="r"):
         """Open the file (eg. return a BtIO object)"""
         stream = data_fs.btopen(path, mode)
         _mode = Mode(mode)
-        if not _mode.reading:
-            stream.readable = lambda: False  # mock a write-only stream
-        if not _mode.writing:
-            stream.writable = lambda: False  # mock a read-only stream
         if _mode.truncate:
             stream.seek(0)
             stream.truncate()
-        elif _mode.appending:
+        if _mode.reading and _mode.writing:
+            stream = io.BufferedRandom(stream)
+        elif _mode.reading:
+            stream = io.BufferedReader(stream)
+        elif _mode.writing or _mode.appending:
+            stream = io.BufferedWriter(stream)
+        # if not _mode.reading:
+        #     stream.readable = lambda: False  # mock a write-only stream
+        # if not _mode.writing:
+        #     stream.writable = lambda: False  # mock a read-only stream
+        if _mode.appending:
             stream.seek(0, 2)  # io.SEEK_END
         io_object = RawWrapper(stream, mode=mode, name=path)
         return io_object

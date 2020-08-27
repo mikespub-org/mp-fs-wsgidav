@@ -576,4 +576,5 @@ def item_delete(parent, item):
 if __name__ == "__main__":
     # python3 -m data.api
     app = create_app()
+    app.add_url_rule("/", view_func=data_api)
     app.run(host="0.0.0.0", port=8080, use_reloader=False)
