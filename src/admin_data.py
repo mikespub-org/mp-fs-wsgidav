@@ -16,6 +16,7 @@ from btfs.auth import AuthorizedUser
 from data import db, views, api
 from data.cache import memcache3
 from data.model import Chunk, Dir, File, Path
+from browser import views as browse
 
 
 def find_orphans(limit=1000):
@@ -87,6 +88,7 @@ app.debug = True
 # add datastore view functions, template filters and global functions
 authorize_wrap = sessions.flask_authorize("admin")
 views.configure_app(app, "/_admin/data", authorize_wrap)
+browse.configure_app(app, "/_admin/browse", authorize_wrap)
 
 
 @app.route("/_admin/")

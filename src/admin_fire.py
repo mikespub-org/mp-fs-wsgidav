@@ -14,6 +14,7 @@ from flask import Flask, render_template, request
 from btfs import sessions
 from btfs.auth import AuthorizedUser
 from fire import db, views, api
+from browser import views as browse
 
 # from fire.cache import memcache3
 # from fire.model import Chunk, Dir, File, Path
@@ -89,6 +90,7 @@ app.debug = True
 # add firestore view functions, template filters and global functions
 authorize_wrap = sessions.flask_authorize("admin")
 views.configure_app(app, "/_admin/fire", authorize_wrap)
+browse.configure_app(app, "/_admin/browse", authorize_wrap)
 
 
 @app.route("/_admin/")
