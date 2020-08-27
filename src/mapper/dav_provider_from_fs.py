@@ -415,6 +415,9 @@ class FS2DAVProvider(DAVProvider):
             return FS2FolderResource(path, environ, info)
         return FS2FileResource(path, environ, info)
 
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, repr(self.source_fs))
+
 
 def create_app(source_fs, config=None):
     # from .dav_provider_from_fs import FS2DAVProvider

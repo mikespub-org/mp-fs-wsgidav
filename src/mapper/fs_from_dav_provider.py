@@ -38,6 +38,7 @@ from functools import partial
 import datetime
 import itertools
 import logging
+import io
 
 # for opener
 from fs.opener import Opener
@@ -232,10 +233,14 @@ class DAVProvider2FS(FS):
                     if not _res or _res.is_collection:
                         raise errors.FileExpected(path)
 
-                    return _res.begin_write()
+                    stream = io.BufferedWriter(_res.begin_write())
+                    io_object = RawWrapper(stream, mode=mode, name=path)
+                    return io_object
 
                 _res = _dir_res.create_empty_resource(file_name)
-                return _res.begin_write()
+                stream = io.BufferedWriter(_res.begin_write())
+                io_object = RawWrapper(stream, mode=mode, name=path)
+                return io_object
 
             if file_name not in _dir_res.get_member_names():
                 raise errors.ResourceNotFound(path)
@@ -245,15 +250,20 @@ class DAVProvider2FS(FS):
                 raise errors.FileExpected(path)
 
             if _mode.appending:
+                # stream.seek(0, 2)  # io.SEEK_END
                 raise NotImplementedError("Appending is not supported")
 
             if _mode.updating:
                 raise NotImplementedError("Updating is not supported")
 
             if _mode.reading:
-                return _res.get_content()
+                stream = io.BufferedReader(_res.get_content())
+                io_object = RawWrapper(stream, mode=mode, name=path)
+                return io_object
 
-            return _res.begin_write()
+            stream = io.BufferedWriter(_res.begin_write())
+            io_object = RawWrapper(stream, mode=mode, name=path)
+            return io_object
 
     def remove(self, path):
         # type: (Text) -> None
@@ -779,6 +789,9 @@ class DAVProvider2FS(FS):
         """
         _path = self.validatepath(path)
         return self.provider.get_resource_inst(_path, self.environ)
+
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, repr(self.provider))
 
     def _reset_path(self, path, confirm=False):
         if not confirm:
