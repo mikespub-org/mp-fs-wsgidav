@@ -1,6 +1,6 @@
 ## PyFilesystem2 and WsgiDAV Building Blocks for Google Cloud Firestore in native mode
 
-  * Firestore DAV Provider for a virtual filesystem built on Google [Cloud Firestore in native mode](https://cloud.google.com/firestore/docs/) for WsgiDAV
+  * [Firestore DAV Provider](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/fire/firestore_dav.py) for a virtual filesystem built on Google [Cloud Firestore in native mode](https://cloud.google.com/firestore/docs/) for [WsgiDAV](https://wsgidav.readthedocs.io/)
   * [Firestore FS](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/fire/firestore_fs.py) for basic support of Google Cloud Firestore in native mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
   * [Firestore DB](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/fire/firestore_db.py) for a read-only database explorer of Google Cloud Firestore in native mode with [PyFilestem2](https://docs.pyfilesystem.org/)
 

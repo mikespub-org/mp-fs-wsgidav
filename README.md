@@ -23,7 +23,7 @@ The master branch here provides the following building blocks for [WsgiDAV](http
 In addition, the following new filesystem providers are available for [PyFilestem2](https://docs.pyfilesystem.org/):
   * [Datastore FS](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/data/datastore_fs.py) for basic support of Google Cloud Firestore in Datastore mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
   * [Datastore DB](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/data/datastore_db.py) for a read-only database explorer of Google Cloud Firestore in Datastore mode with [PyFilestem2](https://docs.pyfilesystem.org/)
-  * Firestore FS for basic support of Google Cloud Firestore in native mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
+  * [Firestore FS](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/fire/firestore_fs.py) for basic support of Google Cloud Firestore in native mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
   * [Firestore DB](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/fire/firestore_db.py) for a read-only database explorer of Google Cloud Firestore in native mode with [PyFilestem2](https://docs.pyfilesystem.org/)
 
 ![Datastore Diagram](https://github.com/mikespub-org/mp-fs-wsgidav/raw/master/src/static/diagram.jpg)
@@ -188,11 +188,23 @@ Example using FirestoreDB() as read-only database explorer in PyFilesystem2:
 Example using FirestoreFS() as filesystem in PyFilesystem2:
 
 ```
+    from .fire.firestore_fs import FirestoreFS
+    fire_fs = FirestoreFS("/")
+    fire_fs.listdir("/")
 ```
 
-Example using FirestoreDAV() as DAV provider in WsgiDAV:
+Example using FirestoreDAVProvider() as DAV provider in WsgiDAV:
 
 ```
+    from wsgidav.wsgidav_app import WsgiDAVApp
+    from .fire.firestore_dav import FirestoreDAVProvider
+    
+    dav_provider = FirestoreDAVProvider()
+    config = {"provider_mapping": {"/": dav_provider}}
+    config["simple_dc"] = {"user_mapping": {"*": True}}  # allow anonymous access or use domain controller
+    
+    app = WsgiDAVApp(config)
+    # run_wsgi_app(app)
 ```
 
 ### Try other combinations ###

@@ -1,6 +1,6 @@
 ## PyFilesystem2 and WsgiDAV Building Blocks for Google Cloud Firestore in Datastore mode
 
-  * Datastore DAV Provider for a virtual filesystem built on Google [Cloud Firestore in Datastore mode](https://cloud.google.com/datastore/docs/) for WsgiDAV
+  * [Datastore DAV Provider](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/data/datastore_dav.py) for a virtual filesystem built on Google [Cloud Firestore in Datastore mode](https://cloud.google.com/datastore/docs/) for [WsgiDAV](https://wsgidav.readthedocs.io/)
   * Cachelib Cache Manager to support in-memory cache using [cachelib](https://github.com/pallets/cachelib) (either memcache, redis or in-memory)
   * [Datastore FS](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/data/datastore_fs.py) for basic support of Google Cloud Firestore in Datastore mode as filesystem for [PyFilestem2](https://docs.pyfilesystem.org/)
   * [Datastore DB](https://github.com/mikespub-org/mp-fs-wsgidav/blob/master/src/data/datastore_db.py) for a read-only database explorer of Google Cloud Firestore in Datastore mode with [PyFilestem2](https://docs.pyfilesystem.org/)
