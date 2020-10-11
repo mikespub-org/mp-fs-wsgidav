@@ -27,17 +27,21 @@ def configure_app(app, base_url="", authorize_wrap=None):
     BASE_URL = base_url
     if authorize_wrap:
         # app.add_url_rule(base_url + "/", view_func=home)
-        app.add_url_rule(base_url + "/", view_func=authorize_wrap(home))  # if one role for all view_funcs
-        # app.add_url_rule(base_url + "/", view_func=authorize_wrap("user", home))
         app.add_url_rule(
-            base_url + "/<string:fstype>/", "fstype_content", view_func=authorize_wrap(content)
-            # base_url + "/<string:fstype>/", view_func=authorize_wrap("admin", content)
+            base_url + "/", view_func=authorize_wrap(home)
+        )  # if one role for all view_funcs
+        # app.add_url_rule(base_url + "/", view_func=authorize_role("user", home))
+        app.add_url_rule(
+            base_url + "/<string:fstype>/",
+            "fstype_content",
+            view_func=authorize_wrap(content)
+            # base_url + "/<string:fstype>/", view_func=authorize_role("admin", content)
         )
         app.add_url_rule(
             base_url + "/<string:fstype>/<path:more>",
             "more_content",
             view_func=authorize_wrap(content),
-            # view_func=authorize_wrap("admin", content),
+            # view_func=authorize_role("admin", content),
         )
     else:
         app.add_url_rule(base_url + "/", view_func=home)
@@ -81,6 +85,9 @@ def home():
 def content(fstype, more=None):
     # if more:
     #     return send_content(zipname, more)
+    if fstype == "favicon.ico":
+        abort(404)
+        return
     sortkey = request.args.get("sort", "name")
     path = fstype + "/"
     if more:
@@ -107,7 +114,7 @@ def content(fstype, more=None):
         link=link,
         path=path,
         elapsed="%.3f" % (stop_time - start_time),
-        filesystem=repr(dispatch.filesystem())
+        filesystem=repr(dispatch.filesystem()),
     )
 
 

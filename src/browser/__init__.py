@@ -3,12 +3,13 @@ import os.path
 import time
 from pathlib import PurePosixPath
 
+
 class GenericPath(PurePosixPath):
     """
     Base Filesystem providing common methods, inherited by DAV/FS/OS and Dispatch
     """
 
-    __slots__ = ("_root_path")
+    __slots__ = "_root_path"
 
     # see https://github.com/python/cpython/blob/3.8/Lib/pathlib.py
     def __new__(cls, *args):
@@ -28,7 +29,7 @@ class GenericPath(PurePosixPath):
         # super().__init__()
 
     def roots(self):
-        return ["os", "fs", "dav"]
+        return ["os", "fs", "dav", "fire", "data_todo"]
 
     def set_root(self, path):
         root, path = path.split("/", 1)
@@ -87,7 +88,7 @@ class DispatchPath(GenericPath):
     Dispatcher Filesystem using fstype_object scandir() and ilist_files()
     """
 
-    __slots__ = ("_fstypes")
+    __slots__ = "_fstypes"
 
     def __init__(self, *args):
         self._fstypes = {}
@@ -112,18 +113,33 @@ class DispatchPath(GenericPath):
 
         if fstype == "os":
             from .local import LocalPath
+
             self._fstypes[fstype] = LocalPath()
 
         elif fstype == "fs":
             from .fs import FsPath
+
             self._fstypes[fstype] = FsPath()
 
         elif fstype == "dav":
             from .dav import DavPath
+
             self._fstypes[fstype] = DavPath()
 
+        elif fstype == "fire":
+            from .fire import FirePath
+
+            self._fstypes[fstype] = FirePath()
+
+        elif fstype == "data_todo":
+            from .data_todo import DataPath
+
+            self._fstypes[fstype] = DataPath()
+
         else:
-            raise ValueError("Invalid filesystem type '%s'" % fstype.replace("<", "&lt;"))
+            raise ValueError(
+                "Invalid filesystem type '%s'" % fstype.replace("<", "&lt;")
+            )
 
         return self._fstypes[fstype]
 

@@ -8,7 +8,7 @@ class DavPath(GenericPath):
     Wsgi DAV Provider using resource_inst.get_member_list()
     """
 
-    __slots__ = ("_dav_provider")
+    __slots__ = "_dav_provider"
 
     def __init__(self, *args):
         self._dav_provider = None
@@ -58,7 +58,9 @@ class DavPath(GenericPath):
             self._dav_provider = FirestoreDAVProvider()
 
         else:
-            raise ValueError("Invalid Wsgi DAV Provider root '%s'" % root.replace("<", "&lt;"))
+            raise ValueError(
+                "Invalid Wsgi DAV Provider root '%s'" % root.replace("<", "&lt;")
+            )
 
         return path
 
@@ -118,4 +120,3 @@ class DavDirEntry(GenericDirEntry):
         # self.is_dir = os.path.isdir(self.path)
         # self.stat = lambda: os.stat(self.path)
         pass
-

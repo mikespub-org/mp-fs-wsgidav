@@ -7,14 +7,22 @@ class FsPath(GenericPath):
     PyFilesystem2 Filesystem using root_fs.scandir()
     """
 
-    __slots__ = ("_root_fs")
+    __slots__ = "_root_fs"
 
     def __init__(self, *args):
         self._root_fs = None
         super().__init__(*args)
 
     def roots(self):
-        return ["temp", "user", "data_fs", "data_db", "dav2fs", "fire_fs_wip", "fire_db"]
+        return [
+            "temp",
+            "user",
+            "data_fs",
+            "data_db",
+            "dav2fs",
+            "fire_fs_wip",
+            "fire_db",
+        ]
 
     def set_root(self, path):
         root, path = path.split("/", 1)
@@ -72,7 +80,9 @@ class FsPath(GenericPath):
             # namespaces = ["details", "properties"]
 
         else:
-            raise ValueError("Invalid PyFilesystem2 root '%s'" % root.replace("<", "&lt;"))
+            raise ValueError(
+                "Invalid PyFilesystem2 root '%s'" % root.replace("<", "&lt;")
+            )
 
         return path
 
@@ -120,4 +130,3 @@ class FsDirEntry(GenericDirEntry):
         # self.is_dir = os.path.isdir(self.path)
         # self.stat = lambda: os.stat(self.path)
         pass
-

@@ -8,7 +8,7 @@ class LocalPath(GenericPath):
     Local Filesystem using os.scandir()
     """
 
-    __slots__ = ("_base_dir")
+    __slots__ = "_base_dir"
 
     def __init__(self, *args):
         self._base_dir = None
@@ -34,7 +34,9 @@ class LocalPath(GenericPath):
             self._base_dir = os.path.abspath(".")
 
         else:
-            raise ValueError("Invalid local filesystem root '%s'" % root.replace("<", "&lt;"))
+            raise ValueError(
+                "Invalid local filesystem root '%s'" % root.replace("<", "&lt;")
+            )
 
         # see https://github.com/python/cpython/blob/3.8/Lib/pathlib.py -> used in __str__
         # self._drv, self._root, self._parts = self._parse_args(self._base_dir)
@@ -58,7 +60,9 @@ class LocalPath(GenericPath):
                 fileinfo["size"] = 0
             else:
                 fileinfo["size"] = stat.st_size
-            fileinfo["date"] = time.strftime("%Y-%m-%d %H:%M", time.gmtime(stat.st_mtime))
+            fileinfo["date"] = time.strftime(
+                "%Y-%m-%d %H:%M", time.gmtime(stat.st_mtime)
+            )
             fileinfo["type"] = guess_mime_type(fileinfo["name"])
             yield fileinfo
 
@@ -74,4 +78,3 @@ class LocalDirEntry(GenericDirEntry):
         self.name = os.path.basename(self.path)
         self.is_dir = os.path.isdir(self.path)
         self.stat = lambda: os.stat(self.path)
-
