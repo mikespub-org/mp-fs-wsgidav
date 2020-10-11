@@ -18,17 +18,25 @@ KNOWN_MODELS = {
     # "AuthorizedUser": AuthorizedUser,
     # "AuthSession": sessions.AuthSession,
 }
-KIND_CONFIG = {}
+LIST_CONFIG = {}
 config_file = os.path.join(os.path.dirname(__file__), "config.json")
 # with open(config_file, "w") as fp:
-#     json.dump(KIND_CONFIG, fp, indent=2)
+#     json.dump(LIST_CONFIG, fp, indent=2)
 with open(config_file, "r") as fp:
-    KIND_CONFIG = json.load(fp)
+    LIST_CONFIG = json.load(fp)
 
 
-for kind in KIND_CONFIG:
-    truncate_list = KIND_CONFIG[kind].get("truncate", [])
-    truncate_list.extend(KIND_CONFIG[kind].get("pickled", []))
-    truncate_list.extend(KIND_CONFIG[kind].get("image", []))
+for kind in LIST_CONFIG:
+    truncate_list = LIST_CONFIG[kind].get("truncate", [])
+    truncate_list.extend(LIST_CONFIG[kind].get("pickled", []))
+    truncate_list.extend(LIST_CONFIG[kind].get("image", []))
     if len(truncate_list) > 0:
-        KIND_CONFIG[kind]["truncate_list"] = truncate_list
+        LIST_CONFIG[kind]["truncate_list"] = truncate_list
+
+
+def get_list_config(kind, what, default=[]):
+    # if "/" in kind:
+    #     kind = kind.split("/")[-1]
+    if kind in LIST_CONFIG:
+        return LIST_CONFIG[kind].get(what, default)
+    return default

@@ -3,6 +3,8 @@
 {% block content %}
 	{% include "data_nav.html" %}
 
+	{% set filter_keys = get_list_filters(name).keys()|list %}
+
 	<ul>
 		{# Note: template filters is_item, item_link and show_date are defined in views.py #}
 		{% if "_parent" in info %}
@@ -10,18 +12,45 @@
 		{% endif %}
 		<li>Key: <a href="{{ base_url }}/{{ info["_key"]|item_link }}">{{ info["_key"].id_or_name }}</a></li>
 		<li>Info: <ul>
-		{% for attr, val in info|dictsort %}
+		{% set parent_attr = [] %}
+		{% for attr, val in info|dictsort recursive %}
+		{% set outer_loop = loop %}
 			{% if attr in ("_parent", "_key", "_children", "_references") %}
 			{% else %}
+				<li>{{ attr }}:
 				{% if val|is_item %}
-					<li>{{ attr }}: <a href="{{ base_url }}/{{ val|item_link }}">{{ val.id_or_name }}</a></li>
+					<a href="{{ base_url }}/{{ val|item_link }}">{{ val.id_or_name }}</a>
 				{% elif attr in ("create_time", "update_time", "modify_time", "timestamp") %}
-					<li>{{ attr }}: {{ val|show_date }}</li>
+					{{ val|show_date }}
 				{% elif val is string and "?fields=" in val %}
-					<li>{{ attr }}: <a href="{{ val }}"><img src="{{ val }}" border="0"></a></li>
+					<a href="{{ val }}"><img src="{{ val }}" border="0"></a>
+				{% elif val is mapping %}
+					{#
+					see https://stackoverflow.com/questions/44816903/recursively-find-child-items-and-list-in-jinja
+					and https://stackoverflow.com/questions/6401912/i-use-jinja2-recursive-tag-in-my-code-but-how-can-i-get-the-depth-of-current-l
+					#}
+					{% set _ = parent_attr.append(attr) %}
+					<ul>
+					{{ loop(val|dictsort) }}
+					</ul>
+					{% set _ = parent_attr.pop() %}
+				{% elif attr != "data" and val is sequence and val is not string and val|length > 2 %}
+					[<ol>
+					{% for value in val %}
+						<li>{% if value is mapping %}<ul>{{ outer_loop(value|dictsort) }}</ul>{% else %}{{ value }}{% endif %}</li>
+					{% endfor %}
+					</ol>]
 				{% else %}
-					<li>{{ attr }}: {{ val }}</li>
+					{{ val }}
+					{% if val != "" %}
+					{% if not parent_attr and attr in filter_keys %}
+					<a href="{{ base_url }}/{{ name }}/?filters.{{ attr }}={{ val }}">filter</a>
+					{% elif parent_attr and parent_attr|join(".") + "." + attr in filter_keys %}
+					<a href="{{ base_url }}/{{ name }}/?filters.{{ parent_attr|join(".") + "." + attr }}={{ val }}">filter</a>
+					{% endif %}
+					{% endif %}
 				{% endif %}
+				</li>
 			{% endif %}
 		{% endfor %}
 		</ul></li>
@@ -38,7 +67,7 @@
 		<li>References: <ul>
 		{% for ref in info["_references"].keys() %}
 		{% for key in info["_references"][ref].keys() %}
-			<li><a href="{{ base_url }}/{{ ref }}/?filters[{{ key }}]={{ info["_key"].id_or_name }}">{{ ref }}.{{ key }}</a>:<ol>
+			<li><a href="{{ base_url }}/{{ ref }}/?filters.{{ key }}={{ info["_key"].id_or_name }}">{{ ref }}.{{ key }}</a>:<ol>
 			{% for item in info["_references"][ref][key] %}
 				<li><a href="{{ base_url }}/{{ item|item_link }}">{{ item.id_or_name }}</a></li>
 			{% endfor %}

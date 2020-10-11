@@ -27,6 +27,12 @@
       "info"
     ]
   },
+  "AuthSession": {
+    "filters": [
+      "nickname",
+      "roles"
+    ]
+  },
   "SessionStore": {
     "pickled": [
       "session"

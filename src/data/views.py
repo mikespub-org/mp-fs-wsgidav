@@ -50,8 +50,12 @@ def configure_app(app, base_url="/data", authorize_wrap=None):
     app.add_template_filter(show_date)
     app.add_template_filter(show_image)
     app.add_template_global(get_pager)
-    # app.add_template_global(get_lists)
-    # app.add_template_global(get_stats)
+    api.get_lists()
+    app.add_template_global(api.get_lists, "get_lists")
+    api.get_stats()
+    # app.add_template_global(api.get_stats, "get_stats")
+    api.get_filters()
+    app.add_template_global(api.get_list_filters, "get_list_filters")
 
 
 # @app.template_filter()
@@ -187,9 +191,7 @@ def item_view(parent, item):
         kinds_list = api.get_lists()
         if parent not in kinds_list or parent == "Others":
             return home_view(parent)
-    image_list = []
-    if parent in api.KIND_CONFIG and api.KIND_CONFIG[parent].get("image", None):
-        image_list = api.KIND_CONFIG[parent].get("image", [])
+    image_list = api.get_list_config(parent, "image")
     fields = request.args.get("fields", None)
     if fields and fields in image_list:
         return image_view(parent, item, fields)

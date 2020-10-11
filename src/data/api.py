@@ -12,7 +12,7 @@ from flask.views import MethodView
 import flask.json
 
 from . import db
-from .config import PAGE_SIZE, KNOWN_MODELS, KIND_CONFIG
+from .config import PAGE_SIZE, KNOWN_MODELS, LIST_CONFIG, get_list_config
 
 
 def create_app(debug=True, base_url="/api/v1/data"):
@@ -80,8 +80,8 @@ def item_to_path(key):
         return "%s/%s" % (key.kind, key.id_or_name[1:])
     # elif key.kind in ("Chunk") and key.parent:
     elif (
-        key.kind in KIND_CONFIG
-        and KIND_CONFIG[key.kind].get("parent", None)
+        key.kind in LIST_CONFIG
+        and LIST_CONFIG[key.kind].get("parent", None)
         and key.parent
     ):
         # add the :parent:path
@@ -97,13 +97,13 @@ def item_to_path(key):
 def item_to_dict(entity, truncate=False):
     info = dict(entity)
     info["_key"] = entity.key
-    if entity.kind in KIND_CONFIG and KIND_CONFIG[entity.kind].get("parent", None):
+    if entity.kind in LIST_CONFIG and LIST_CONFIG[entity.kind].get("parent", None):
         info["_parent"] = entity.key.parent
     elif entity.key and entity.key.parent:
         info["_parent"] = entity.key.parent
     if truncate:
-        if entity.kind in KIND_CONFIG:
-            truncate_list = KIND_CONFIG[entity.kind].get("truncate_list", [])
+        if entity.kind in LIST_CONFIG:
+            truncate_list = LIST_CONFIG[entity.kind].get("truncate_list", [])
         else:
             truncate_list = list(info.keys())
         for attr in truncate_list:
@@ -115,14 +115,14 @@ def item_to_dict(entity, truncate=False):
 def instance_to_dict(instance, truncate=False):
     info = instance.to_dict(True)
     # if instance._kind == "Chunk":
-    if instance._kind in KIND_CONFIG and KIND_CONFIG[instance._kind].get(
+    if instance._kind in LIST_CONFIG and LIST_CONFIG[instance._kind].get(
         "parent", None
     ):
         info["_parent"] = instance.key().parent
     # if truncate and instance._kind == "Chunk" and len(info["data"]) > 20:
     if truncate:
-        if instance._kind in KIND_CONFIG:
-            truncate_list = KIND_CONFIG[instance._kind].get("truncate_list", [])
+        if instance._kind in LIST_CONFIG:
+            truncate_list = LIST_CONFIG[instance._kind].get("truncate_list", [])
         else:
             truncate_list = list(info.keys())
         for attr in truncate_list:
@@ -139,6 +139,7 @@ def get_models():
 
 list_names = []
 list_stats = {}
+list_filters = {}
 
 
 def get_lists(reset=False):
@@ -221,14 +222,45 @@ def get_list_count(model, reset=False):
     return list_stats[model]["count"]
 
 
+def get_filters(reset=False):
+    global list_filters
+    if len(list_filters) > 0 and not reset:
+        return list_filters
+    list_filters = {}
+    # TODO: load filters from Datastore + check timestamp
+    # coll_ref = db.get_coll_ref("_Filter_Kind_")
+    # for doc in coll_ref.stream():
+    #     info = doc.to_dict()
+    #     list_filters[info["name"]] = info["filters"]
+    for name in get_lists():
+        if name not in list_filters:
+            get_list_filters(name)
+    return list_filters
+
+
+def get_list_filters(name, reset=False):
+    global list_filters
+    if name not in list_filters or reset:
+        list_filters[name] = {}
+        filter_list = get_list_config(name, "filters")
+        for filter in filter_list:
+            list_filters[name][filter] = {}
+    return list_filters[name]
+
+
+def set_list_filters(name, filter_dict):
+    global list_filters
+    list_filters[name] = filter_dict
+
+
 def parse_filter_args(args, kind):
     filters = None
     for key, value in list(args.items()):
-        if not key.startswith("filters["):
+        if not key.startswith("filters."):
             continue
         if filters is None:
             filters = []
-        prop_name = key[8:-1]
+        prop_name = key[8:]
         # TODO: look at first char for <, >, etc.
         operator = "="
         # CHECKME: assuming this is a Path entity here!?
@@ -239,10 +271,10 @@ def parse_filter_args(args, kind):
             continue
         # /data/Picture/?filters[album]=3846051 -> parent = "Album"
         found = False
-        for parent in KIND_CONFIG:
-            if not KIND_CONFIG[parent].get("references", None):
+        for parent in LIST_CONFIG:
+            ref_dict = get_list_config(parent, "references")
+            if not ref_dict:
                 continue
-            ref_dict = KIND_CONFIG[parent].get("references")
             for ref in ref_dict.keys():
                 if ref == kind and ref_dict[ref] == prop_name:
                     # print("Found", parent, ref, prop_name)
@@ -327,7 +359,16 @@ class ListAPI(MethodView):
 
 def list_get(name, page=1, sort=None, fields=None, truncate=True, filters=None):
     """Get all entities of kind"""
-    return list(ilist_get(name, page=page, sort=sort, fields=fields, truncate=truncate, filters=filters))
+    return list(
+        ilist_get(
+            name,
+            page=page,
+            sort=sort,
+            fields=fields,
+            truncate=truncate,
+            filters=filters,
+        )
+    )
 
 
 def ilist_get(name, page=1, sort=None, fields=None, truncate=True, filters=None):
@@ -397,14 +438,10 @@ class ItemAPI(MethodView):
                 return result, 200, {"Content-Type": "text/plain"}
             # https://stackoverflow.com/questions/20508788/do-i-need-content-type-application-octet-stream-for-file-download
             if isinstance(result, bytes):
-                if parent in KIND_CONFIG and fields in KIND_CONFIG[parent].get(
-                    "image", []
-                ):
+                if fields in get_list_config(parent, "image"):
                     return result, 200, {"Content-Type": "image/png"}
                 # return result, 200, {"Content-Type": "application/octet-stream"}
-            if parent in KIND_CONFIG and fields in KIND_CONFIG[parent].get(
-                "pickled", []
-            ):
+            if fields in get_list_config(parent, "pickled"):
                 return jsonify(result)
         return jsonify(result)
 
@@ -440,7 +477,7 @@ def item_get_key(kind, item):
             id_or_name = item
         key = db.get_key(kind, id_or_name)
     # elif kind in ("Chunk") and ":" in item:
-    elif kind in KIND_CONFIG and KIND_CONFIG[kind].get("parent", None) and ":" in item:
+    elif kind in LIST_CONFIG and LIST_CONFIG[kind].get("parent", None) and ":" in item:
         id_or_name, parent = item.split(":", 1)
         path_args = parent.split(":")
         key = db.get_key(kind, int(id_or_name), *path_args)
@@ -474,11 +511,8 @@ def item_get(parent, item, fields=None, children=False, unpickle=False):
         #     info["_children"] = Chunk.list_keys_by_file(instance)
         #     info["_children"] = db.list_entity_keys("Chunk", limit=PAGE_SIZE, ancestor=instance.key())
     if unpickle:
-        if parent in KIND_CONFIG:
-            pickled_list = KIND_CONFIG[parent].get("pickled", [])
-        else:
-            # pickled_list = list(info.keys())
-            pickled_list = []
+        pickled_list = get_list_config(parent, "pickled")
+        # pickled_list = list(info.keys())
         # See https://github.com/python/cpython/blob/master/Lib/pickle.py
         # and https://github.com/python/cpython/blob/master/Lib/pickletools.py
         for attr in pickled_list:
@@ -502,20 +536,16 @@ def item_get(parent, item, fields=None, children=False, unpickle=False):
                 result[attr] = info[attr]
         return result
     # handle ancestor
-    if children and parent in KIND_CONFIG and KIND_CONFIG[parent].get("children", None):
-        child_list = KIND_CONFIG[parent].get("children")
+    child_list = get_list_config(parent, "children")
+    if children and child_list:
         info["_children"] = {}
         for child in child_list:
             info["_children"][child] = db.list_entity_keys(
                 child, limit=PAGE_SIZE, ancestor=parent_key
             )
     # handle ReferenceProperty
-    if (
-        children
-        and parent in KIND_CONFIG
-        and KIND_CONFIG[parent].get("references", None)
-    ):
-        ref_dict = KIND_CONFIG[parent].get("references")
+    ref_dict = get_list_config(parent, "references")
+    if children and ref_dict:
         info["_references"] = {}
         for ref in ref_dict.keys():
             child_refs = db.list_entity_keys(
