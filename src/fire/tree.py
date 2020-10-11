@@ -229,6 +229,8 @@ class FileStructure(BaseStructure):
         return path.replace("/_/", "/")
 
     def get_doc_ref(self, path, kind="Base"):
+        if path == "/":
+            return None
         ref_path = self.convert_path_to_ref(path)
         # doc_ref = BaseDocReference(ref_path, kind)
         # Fake root for off-line or on-line testing - for BaseStructure only (try self.client on-line)
@@ -380,6 +382,8 @@ class FileStructure(BaseStructure):
         # return dir_ref.collection('d').stream()
         # return self.client.collection(self.paths).select(['size', 'count']).where('parent_ref', '==', dir_ref).stream()
         # return []
+        if dir_ref is None:
+            return self.client.collection("root").select(field_paths)
         return dir_ref.collection("_").select(field_paths)
 
     def update_dir_count(self, dir_ref):
@@ -594,6 +598,8 @@ class TreeStructure(TestStructure):
         return path
 
     def get_doc_ref(self, path, kind="Base"):
+        if path == "/":
+            return None
         ref_path = self.convert_path_to_ref(path)
         doc_ref = self.client.document(ref_path)
         return doc_ref
@@ -630,6 +636,8 @@ class TreeStructure(TestStructure):
 
     def get_dir_query(self, dir_ref, field_paths=["size", "count"]):
         # for doc in dir_ref.collection('d').select(['size', 'count']).stream():
+        if dir_ref is None:
+            return self.client.collection(self.root[:-1]).select(field_paths)
         return dir_ref.collection("d").select(field_paths)
 
     # the following methods only apply when dealing with a dir collection supporting .list_documents(), i.e. not flat
@@ -716,6 +724,7 @@ class FlatStructure(TestStructure):
     def get_dir_coll(self, dir_ref):
         raise NotImplementedError
 
+
 #
 # In HashStructure, no subcollections are used but we have 'hashes' and 'pieces' collections with documents
 # containing a parent path field like with Google Cloud Firestore in Datastore mode + the actual path field
@@ -747,7 +756,9 @@ class HashStructure(FlatStructure):  # WIP
         # 5c5fbf220df80bcf6388c827b2180351 -> ???
         raise NotImplementedError
 
-    def get_parent_ref(self, doc_ref, path):  # we need to pass along the path here, to find the parent
+    def get_parent_ref(
+        self, doc_ref, path
+    ):  # we need to pass along the path here, to find the parent
         # ref_path = self.get_parent_path(doc_ref)
         # test/my_dir/your_dir/my_file -> test/my_dir/your_dir
         parent_path = "/".join(path.split("/")[:-1])
@@ -767,4 +778,3 @@ class HashStructure(FlatStructure):  # WIP
             .where("parent_ref", "==", dir_ref)
             .order_by("path")
         )
-

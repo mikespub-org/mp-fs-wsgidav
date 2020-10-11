@@ -12,7 +12,7 @@ from flask.views import MethodView
 import flask.json
 
 from . import db
-from .config import PAGE_SIZE, COLL_CONFIG
+from .config import PAGE_SIZE, LIST_CONFIG, get_list_config
 
 
 def create_app(debug=True, base_url="/api/v1/fire"):
@@ -132,13 +132,14 @@ def item_to_dict(doc, truncate=False):
         )
     info.update(doc.__dict__)
     del info["_data"]
+    del info["_exists"]
     if truncate:
         coll_ref = doc.reference.parent
         # coll_path = item_to_path(coll_ref)
         coll_id = coll_ref.id
-        if coll_id in COLL_CONFIG:
-            truncate_list = COLL_CONFIG[coll_id].get("truncate_list", [])
-            array_list = COLL_CONFIG[coll_id].get("array", [])
+        if coll_id in LIST_CONFIG:
+            truncate_list = LIST_CONFIG[coll_id].get("truncate_list", [])
+            array_list = LIST_CONFIG[coll_id].get("array", [])
         else:
             truncate_list = list(info.keys())
             array_list = []
@@ -155,6 +156,7 @@ def item_to_dict(doc, truncate=False):
 
 list_names = []
 list_stats = {}
+list_filters = {}
 
 
 def get_lists(reset=False):
@@ -240,21 +242,97 @@ def set_list_count(name, count):
     return list_stats[name]["count"]
 
 
+def get_filters(reset=False):
+    global list_filters
+    if len(list_filters) > 0 and not reset:
+        return list_filters
+    list_filters = {}
+    # TODO: load filters from Firestore + check timestamp
+    coll_ref = db.get_coll_ref("_Filter_Coll_")
+    for doc in coll_ref.stream():
+        info = doc.to_dict()
+        list_filters[info["name"]] = info["filters"]
+    for name in get_lists():
+        if name not in list_filters:
+            get_list_filters(name)
+    return list_filters
+
+
+def get_list_filters(name, reset=False):
+    global list_filters
+    if name not in list_filters or reset:
+        list_filters[name] = {}
+        filter_list = get_list_config(name, "filters")
+        for filter in filter_list:
+            list_filters[name][filter] = {}
+    return list_filters[name]
+
+
+def set_list_filters(name, filter_dict):
+    global list_filters
+    list_filters[name] = filter_dict
+
+
+def create_list_filters(name, reset=False, limit=1000):
+    filter_dict = get_list_filters(name, reset)
+    if len(filter_dict) < 1:
+        return
+    filter_keys = list(filter_dict.keys())
+    coll_ref = db.get_coll_ref(name)
+    for doc in coll_ref.select(filter_keys).limit(limit).stream():
+        for key in filter_keys:
+            value = str(doc.get(key))
+            if value not in filter_dict[key]:
+                # filter_dict[key].append(value)
+                filter_dict[key][value] = 0
+            filter_dict[key][value] += 1
+    set_list_filters(name, filter_dict)
+    save_list_filters(name)
+
+
+def save_list_filters(name=None):
+    global list_filters
+    if name is None:
+        todo = list(list_filters.keys())
+    elif name in list_filters:
+        todo = [name]
+    else:
+        return
+    coll_ref = db.get_coll_ref("_Filter_Coll_")
+    now = time.time()
+    for name in todo:
+        coll_ref.document(name).set(
+            {"name": name, "filters": list_filters[name], "timestamp": now}
+        )
+
+
 def parse_filter_args(args, name):
     filters = None
+    # Note: this also supports field_paths, e.g. /cp_media/?filters.identifiers.imdb=tt1470827
     for key, value in list(args.items()):
-        if not key.startswith("filters["):
+        if not key.startswith("filters."):
             continue
         if filters is None:
             filters = []
-        field_path = key[8:-1]
+        field_path = key[8:]
         # TODO: look at first char for <, >, etc.
         op_string = "=="
         # CHECKME: assuming this is a doc path here!?
         if "/" in value:
             filters.append((field_path, op_string, db.get_doc_ref(value)))
         # TODO: do something with name, cfr. data kind
-        else:
+        elif value == "None":
+            filters.append((field_path, op_string, None))
+        elif value == "True":
+            filters.append((field_path, op_string, True))
+        elif value == "False":
+            filters.append((field_path, op_string, False))
+        elif value != "":
+            if value.isdecimal():
+                try:
+                    value = int(value)
+                except:
+                    pass
             filters.append((field_path, op_string, value))
     return filters
 
@@ -323,7 +401,16 @@ class ListAPI(MethodView):
 
 def list_get(name, page=1, sort=None, fields=None, truncate=True, filters=None):
     """Get all documents in collection"""
-    return list(ilist_get(name, page=page, sort=sort, fields=fields, truncate=truncate, filters=filters))
+    return list(
+        ilist_get(
+            name,
+            page=page,
+            sort=sort,
+            fields=fields,
+            truncate=truncate,
+            filters=filters,
+        )
+    )
 
 
 def ilist_get(name, page=1, sort=None, fields=None, truncate=True, filters=None):
@@ -333,12 +420,8 @@ def ilist_get(name, page=1, sort=None, fields=None, truncate=True, filters=None)
     offset = (page - 1) * limit
     coll_ref = db.get_coll_ref(name)
     coll_id = coll_ref.id
-    if (
-        not fields
-        and coll_id in COLL_CONFIG
-        and COLL_CONFIG[coll_id].get("fields", None)
-    ):
-        fields = COLL_CONFIG[coll_id].get("fields", [])
+    if not fields:
+        fields = get_list_config(coll_id, "fields")
     if fields:
         if not isinstance(fields, list):
             fields = fields.split(",")
@@ -406,15 +489,11 @@ class ItemAPI(MethodView):
                 return result, 200, {"Content-Type": "text/plain"}
             # https://stackoverflow.com/questions/20508788/do-i-need-content-type-application-octet-stream-for-file-download
             if isinstance(result, bytes):
-                if coll_id in COLL_CONFIG and fields in COLL_CONFIG[coll_id].get(
-                    "image", []
-                ):
+                if fields in get_list_config(coll_id, "image"):
                     return result, 200, {"Content-Type": "image/png"}
                 # return result, 200, {"Content-Type": "application/octet-stream"}
 
-            if coll_id in COLL_CONFIG and fields in COLL_CONFIG[coll_id].get(
-                "pickled", []
-            ):
+            if fields in get_list_config(coll_id, "pickled"):
                 return jsonify(result)
         return jsonify(result)
 
@@ -460,11 +539,8 @@ def item_get(parent, item, fields=None, children=False, unpickle=False):
     info = item_to_dict(doc)
     coll_id = doc_ref.parent.id
     if unpickle:
-        if coll_id in COLL_CONFIG:
-            pickled_list = COLL_CONFIG[coll_id].get("pickled", [])
-        else:
-            # pickled_list = list(info.keys())
-            pickled_list = []
+        pickled_list = get_list_config(coll_id, "pickled")
+        # pickled_list = list(info.keys())
         # See https://github.com/python/cpython/blob/master/Lib/pickle.py
         # and https://github.com/python/cpython/blob/master/Lib/pickletools.py
         for attr in pickled_list:
@@ -489,8 +565,8 @@ def item_get(parent, item, fields=None, children=False, unpickle=False):
                 result[attr] = info[attr]
         return result
     # handle ancestor
-    # if children and coll_id in COLL_CONFIG and COLL_CONFIG[coll_id].get("children", None):
-    #     child_list = COLL_CONFIG[coll_id].get("children")
+    # child_list = get_list_config(coll_id, "children")
+    # if children and child_list:
     #     info["_children"] = {}
     #     for child in child_list:
     #         info["_children"][child] = db.list_entity_keys(
@@ -500,12 +576,8 @@ def item_get(parent, item, fields=None, children=False, unpickle=False):
     if children:
         info["_children"] = list(doc_ref.collections())
     # handle references
-    if (
-        children
-        and coll_id in COLL_CONFIG
-        and COLL_CONFIG[coll_id].get("references", None)
-    ):
-        ref_dict = COLL_CONFIG[coll_id].get("references")
+    ref_dict = get_list_config(coll_id, "references")
+    if children and ref_dict:
         info["_references"] = {}
         for ref in ref_dict.keys():
             coll_ref = db.get_coll_ref(ref)

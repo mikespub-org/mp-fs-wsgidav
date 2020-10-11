@@ -47,8 +47,12 @@ def configure_app(app, base_url="/fire", authorize_wrap=None):
     app.add_template_filter(item_link)
     app.add_template_filter(show_date)
     app.add_template_global(get_pager)
-    # app.add_template_global(get_lists)
-    # app.add_template_global(get_stats)
+    api.get_lists()
+    app.add_template_global(api.get_lists, "get_lists")
+    api.get_stats()
+    # app.add_template_global(api.get_stats, "get_stats")
+    api.get_filters()
+    app.add_template_global(api.get_list_filters, "get_list_filters")
 
 
 # @app.template_filter()
@@ -144,6 +148,9 @@ def list_view(name):
     filters = api.parse_filter_args(request.args, name)
     if page < 1:
         page = 1
+    create = request.args.get("create_filters", False)
+    if create:
+        api.create_list_filters(name, True)
     count = api.get_list_count(name)
     columns = []
     if filters is not None:
@@ -158,6 +165,28 @@ def list_view(name):
                 api.set_list_count(name, count)
         elif filters is not None:
             count = None
+    filter_dict = api.get_list_filters(name)
+    """
+    update = request.args.get("update_filters", False)
+    if update:
+        if len(rows) > 0 and len(filter_dict) > 0:
+            # TODO: support field_paths here as well, e.g. /cp_media/?filters.identifiers.imdb=tt1470827
+            filter_keys = list(filter_dict.keys())
+            filter_updated = False
+            for row in rows:
+                for key in filter_keys:
+                    if key in row:
+                        value = str(row[key])
+                        if value not in filter_dict[key]:
+                            # filter_dict[key].append(row[key])
+                            # filter_dict[key].append(value)
+                            filter_dict[key][value] = 0
+                        filter_dict[key][value] += 1
+                        filter_updated = True
+            if filter_updated:
+                api.set_list_filters(name, filter_dict)
+                api.save_list_filters(name)
+    """
     # TODO: can we get rid of this too?
     coll_ref = db.get_coll_ref(name)
     parent = coll_ref.parent
@@ -172,6 +201,7 @@ def list_view(name):
         columns=columns,
         rows=rows,
         parent=parent,
+        filter_dict=filter_dict,
         filters=filters,
     )
 
@@ -185,14 +215,12 @@ def item_view(parent, item):
     if item.endswith("/"):
         parent += "/" + item[:-1]
         return list_view(parent)
-    image_list = []
     # extract coll_id from item if needed: parent main_doc/sub_coll/sub_doc -> sub_coll
     if "/" in item:
         coll_id = item.split("/")[-2]
     else:
         coll_id = parent
-    if coll_id in api.COLL_CONFIG and api.COLL_CONFIG[coll_id].get("image", None):
-        image_list = api.COLL_CONFIG[coll_id].get("image", [])
+    image_list = api.get_list_config(coll_id, "image")
     # if we only select an image field, show the image
     fields = request.args.get("fields", None)
     if fields and fields in image_list:

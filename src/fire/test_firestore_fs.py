@@ -35,11 +35,15 @@ class TestFirestoreFS(FSTestCases, unittest.TestCase):
             pytest.xfail("Test invalid path method.")
         if test_name in ("test_open_files"):
             # f.read(1)  # AssertionError: OSError not raised
-            pytest.xfail("Test file-like objects work as expected - for self.fs.open('bin', 'wb')")
+            pytest.xfail(
+                "Test file-like objects work as expected - for self.fs.open('bin', 'wb')"
+            )
         if test_name in ("test_removetree"):
             # self.fs.removetree("foo")  # fs.errors.DirectoryNotEmpty: directory '/foo/a/b/c/d' is not empty
             # if len(_res.listdir()) > 0:
-            pytest.xfail("Test removetree - in DatastoreFS.removedir(), _res.listdir() is not empty")
+            pytest.xfail(
+                "Test removetree - in DatastoreFS.removedir(), _res.listdir() is not empty"
+            )
         # Return an instance of your FS object here - disable caching on client side for test
         fire_fs = FirestoreFS(
             root_path="/_playground_/%02d_%s" % (test_count, test_name),

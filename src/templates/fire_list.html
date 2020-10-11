@@ -3,6 +3,38 @@
 {% block content %}
 	{% include "fire_nav.html" %}
 
+	{% if filter_dict %}
+		{% set match = {} %}
+		{% if filters %}
+			{# see https://stackoverflow.com/questions/36886650/how-to-add-a-new-entry-into-a-dictionary-object-while-using-jinja2 #}
+			{% for where in filters %}
+				{% set _ = match.update({where[0]: where[2]|string}) %}
+			{% endfor %}
+		{% endif %}
+		<form method="get">
+		<b>Filters</b>:
+		{% for filter, values in filter_dict|dictsort %}
+			{% if values is mapping %}
+				{{ filter }}: <select name="filters.{{ filter }}">
+				<option value=""></option>
+				{# todo match where[0] from filters with filter_dict #}
+				{% for value, num in values|dictsort %}
+					{% if filter in match and value == match[filter] %}
+					<option value="{{ value }}" selected="selected">{{ value }} ({{ num }})</option>
+					{% else %}
+					<option value="{{ value }}">{{ value }} ({{ num }})</option>
+					{% endif %}
+				{% endfor %}
+				</select>
+			{% else %}
+				<b>{{ filter }}</b>: {{ values }}
+			{% endif %}
+		{% endfor %}
+		<input type="submit" value="Filter">
+		<a href="{{ base_url }}/{{ name }}/?create_filters=1">Create filters</a>
+		</form>
+	{% endif %}
+
 	{% if parent %}
 	<p>Parent: <a href="{{ base_url }}/{{ parent|item_link }}">{{ parent.id }}</a></p>
 	{% endif %}

@@ -1,5 +1,6 @@
 # https://wsgidav.readthedocs.io/en/latest/development.html#test-test-test
-print("""
+print(
+    """
     You can run the full set of tests from the WsgiDAV tests/ directory
     with the Firestore DAV Provider, simply by:
     1. copying this fire/ directory next to the tests/ directory
@@ -11,4 +12,5 @@ print("""
         provider = FirestoreDAVProvider(anon_role="editor")  # assign "editor" role to anon to support all tests
 
     Note: the litmus tests will also succeed, but they may take a long time...
-""")
+"""
+)

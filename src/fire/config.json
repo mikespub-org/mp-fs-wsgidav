@@ -60,6 +60,83 @@
       "info"
     ]
   },
+  "cp__indexes_": {
+    "fields": [
+      "_order",
+      "name",
+      "version",
+      "storage_class",
+      "db_path"
+    ]
+  },
+  "cp_media": {
+    "fields": [
+      "category_id",
+      "identifiers",
+      "profile_id",
+      "status",
+      "title",
+      "type"
+    ],
+    "filters": [
+      "category_id",
+      "profile_id",
+      "info.year",
+      "info.mpaa",
+      "status",
+      "type"
+    ],
+    "references": {
+      "cp_release": "media_ref",
+      "cp_property": "media_ref"
+    }
+  },
+  "cp_profile": {
+    "fields": [
+      "label",
+      "order",
+      "hide",
+      "qualities",
+      "minimum_score",
+      "wait_for",
+      "stop_after",
+      "finish"
+    ]
+  },
+  "cp_property": {
+    "fields": [
+      "identifier",
+      "media_ref",
+      "prop_type",
+      "value"
+    ],
+    "filters": [
+      "prop_type"
+    ]
+  },
+  "cp_quality": {
+    "fields": [
+      "order",
+      "identifier",
+      "size_min",
+      "size_max"
+    ]
+  },
+  "cp_release": {
+    "fields": [
+      "identifier",
+      "is_3d",
+      "last_edit",
+      "media_ref",
+      "quality",
+      "status"
+    ],
+    "filters": [
+      "is_3d",
+      "quality",
+      "status"
+    ]
+  },
   "channels": {
     "references": {
       "programs": "channel_ref"
