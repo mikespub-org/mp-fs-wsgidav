@@ -611,7 +611,7 @@ class DatastoreDB(FS):
         id_or_name = parts.pop(0)
         id_or_name = id_or_name.replace("§", "/")
         if ":" in id_or_name:
-            id_or_name, parent = key.split(":", 1)
+            id_or_name, parent = id_or_name.split(":", 1)
             path_args = parent.split(":")
             if id_or_name.isdecimal():
                 id_or_name = int(id_or_name)

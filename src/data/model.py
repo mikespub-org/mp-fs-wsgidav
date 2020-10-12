@@ -385,7 +385,7 @@ class Dir(Path):
                 elif type(p) is File:
                     p.delete()
                 else:
-                    RuntimeError("invalid child type")
+                    raise RuntimeError("invalid child type")
         # for d in self.dir_set:
         #     logging.debug("Dir.delete(%s): %r, d=%r" % (recursive, self.path, d))
         #     d.delete(recursive)
