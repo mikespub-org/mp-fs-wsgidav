@@ -16,7 +16,7 @@
 	{% else %}
 	<table>
 		<tr><td><a href="{{ base_url }}/">Home</a></td><td></td><td align="right">{{ elapsed }} sec</td><td></td></tr>
-		<tr><th><a href="{{ base_url }}/{{ path }}/">Name</a></th><th align="right"><a href="{{ base_url }}/{{ path }}/?sort=size">Size</a></th><th><a href="{{ base_url }}/{{ path }}/?sort=date">Date</a></th><th>Type</th></tr>
+		<tr><th scope="col"><a href="{{ base_url }}/{{ path }}/">Name</a></th><th scope="col" align="right"><a href="{{ base_url }}/{{ path }}/?sort=size">Size</a></th><th scope="col"><a href="{{ base_url }}/{{ path }}/?sort=date">Date</a></th><th scope="col">Type</th></tr>
 		{% for info in files %}
 		{% if info.name.endswith('/') %}
 		<tr><td><a href="{{ base_url }}/{{ path }}/{{ info.name }}">{{ info.name }}</a></td><td align="right">-</td><td>{{ info.date }}</td><td>{{ info.type }}</td></tr>

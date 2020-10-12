@@ -24,7 +24,7 @@
         {% for auth_user in authorized_users %}
         <li>[{{ auth_user.roles }}] '{{ auth_user.nickname }}' (email: {{ auth_user.email }}) -
 		    {% if auth_user.canWrite %}
-                <b>Read/Write access</b>
+                <strong>Read/Write access</strong>
    	        {% else %}
     	        Read access
 		    {% endif %}

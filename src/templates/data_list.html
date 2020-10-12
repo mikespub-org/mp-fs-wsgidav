@@ -13,7 +13,7 @@
 			{% endfor %}
 		{% endif %}
 		<form method="get">
-		<b>Filters</b>:
+		<strong>Filters</strong>:
 		{% for filter, values in filter_dict|dictsort %}
 			{% if values is mapping %}
 				{{ filter }}: <select name="filters.{{ filter }}">
@@ -28,7 +28,7 @@
 				{% endfor %}
 				</select>
 			{% else %}
-				<b>{{ filter }}</b>: {{ values }}
+				<strong>{{ filter }}</strong>: {{ values }}
 			{% endif %}
 		{% endfor %}
 		<input type="submit" value="Filter">
@@ -54,16 +54,16 @@
 			{% for col_name in columns %}
 				{% if col_name == "_key" %}
 					{% if sort %}
-						<th><a href="{{ base_url }}/{{ name }}/">{{ col_name }}</a></th>
+						<th scope="col"><a href="{{ base_url }}/{{ name }}/">{{ col_name }}</a></th>
 					{% else %}
-						<th><strong>{{ col_name }}</strong></th>
+						<th scope="col"><strong>{{ col_name }}</strong></th>
 					{% endif %}
 				{% elif col_name == sort %}
-					<th><strong>{{ col_name }}</strong> <a href="{{ base_url }}/{{ name }}/?sort=-{{ col_name }}"> &uarr; </a></th>
+					<th scope="col"><strong>{{ col_name }}</strong> <a href="{{ base_url }}/{{ name }}/?sort=-{{ col_name }}"> &uarr; </a></th>
 				{% elif "-" + col_name == sort %}
-					<th><strong>-{{ col_name }}</strong> <a href="{{ base_url }}/{{ name }}/?sort={{ col_name }}"> &darr; </a></th>
+					<th scope="col"><strong>-{{ col_name }}</strong> <a href="{{ base_url }}/{{ name }}/?sort={{ col_name }}"> &darr; </a></th>
 				{% else %}
-					<th><a href="{{ base_url }}/{{ name }}/?sort={{ col_name }}">{{ col_name }}</a></th>
+					<th scope="col"><a href="{{ base_url }}/{{ name }}/?sort={{ col_name }}">{{ col_name }}</a></th>
 				{% endif %}
 			{% endfor %}
 			</tr>
