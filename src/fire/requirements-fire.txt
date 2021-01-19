@@ -1,7 +1,7 @@
 future>=0.18.2
 cachelib>=0.1.1
-google-cloud-firestore>=1.9.0
+google-cloud-firestore>=2.0.2
 # Flask>=1.1.2
-# fs>=2.4.11
-# wsgidav>=3.0.3
-# pytest>=6.0.1
+# fs>=2.4.12
+# wsgidav>=3.1.0
+# pytest>=6.2.1

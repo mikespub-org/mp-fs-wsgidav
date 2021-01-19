@@ -172,8 +172,7 @@ class FirestoreDAVResource(_DAVResource):
         return res
 
     def get_member_list(self):
-        """Return a list of direct members (_DAVResource or derived objects).
-        """
+        """Return a list of direct members (_DAVResource or derived objects)."""
         if not self.is_collection:
             raise NotImplementedError
         memberList = []

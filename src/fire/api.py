@@ -54,6 +54,13 @@ def configure_app(app, base_url="/api/v1/fire", authorize_wrap=None):
     app.json_encoder = MyJSONEncoder
 
 
+def pb2epoch(pb):
+    # return time.mktime(tm.utctimetuple())
+    if hasattr(pb, "timestamp_pb"):
+        pb = pb.timestamp_pb()
+    return pb.seconds + float(pb.nanos / 1000000000.0)
+
+
 # def dt2epoch(dt):
 #     # return time.mktime(dt.utctimetuple())
 #     return (
@@ -111,25 +118,19 @@ def item_to_dict(doc, truncate=False):
         and doc.create_time
         and not isinstance(doc.create_time, float)
     ):
-        doc.create_time = doc.create_time.seconds + float(
-            doc.create_time.nanos / 1000000000.0
-        )
+        doc.create_time = pb2epoch(doc.create_time)
     if (
         hasattr(doc, "update_time")
         and doc.update_time
         and not isinstance(doc.update_time, float)
     ):
-        doc.update_time = doc.update_time.seconds + float(
-            doc.update_time.nanos / 1000000000.0
-        )
+        doc.update_time = pb2epoch(doc.update_time)
     if (
         hasattr(doc, "read_time")
         and doc.read_time
         and not isinstance(doc.read_time, float)
     ):
-        doc.read_time = doc.read_time.seconds + float(
-            doc.read_time.nanos / 1000000000.0
-        )
+        doc.read_time = pb2epoch(doc.read_time)
     info.update(doc.__dict__)
     del info["_data"]
     del info["_exists"]

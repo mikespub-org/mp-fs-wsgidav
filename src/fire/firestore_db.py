@@ -407,26 +407,22 @@ class FirestoreDB(FS):
 
         def match_dir(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_file or self.match(patterns, info.name)
 
         def match_file(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_dir or self.match(patterns, info.name)
 
         def exclude_dir(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_file or not self.match(patterns, info.name)
 
         def exclude_file(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_dir or not self.match(patterns, info.name)
 
         if files:
@@ -556,6 +552,12 @@ class FirestoreDB(FS):
 
     @classmethod
     def _make_info_from_document(cls, doc, namespaces):
+        def epoch(pb):
+            # return time.mktime(dt.utctimetuple())
+            if hasattr(pb, "timestamp_pb"):
+                pb = pb.timestamp_pb()
+            return pb.seconds + float(pb.nanos / 1000000000.0)
+
         name = doc.id
         doc_ref = doc.reference
         # CHECKME: this needs to be pre-configured or cached
@@ -574,8 +576,8 @@ class FirestoreDB(FS):
         # st_size = doc.to_dict().get("size", 0)
         st_size = None
         st_atime = now
-        st_mtime = doc.update_time.seconds + float(doc.update_time.nanos / 1000000000.0)
-        st_ctime = doc.create_time.seconds + float(doc.create_time.nanos / 1000000000.0)
+        st_mtime = epoch(doc.update_time)
+        st_ctime = epoch(doc.create_time)
         if "properties" in namespaces:
             info["properties"] = doc.to_dict()
             # add other doc properties too?

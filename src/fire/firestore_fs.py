@@ -517,26 +517,22 @@ class FirestoreFS(FS):
 
         def match_dir(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_file or self.match(patterns, info.name)
 
         def match_file(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_dir or self.match(patterns, info.name)
 
         def exclude_dir(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_file or not self.match(patterns, info.name)
 
         def exclude_file(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_dir or not self.match(patterns, info.name)
 
         if files:
@@ -831,11 +827,11 @@ class FirestoreFS(FS):
 
     @staticmethod
     def _make_info_from_resource(_res, namespaces):
-        def epoch(dt):
+        def epoch(pb):
             # return time.mktime(dt.utctimetuple())
-            return (
-                dt - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
-            ) / datetime.timedelta(seconds=1)
+            if hasattr(pb, "timestamp_pb"):
+                pb = pb.timestamp_pb()
+            return pb.seconds + float(pb.nanos / 1000000000.0)
 
         doc = _res.get_doc()
         # if _res.isdir():
@@ -845,8 +841,8 @@ class FirestoreFS(FS):
         # when combined with FS2DAVProvider(), size None tells WsgiDAV to read until EOF
         st_size = doc.to_dict().get("size", 0)
         # st_size = None
-        st_mtime = doc.update_time.seconds + float(doc.update_time.nanos / 1000000000.0)
-        st_ctime = doc.create_time.seconds + float(doc.create_time.nanos / 1000000000.0)
+        st_mtime = epoch(doc.update_time)
+        st_ctime = epoch(doc.create_time)
         st_atime = st_mtime
 
         info = {"basic": {"name": _res.basename(_res.path), "is_dir": _res.isdir()}}

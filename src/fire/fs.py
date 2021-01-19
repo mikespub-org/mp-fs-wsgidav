@@ -90,15 +90,18 @@ def exists(s):
 
 
 def stat(s):
-    def epoch(tm):
-        return time.mktime(tm.utctimetuple())
+    def epoch(pb):
+        # return time.mktime(tm.utctimetuple())
+        if hasattr(pb, "timestamp_pb"):
+            pb = pb.timestamp_pb()
+        return pb.seconds + float(pb.nanos / 1000000000.0)
 
     p = _getresource(s)
     doc = p.get_doc()
     if doc and doc.exists:
         size = doc.to_dict().get("size", 0)
-        mtime = doc.update_time.seconds + float(doc.update_time.nanos / 1000000000.0)
-        ctime = doc.create_time.seconds + float(doc.create_time.nanos / 1000000000.0)
+        mtime = epoch(doc.update_time)
+        ctime = epoch(doc.create_time)
     else:
         now = time.time()
         size = 0
