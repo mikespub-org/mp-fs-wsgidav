@@ -515,26 +515,22 @@ class DatastoreFS(FS):
 
         def match_dir(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_file or self.match(patterns, info.name)
 
         def match_file(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_dir or self.match(patterns, info.name)
 
         def exclude_dir(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_file or not self.match(patterns, info.name)
 
         def exclude_file(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_dir or not self.match(patterns, info.name)
 
         if files:

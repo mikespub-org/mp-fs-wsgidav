@@ -141,7 +141,11 @@ def home_view(name=None):
     reset = request.args.get("reset", False)
     stats = api.get_stats(reset)
     return render_template(
-        "data_home.html", base_url=BASE_URL, lists=kinds_list, name=name, stats=stats,
+        "data_home.html",
+        base_url=BASE_URL,
+        lists=kinds_list,
+        name=name,
+        stats=stats,
     )
 
 
@@ -207,7 +211,11 @@ def item_view(parent, item):
     for attr in image_list:
         info[attr] = "?fields=%s" % attr
     return render_template(
-        "data_item.html", base_url=BASE_URL, lists=kinds_list, name=parent, info=info,
+        "data_item.html",
+        base_url=BASE_URL,
+        lists=kinds_list,
+        name=parent,
+        info=info,
     )
 
 

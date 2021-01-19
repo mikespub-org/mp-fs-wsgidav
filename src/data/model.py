@@ -141,9 +141,9 @@ class Path(db.PolyModel):
     @classmethod
     def normalize(cls, p):
         """
-         /foo/bar/ -> /foo/bar
-         / -> /
-         // -> /
+        /foo/bar/ -> /foo/bar
+        / -> /
+        // -> /
         """
         # if not isinstance(p, unicode):
         #     logging.debug("Path.normalize: encoding str %s to unicode.", repr(p))
@@ -167,7 +167,7 @@ class Path(db.PolyModel):
     @classmethod
     def get_parent_path(cls, p):
         """
-         /foo/bar -> /foo
+        /foo/bar -> /foo
         """
         return os.path.dirname(cls.normalize(p))
 
