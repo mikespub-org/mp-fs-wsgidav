@@ -5,16 +5,13 @@
 
 import logging
 import os
-import time
-from builtins import str
 from pprint import pformat
 
 from flask import Flask, render_template, request
 
-from btfs import sessions
-from btfs.auth import AuthorizedUser
-from fire import db, views, api
 from browser import views as browse
+from btfs import sessions
+from fire import api, db, views
 
 # from fire.cache import memcache3
 # from fire.model import Chunk, Dir, File, Path
@@ -130,7 +127,7 @@ def admin_view():
         url_linktext = "Login"
     env = []
     for k, v in list(os.environ.items()):
-        env.append("%s: '%s'" % (k, v))
+        env.append(f"{k}: '{v}'")
     stats = api.get_stats()
     nickname = "stranger"
     if session.is_user():
@@ -203,7 +200,7 @@ def check_orphans():
     output = "Checking orphans. <a href='?'>Back</a><pre>"
     result, dir_orphans, file_orphans, chunk_orphans = find_orphans()
     output += result
-    output += "</pre>Total orphans: %s dirs, %s files, %s chunks" % (
+    output += "</pre>Total orphans: {} dirs, {} files, {} chunks".format(
         len(dir_orphans),
         len(file_orphans),
         len(chunk_orphans),

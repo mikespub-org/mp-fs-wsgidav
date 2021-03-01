@@ -1,6 +1,5 @@
 import logging
 import os
-from functools import wraps
 
 from flask import Flask, make_response, redirect, render_template, request
 

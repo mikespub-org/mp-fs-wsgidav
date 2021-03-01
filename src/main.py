@@ -5,12 +5,11 @@
 # Application Dispatching - https://flask.palletsprojects.com/en/1.1.x/patterns/appdispatch/
 import json
 import re
-from builtins import object
 from threading import RLock
 
 # Lazy Loading - https://flask.palletsprojects.com/en/1.1.x/patterns/lazyloading/
-from werkzeug.utils import cached_property, import_string
-from werkzeug.wsgi import get_path_info, peek_path_info, pop_path_info
+from werkzeug.utils import import_string
+from werkzeug.wsgi import get_path_info
 
 # Import for local testing
 # import set_env
@@ -20,7 +19,7 @@ from clouddav import app as default_app
 # from sample import app as default_app
 
 
-class PathDispatcher(object):
+class PathDispatcher:
     def __init__(self, default_app, handlers=None, root="/"):
         self.default_app = default_app
         self.handlers = handlers
@@ -78,7 +77,7 @@ class PathDispatcher(object):
 def make_handlers():
     import yaml
 
-    with open("app.yaml.template", "r") as fp:
+    with open("app.yaml.template") as fp:
         info = yaml.unsafe_load(fp)
     with open("app.handlers.json", "w") as fp:
         json.dump(info["handlers"], fp, indent=2)
@@ -86,7 +85,7 @@ def make_handlers():
 
 def get_handlers(script_only=True):
     handlers = []
-    with open("app.handlers.json", "r") as fp:
+    with open("app.handlers.json") as fp:
         info = json.load(fp)
         for handler in info:
             if script_only and "script" not in handler:
@@ -113,7 +112,7 @@ def run_wsgi_app(app, port=8080):
         print("Serving HTTP on port %s..." % port)
         try:
             httpd.serve_forever()
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             print("Goodbye...")
 
 

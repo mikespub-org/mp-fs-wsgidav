@@ -3,11 +3,10 @@
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
-import logging
 import os
 
 from future import standard_library
-from wsgidav.wsgidav_app import DEFAULT_CONFIG, WsgiDAVApp
+from wsgidav.wsgidav_app import WsgiDAVApp
 
 from btfs.btfs_dav_provider import BTFSResourceProvider
 

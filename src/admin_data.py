@@ -5,18 +5,15 @@
 
 import logging
 import os
-import time
-from builtins import str
 from pprint import pformat
 
 from flask import Flask, render_template, request
 
-from btfs import sessions
-from btfs.auth import AuthorizedUser
-from data import db, views, api
-from data.cache import memcache3
-from data.model import Chunk, Dir, File, Path
 from browser import views as browse
+from btfs import sessions
+from data import api, db, views
+from data.cache import memcache3
+from data.model import Chunk, Dir, File
 
 
 def find_orphans(limit=1000):
@@ -33,7 +30,7 @@ def find_orphans(limit=1000):
             continue
         try:
             key = item.parent_path
-        except Exception as e:
+        except Exception:
             output += "Invalid Reference: %s\n" % item.path
             dir_orphans.append(item.key())
             continue
@@ -47,7 +44,7 @@ def find_orphans(limit=1000):
         file_keys[item.key()] = item
         try:
             key = item.parent_path
-        except Exception as e:
+        except Exception:
             output += "Invalid Reference: %s\n" % item.path
             file_orphans.append(item.key())
             continue
@@ -66,16 +63,16 @@ def find_orphans(limit=1000):
     for item in Chunk.ilist_all(1000, projection=["offset"]):
         try:
             key = item.key().parent
-        except Exception as e:
+        except Exception:
             output += "Invalid Reference: %s\n" % item.key()
             chunk_orphans.append(item.key())
             continue
         if key not in file_keys:
-            output += "Unknown File: %s %s\n" % (item.key().parent, item.offset)
+            output += f"Unknown File: {item.key().parent} {item.offset}\n"
             chunk_orphans.append(item.key())
             continue
         if key in file_orphans:
-            output += "Orphan File: %s %s\n" % (item.key().parent, item.offset)
+            output += f"Orphan File: {item.key().parent} {item.offset}\n"
             chunk_orphans.append(item.key())
             continue
         # chunk_keys[item.key()] = item
@@ -128,7 +125,7 @@ def admin_view():
         url_linktext = "Login"
     env = []
     for k, v in list(os.environ.items()):
-        env.append("%s: '%s'" % (k, v))
+        env.append(f"{k}: '{v}'")
     stats = api.get_stats()
     nickname = "stranger"
     if session.is_user():
@@ -203,7 +200,7 @@ def check_orphans():
     output = "Checking orphans. <a href='?'>Back</a><pre>"
     result, dir_orphans, file_orphans, chunk_orphans = find_orphans()
     output += result
-    output += "</pre>Total orphans: %s dirs, %s files, %s chunks" % (
+    output += "</pre>Total orphans: {} dirs, {} files, {} chunks".format(
         len(dir_orphans),
         len(file_orphans),
         len(chunk_orphans),
