@@ -25,24 +25,22 @@ Example opening via a FS URL "dav_provider://"  # TODO
 For more information on PyFilesystem2, see https://docs.pyfilesystem.org/
 For more information on WsgiDAV, see https://wsgidav.readthedocs.io/
 """
+import io
+import itertools
+import logging
+from functools import partial
+
 from fs import errors
 from fs.base import FS
 from fs.info import Info
-from fs.mode import Mode
-from fs.path import split, join
-from fs.wrapfs import WrapFS
-from fs.opener import open_fs
 from fs.iotools import RawWrapper
-from fs.time import epoch_to_datetime
-from functools import partial
-import datetime
-import itertools
-import logging
-import io
+from fs.mode import Mode
 
 # for opener
-from fs.opener import Opener
-from fs.opener import registry
+from fs.opener import Opener, open_fs, registry
+from fs.path import split
+from fs.time import epoch_to_datetime
+from fs.wrapfs import WrapFS
 
 __all__ = ["DAVProvider2FS", "WrapDAVProvider2FS"]
 
@@ -53,7 +51,7 @@ log = logging.getLogger(__name__)
 class DAVProvider2FS(FS):
     def __init__(self, dav_provider, dav_config=None):
         # self._meta = {}
-        super(DAVProvider2FS, self).__init__()
+        super().__init__()
         self.provider = dav_provider
         self.provider.share_path = ""
         # TODO: get list of invalid characters from DAV Provider
@@ -185,7 +183,7 @@ class DAVProvider2FS(FS):
         path,  # type: Text
         mode="r",  # type: Text
         buffering=-1,  # type: int
-        **options  # type: Any
+        **options,  # type: Any
     ):
         # type: (...) -> BinaryIO
         """Open a binary file-like object.
@@ -523,26 +521,22 @@ class DAVProvider2FS(FS):
 
         def match_dir(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_file or self.match(patterns, info.name)
 
         def match_file(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_dir or self.match(patterns, info.name)
 
         def exclude_dir(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_file or not self.match(patterns, info.name)
 
         def exclude_file(patterns, info):
             # type: (Optional[Iterable[Text]], Info) -> bool
-            """Pattern match info.name.
-            """
+            """Pattern match info.name."""
             return info.is_dir or not self.match(patterns, info.name)
 
         if files:
@@ -582,7 +576,7 @@ class DAVProvider2FS(FS):
                 ``dst_path`` does not exist.
 
         """
-        _src_path = self.validatepath(src_path)
+        self.validatepath(src_path)
         _dst_path = self.validatepath(dst_path)
         with self._lock:
             if not overwrite and self.exists(dst_path):
@@ -621,7 +615,7 @@ class DAVProvider2FS(FS):
                 ``dst_path`` does not exist.
 
         """
-        _src_path = self.validatepath(src_path)
+        self.validatepath(src_path)
         _dst_path = self.validatepath(dst_path)
         with self._lock:
             if not overwrite and self.exists(dst_path):
@@ -714,7 +708,7 @@ class DAVProvider2FS(FS):
             if hasattr(self.provider, "close") and callable(self.provider.close):
                 self.provider.close()
             self.provider = None
-        return super(DAVProvider2FS, self).close()
+        return super().close()
 
     # ---------------------------------------------------------------- #
     # Internal methods                                                 #
@@ -736,7 +730,7 @@ class DAVProvider2FS(FS):
                 rfc1123_time = dt.strftime("%a, %d %b %Y %H:%M:%S GMT")
                 _res.set_last_modified(_res.path, rfc1123_time, True)
                 write.append("modified")
-            except Exception as e:
+            except Exception:
                 pass
             info["details"] = {
                 # "_write": ["accessed", "modified"],
@@ -791,7 +785,7 @@ class DAVProvider2FS(FS):
         return self.provider.get_resource_inst(_path, self.environ)
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, repr(self.provider))
+        return "{}({})".format(self.__class__.__name__, repr(self.provider))
 
     def _reset_path(self, path, confirm=False):
         if not confirm:
@@ -818,7 +812,7 @@ class WrapDAVProvider2FS(WrapFS):
         self._temp_fs = open_fs(self._temp_fs_url)
         print(self._temp_fs)
         # self._meta = {}
-        super(WrapDAVProvider2FS, self).__init__(self._temp_fs)
+        super().__init__(self._temp_fs)
 
 
 @registry.install
@@ -849,6 +843,6 @@ def main():
 
 if __name__ == "__main__":
     result = main()
-    from pprint import pformat, pprint
+    from pprint import pprint
 
     pprint(result)

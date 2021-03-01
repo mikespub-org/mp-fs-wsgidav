@@ -1,10 +1,11 @@
 # https://docs.pyfilesystem.org/en/latest/implementers.html#testing-filesystems
-from .fs_from_dav_provider import DAVProvider2FS
-from wsgidav.fs_dav_provider import FilesystemProvider
 import unittest
 
 import pytest
 from fs.test import FSTestCases
+from wsgidav.fs_dav_provider import FilesystemProvider
+
+from .fs_from_dav_provider import DAVProvider2FS
 
 # Create the test playground if needed
 dav_provider = FilesystemProvider("/tmp")

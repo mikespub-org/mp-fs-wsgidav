@@ -23,17 +23,15 @@ Example using the FS2DAVProvider() in WsgiDAV:
 For more information on WsgiDAV, see https://wsgidav.readthedocs.io/
 For more information on PyFilesystem2, see https://docs.pyfilesystem.org/
 """
-import logging
-
-# logging.basicConfig(format='%(levelname)s:%(module)s.%(funcName)s:%(message)s', level=logging.DEBUG)
-from wsgidav import util
-from wsgidav.dav_error import DAVError, HTTP_FORBIDDEN
-from wsgidav.dav_provider import DAVCollection, DAVNonCollection, DAVProvider
 
 import fs.base
 import fs.path
 import fs.time
 
+# logging.basicConfig(format='%(levelname)s:%(module)s.%(funcName)s:%(message)s', level=logging.DEBUG)
+from wsgidav import util
+from wsgidav.dav_error import HTTP_FORBIDDEN, DAVError
+from wsgidav.dav_provider import DAVCollection, DAVNonCollection, DAVProvider
 
 _logger = util.get_module_logger(__name__)
 # _logger = logging.getLogger("wsgidav")
@@ -51,7 +49,7 @@ class FS2FileResource(DAVNonCollection):
     """
 
     def __init__(self, path, environ, info):
-        super(FS2FileResource, self).__init__(path, environ)
+        super().__init__(path, environ)
         self.info = info
         if not self.info.created and self.info.metadata_changed:
             self.info.raw["details"]["created"] = self.info.raw["details"][
@@ -157,7 +155,7 @@ class FS2FileResource(DAVNonCollection):
         if self.provider.readonly:
             raise DAVError(HTTP_FORBIDDEN)
         assert not util.is_equal_or_child_uri(self.path, dest_path)
-        _logger.debug("move_recursive({}, {})".format(self.path, dest_path))
+        _logger.debug(f"move_recursive({self.path}, {dest_path})")
         self.provider.source_fs.move(self.path, dest_path, overwrite=False)
         # (Live properties are copied by copy2 or copystat)
         # Move dead properties
@@ -192,7 +190,7 @@ class FS2FolderResource(DAVCollection):
     """
 
     def __init__(self, path, environ, info):
-        super(FS2FolderResource, self).__init__(path, environ)
+        super().__init__(path, environ)
         self.info = info
         if not self.info.created and self.info.metadata_changed:
             self.info.raw["details"]["created"] = self.info.raw["details"][
@@ -240,7 +238,7 @@ class FS2FolderResource(DAVCollection):
         path = fs.path.join(self.path, name)
         info = self.provider.get_details(path)
         if not info:
-            _logger.debug("Skipping non-file {}".format(path))
+            _logger.debug(f"Skipping non-file {path}")
             return
         if info.is_dir:
             res = FS2FolderResource(path, self.environ, info)
@@ -323,7 +321,7 @@ class FS2FolderResource(DAVCollection):
             del details_info["basic"]
             self.provider.source_fs.setinfo(dest_path, details_info)
         except Exception:
-            _logger.exception("Could not copy folder stats: {}".format(self.path))
+            _logger.exception(f"Could not copy folder stats: {self.path}")
         # (Live properties are copied by copy2 or copystat)
         # Copy dead properties
         propMan = self.provider.prop_manager
@@ -353,7 +351,7 @@ class FS2FolderResource(DAVCollection):
         if self.provider.readonly:
             raise DAVError(HTTP_FORBIDDEN)
         assert not util.is_equal_or_child_uri(self.path, dest_path)
-        _logger.debug("move_recursive({}, {})".format(self.path, dest_path))
+        _logger.debug(f"move_recursive({self.path}, {dest_path})")
         self.provider.source_fs.movedir(self.path, dest_path, create=True)
         # (Live properties are copied by copy2 or copystat)
         # Move dead properties
@@ -384,9 +382,9 @@ class FS2FolderResource(DAVCollection):
 class FS2DAVProvider(DAVProvider):
     def __init__(self, source_fs, readonly=False):
         if not source_fs or not isinstance(source_fs, fs.base.FS):
-            raise ValueError("Invalid source fs: {}".format(source_fs))
+            raise ValueError(f"Invalid source fs: {source_fs}")
 
-        super(FS2DAVProvider, self).__init__()
+        super().__init__()
 
         self.source_fs = source_fs
         self.readonly = readonly
@@ -406,7 +404,7 @@ class FS2DAVProvider(DAVProvider):
         try:
             info = self.get_details(path)
         except Exception as e:
-            _logger.debug("Error {} for {}".format(e, path))
+            _logger.debug(f"Error {e} for {path}")
             return None
 
         if not info:
@@ -416,7 +414,7 @@ class FS2DAVProvider(DAVProvider):
         return FS2FileResource(path, environ, info)
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, repr(self.source_fs))
+        return "{}({})".format(self.__class__.__name__, repr(self.source_fs))
 
 
 def create_app(source_fs, config=None):
@@ -441,7 +439,7 @@ def run_wsgi_app(app, port=8080):
         print("Serving HTTP on port %s..." % port)
         try:
             httpd.serve_forever()
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             print("Goodbye...")
 
 
