@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import os.path
 import time
-from flask import Flask, render_template, request, redirect, send_file, abort
+
+from flask import Flask, abort, render_template, request, send_file
+
 from . import DispatchPath, guess_mime_type
 
 BASE_URL = ""
@@ -101,7 +103,7 @@ def content(fstype, more=None):
     label = "Logout"
     link = "/user"
     if more is not None:
-        path = "%s/%s" % (fstype, more)
+        path = f"{fstype}/{more}"
     else:
         path = fstype
     if path.endswith("/"):
@@ -150,8 +152,8 @@ def profiler(app):
 
 
 def lineprof(app):
+    from wsgi_lineprof.filters import FilenameFilter, TopItemsFilter, TotalTimeSorter
     from wsgi_lineprof.middleware import LineProfilerMiddleware
-    from wsgi_lineprof.filters import FilenameFilter, TotalTimeSorter, TopItemsFilter
 
     filters = [
         # Results which filename contains "mikeswebdav"

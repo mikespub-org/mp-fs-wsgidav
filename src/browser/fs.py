@@ -1,5 +1,6 @@
 import os.path
-from . import GenericPath, GenericDirEntry, guess_mime_type
+
+from . import GenericDirEntry, GenericPath, guess_mime_type
 
 
 class FsPath(GenericPath):
@@ -52,9 +53,8 @@ class FsPath(GenericPath):
 
         elif root == "dav2fs":
             # Open the DAV Provider as source
-            from mapper.fs_from_dav_provider import DAVProvider2FS
-            from wsgidav.fs_dav_provider import FilesystemProvider
             from data.datastore_dav import DatastoreDAVProvider
+            from mapper.fs_from_dav_provider import DAVProvider2FS
 
             # dav_provider = FilesystemProvider(BASE_DIR)
             dav_provider = DatastoreDAVProvider()

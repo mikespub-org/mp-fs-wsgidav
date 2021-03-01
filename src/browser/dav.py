@@ -1,6 +1,7 @@
 import os.path
 import time
-from . import GenericPath, GenericDirEntry, guess_mime_type
+
+from . import GenericDirEntry, GenericPath, guess_mime_type
 
 
 class DavPath(GenericPath):
@@ -41,11 +42,9 @@ class DavPath(GenericPath):
 
         elif root == "fs2dav":
             # Open the PyFilesystem2 filesystem as source
-            from mapper.dav_provider_from_fs import FS2DAVProvider
-
             # from fs import open_fs
-            from fs.osfs import OSFS
             from data.datastore_fs import DatastoreFS
+            from mapper.dav_provider_from_fs import FS2DAVProvider
 
             # source_fs = open_fs("osfs://" + BASE_DIR)
             # source_fs = OSFS(BASE_DIR)

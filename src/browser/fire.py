@@ -1,6 +1,6 @@
-import os.path
 import time
-from . import GenericPath, GenericDirEntry, guess_mime_type
+
+from . import GenericDirEntry, GenericPath, guess_mime_type
 
 
 class FirePath(GenericPath):
