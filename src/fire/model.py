@@ -6,13 +6,11 @@
 # The original source for this module was taken from gaedav:
 # (c) 2009 Haoyu Bai (http://gaedav.google.com/).
 
-from __future__ import absolute_import
 
 import datetime
 import hashlib
 import logging
 import os.path
-from builtins import object, range
 
 from . import db
 from .tree import get_structure
@@ -27,7 +25,7 @@ DO_EXPENSIVE_CHECKS = False
 # DO_EXPENSIVE_CHECKS = True
 
 
-class DocModel(object):
+class DocModel:
     _tree = get_structure("flat", db.get_client())
     # _tree = get_structure("hash", db.get_client())
 
@@ -93,7 +91,7 @@ class Path(DocModel):
     # cache = cached_resource
 
     def _init_entity(self, **kwargs):
-        super(Path, self)._init_entity(**kwargs)
+        super()._init_entity(**kwargs)
         now = datetime.datetime.now(datetime.timezone.utc)
         template = {
             "path": "",
@@ -134,7 +132,7 @@ class Path(DocModel):
         return
 
     def __repr__(self):
-        return "%s('%s')" % (type(self).class_name(), self.path)
+        return "{}('{}')".format(type(self).class_name(), self.path)
 
     def isdir(self):
         return type(self) is Dir
@@ -161,7 +159,7 @@ class Path(DocModel):
         # if not isinstance(result, unicode):
         #     result = result.decode('utf-8')
         if p != result:
-            logging.debug("Path.normalize(%r): %r." % (p, result))
+            logging.debug(f"Path.normalize({p!r}): {result!r}.")
         return result
 
     @classmethod
@@ -192,7 +190,7 @@ class Path(DocModel):
 
     @classmethod
     def retrieve(cls, path):
-        logging.debug("Path.retrieve(%s, %r)" % (cls.__name__, path))
+        logging.debug(f"Path.retrieve({cls.__name__}, {path!r})")
         assert cls is Path
         path = cls.normalize(path)
         assert path.startswith("/")
@@ -222,7 +220,7 @@ class Path(DocModel):
     def new(cls, path):
         # Make sure, we don't instantiate <Path> objects
         assert cls in (Dir, File)
-        logging.debug("%s.new(%r)" % (cls.__name__, path))
+        logging.debug(f"{cls.__name__}.new({path!r})")
         path = cls.normalize(path)
         if cls == Dir:
             doc = cls._tree.make_dir(path)
@@ -310,7 +308,7 @@ class Dir(Path):
     # cache = cached_dir
 
     def _init_entity(self, **kwargs):
-        super(Dir, self)._init_entity(**kwargs)
+        super()._init_entity(**kwargs)
         self._entity.setdefault("parent_path", None)
 
     def _init_doc_ref(self, **kwargs):
@@ -387,14 +385,14 @@ class Dir(Path):
             yield c.basename(c.path)
 
     def delete(self, recursive=False):
-        logging.debug("Dir.delete(%s): %r" % (recursive, self.path))
+        logging.debug(f"Dir.delete({recursive}): {self.path!r}")
         if not recursive:
             # TODO: faster lookup (for __key__)
             for p in self.iget_content():
                 raise RuntimeError("Dir must be empty")
         else:
             for p in self.get_content():
-                logging.debug("Dir.delete(%s): %r, p=%r" % (recursive, self.path, p))
+                logging.debug(f"Dir.delete({recursive}): {self.path!r}, p={p!r}")
                 if type(p) is Dir:
                     p.delete(recursive)
                 elif type(p) is File:
@@ -434,7 +432,7 @@ class File(Path):
     # cache = cached_file
 
     def _init_entity(self, **kwargs):
-        super(File, self)._init_entity(**kwargs)
+        super()._init_entity(**kwargs)
         self._entity.setdefault("parent_path", None)
 
     def _init_doc_ref(self, **kwargs):
@@ -480,8 +478,7 @@ class File(Path):
             chunks = Chunk.iget_chunks_data(self)
         else:
             chunks = []
-        for data in chunks:
-            yield data
+        yield from chunks
 
     def put_content(self, s):
         """
@@ -608,7 +605,7 @@ class Chunk(DocModel):
     _auto_now = None
 
     def _init_entity(self, **kwargs):
-        super(Chunk, self)._init_entity(**kwargs)
+        super()._init_entity(**kwargs)
         template = {
             #'file': None,
             "offset": 0,

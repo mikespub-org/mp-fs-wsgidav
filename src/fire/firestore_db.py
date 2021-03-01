@@ -18,27 +18,25 @@ Example opening via a FS URL "firestore_db://"
 
 For more information on PyFilesystem2, see https://docs.pyfilesystem.org/
 """
-from fs import errors
-from fs.base import FS
-from fs.info import Info
-from fs.path import split, join, basename, dirname
-from fs.wrapfs import WrapFS
-from fs.opener import open_fs
-
-# for opener
-from fs.opener import Opener
-from fs.opener import registry
-
-from functools import partial
-import time
+import io
 import itertools
 import json
 import logging
+import time
+from functools import partial
+
+from fs import errors
+from fs.base import FS
+from fs.info import Info
+from fs.iotools import make_stream
+
+# for opener
+from fs.opener import Opener, open_fs, registry
+from fs.path import dirname
+from fs.wrapfs import WrapFS
 
 # use the db module here
 from . import db
-import io
-from fs.iotools import RawWrapper, make_stream
 
 #
 # Specify location of your service account credentials in environment variable before you start:
@@ -63,7 +61,7 @@ class FirestoreDB(FS):
 
     def __init__(self, root_path=None, limit=1000):
         # self._meta = {}
-        super(FirestoreDB, self).__init__()
+        super().__init__()
         self._root_path = root_path
         self._limit = limit
         # Initialize Firestore database if needed
@@ -185,7 +183,7 @@ class FirestoreDB(FS):
         path,  # type: Text
         mode="r",  # type: Text
         buffering=-1,  # type: int
-        **options  # type: Any
+        **options,  # type: Any
     ):
         # type: (...) -> BinaryIO
         """Open a binary file-like object.
@@ -469,7 +467,7 @@ class FirestoreDB(FS):
         """
         if not self._closed:
             db.close()
-        return super(FirestoreDB, self).close()
+        return super().close()
 
     # ---------------------------------------------------------------- #
     # Internal methods                                                 #
@@ -733,7 +731,7 @@ class WrapFirestoreDB(WrapFS):
         self._temp_fs = open_fs(self._temp_fs_url)
         log.info(self._temp_fs)
         # self._meta = {}
-        super(WrapFirestoreDB, self).__init__(self._temp_fs)
+        super().__init__(self._temp_fs)
 
 
 @registry.install
@@ -791,8 +789,8 @@ def main(coll=None, id=None, *args):
 
 
 if __name__ == "__main__":
-    from pprint import pformat, pprint
     import sys
+    from pprint import pprint
 
     if len(sys.argv) > 1:
         result = main(*sys.argv[1:])

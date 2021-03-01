@@ -3,7 +3,6 @@
 # Licensed under the MIT license: https://opensource.org/licenses/mit-license.php
 #
 import logging
-import os
 
 from . import fs as fire_fs
 
@@ -50,7 +49,9 @@ def test():
 
 def profile_test():
     # This is the main function for profiling
-    import cProfile, pstats, io
+    import cProfile
+    import io
+    import pstats
 
     prof = cProfile.Profile()
     prof = prof.runctx("test()", globals(), locals())

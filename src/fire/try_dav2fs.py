@@ -5,8 +5,8 @@
 
 
 def main(path=None, file=None, *args):
-    from mapper.fs_from_dav_provider import DAVProvider2FS
     from fire.firestore_dav import FirestoreDAVProvider
+    from mapper.fs_from_dav_provider import DAVProvider2FS
 
     dav_provider = FirestoreDAVProvider()
     dav_fs = DAVProvider2FS(dav_provider)
@@ -23,8 +23,8 @@ def main(path=None, file=None, *args):
 
 
 if __name__ == "__main__":
-    from pprint import pformat, pprint
     import sys
+    from pprint import pprint
 
     if len(sys.argv) > 1:
         result = main(*sys.argv[1:])

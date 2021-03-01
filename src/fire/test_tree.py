@@ -3,9 +3,10 @@
 # Licensed under the MIT license: https://opensource.org/licenses/mit-license.php
 #
 import json
+import logging
+
 from .db import get_client, to_dict
 from .tree import get_structure
-import logging
 
 logging.getLogger().setLevel(logging.DEBUG)
 

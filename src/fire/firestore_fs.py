@@ -18,23 +18,22 @@ Example opening via a FS URL "firestore://"
 
 For more information on PyFilesystem2, see https://docs.pyfilesystem.org/
 """
+import datetime
+import io
+import itertools
+import logging
+from functools import partial
+
 from fs import errors
 from fs.base import FS
 from fs.info import Info
-from fs.mode import Mode
-from fs.path import split, join
-from fs.wrapfs import WrapFS
-from fs.opener import open_fs
 from fs.iotools import RawWrapper
-from functools import partial
-import datetime
-import itertools
-import logging
-import io
+from fs.mode import Mode
 
 # for opener
-from fs.opener import Opener
-from fs.opener import registry
+from fs.opener import Opener, open_fs, registry
+from fs.path import join, split
+from fs.wrapfs import WrapFS
 
 # use the fire_fs module here
 from . import fs as fire_fs  # TODO
@@ -64,7 +63,7 @@ log = logging.getLogger(__name__)
 class FirestoreFS(FS):
     def __init__(self, root_path=None, use_cache=True):
         # self._meta = {}
-        super(FirestoreFS, self).__init__()
+        super().__init__()
         if root_path is None:
             root_path = "/_firestore_fs_"
         _root_path = self.validatepath(root_path)
@@ -206,7 +205,7 @@ class FirestoreFS(FS):
         path,  # type: Text
         mode="r",  # type: Text
         buffering=-1,  # type: int
-        **options  # type: Any
+        **options,  # type: Any
     ):
         # type: (...) -> BinaryIO
         """Open a binary file-like object.
@@ -572,7 +571,7 @@ class FirestoreFS(FS):
                 ``dst_path`` does not exist.
 
         """
-        _src_path = self.validatepath(src_path)
+        self.validatepath(src_path)
         _dst_path = self.validatepath(dst_path)
         with self._lock:
             if not overwrite and self.exists(dst_path):
@@ -818,7 +817,7 @@ class FirestoreFS(FS):
         if not self._closed:
             if hasattr(fire_fs, "close") and callable(fire_fs.close):
                 fire_fs.close()
-        return super(FirestoreFS, self).close()
+        return super().close()
 
     # ---------------------------------------------------------------- #
     # Internal methods                                                 #
@@ -942,7 +941,7 @@ class FirestoreFS(FS):
         return fire_fs._getresource(self._prep_path(_path))
 
     def __repr__(self):
-        return "%s('%s')" % (self.__class__.__name__, self.root_path)
+        return f"{self.__class__.__name__}('{self.root_path}')"
 
     @staticmethod
     def _btopen(path, mode="r"):
@@ -975,7 +974,7 @@ class WrapFirestoreFS(WrapFS):
         self._temp_fs = open_fs(self._temp_fs_url)
         print(self._temp_fs)
         # self._meta = {}
-        super(WrapFirestoreFS, self).__init__(self._temp_fs)
+        super().__init__(self._temp_fs)
 
 
 @registry.install
@@ -999,7 +998,7 @@ def main():
 
 if __name__ == "__main__":
     result = main()
-    from pprint import pformat, pprint
+    from pprint import pprint
 
     pprint(result)
     pprint(result.root_path)

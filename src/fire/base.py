@@ -2,14 +2,14 @@
 # Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
 # Licensed under the MIT license: https://opensource.org/licenses/mit-license.php
 #
+import logging
 import os.path
 import time
 import uuid
-import logging
 
 
 # Base container for collections
-class BaseContainer(object):
+class BaseContainer:
     def __init__(self, path="", parent=None):
         self.path = path
         self.id = os.path.basename(self.path)
@@ -24,7 +24,7 @@ class BaseContainer(object):
 
     def collection(self, name):
         if name not in self._coll:
-            logging.debug("Adding collection %s in %s" % (name, self.path))
+            logging.debug(f"Adding collection {name} in {self.path}")
             self._coll[name] = BaseCollReference(self, name)
         return self._coll[name]
 
@@ -47,7 +47,7 @@ class BaseClient(BaseContainer):
 class BaseDocReference(BaseContainer):
     def __init__(self, path, kind="Base", parent=None):
         self.kind = kind
-        super(BaseDocReference, self).__init__(path, parent)
+        super().__init__(path, parent)
         self._init_doc()
 
     def _init_doc(self):
@@ -61,7 +61,7 @@ class BaseDocReference(BaseContainer):
         self._doc = self._kind_map[self.kind](self, self.info)
 
     def _init_coll(self):
-        super(BaseDocReference, self)._init_coll()
+        super()._init_coll()
         # if self.kind in ('Dir', 'File'):
         #     self.collection('_')
         # if self.kind == 'Dir':
@@ -94,7 +94,7 @@ class BaseDocReference(BaseContainer):
 
     def delete(self):
         if self.parent and self.id not in self.parent:
-            logging.error("Invalid id %s for parent %s" % (self.id, self.parent))
+            logging.error(f"Invalid id {self.id} for parent {self.parent}")
             raise ValueError
         self._doc = None
         self._coll = {}
@@ -107,7 +107,7 @@ class BaseDocReference(BaseContainer):
 # Base collection reference
 class BaseCollReference(dict):
     def __init__(self, doc_ref, name, *args, **kwargs):
-        super(BaseCollReference, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.parent = doc_ref
         if name == "_":
             self.id = ""
@@ -131,7 +131,7 @@ class BaseCollReference(dict):
     def document(self, name):
         # TODO: how to know which kind of DocRef to make here?
         if name not in self:
-            logging.debug("Adding document %s in %s" % (name, self.path))
+            logging.debug(f"Adding document {name} in {self.path}")
             self[name] = BaseDocReference(self.path + "/" + name, parent=self)
         return self[name]
 
@@ -184,7 +184,7 @@ class BaseCollReference(dict):
 # Base document snapshot
 class BaseDocument(dict):
     def __init__(self, doc_ref, *args, **kwargs):
-        super(BaseDocument, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.reference = doc_ref
         self.id = doc_ref.id
         self.exists = False
@@ -202,26 +202,26 @@ class BaseDocument(dict):
 
 class DirDocument(BaseDocument):
     def __init__(self, doc_ref, *args, **kwargs):
-        super(DirDocument, self).__init__(doc_ref, *args, **kwargs)
+        super().__init__(doc_ref, *args, **kwargs)
         self.setdefault("count", 0)
 
 
 class FileDocument(BaseDocument):
     def __init__(self, doc_ref, *args, **kwargs):
-        super(FileDocument, self).__init__(doc_ref, *args, **kwargs)
+        super().__init__(doc_ref, *args, **kwargs)
         self.setdefault("size", 0)
 
 
 class ChunkDocument(BaseDocument):
     def __init__(self, doc_ref, *args, **kwargs):
-        super(ChunkDocument, self).__init__(doc_ref, *args, **kwargs)
+        super().__init__(doc_ref, *args, **kwargs)
         self.setdefault("size", 0)
         self.setdefault("offset", 0)
         self.setdefault("data", b"")
 
 
 # Base query
-class BaseQuery(object):
+class BaseQuery:
     def __init__(self, doc_ref, kind="Base"):
         self.reference = doc_ref
         self.kind = kind

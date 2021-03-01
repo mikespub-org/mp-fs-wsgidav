@@ -2,11 +2,11 @@
 # Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
 # Licensed under the MIT license: https://opensource.org/licenses/mit-license.php
 #
-from .base import BaseClient
-
-import os.path
 import hashlib
 import logging
+import os.path
+
+from .base import BaseClient
 
 
 def get_structure(name="base", client=None):
@@ -27,13 +27,13 @@ def get_structure(name="base", client=None):
 # There are different ways to structure data in the Firestore database, as explained in
 # https://cloud.google.com/firestore/docs/concepts/structure-data
 #
-class BaseStructure(object):
+class BaseStructure:
     def __init__(self, client):
         # Fake client for off-line testing - for any structure
         if client is None:
             # from .base import BaseClient
             client = BaseClient()
-        logging.debug("Starting %s(%s)" % (type(self).__name__, client))
+        logging.debug("Starting {}({})".format(type(self).__name__, client))
         self.client = client
 
     def convert_path_to_ref(self, path):
@@ -61,7 +61,7 @@ class BaseStructure(object):
         return os.path.dirname(doc_ref.path)
 
     def get_parent_ref(self, doc_ref, path):
-        ref_path = self.get_parent_path(doc_ref)
+        self.get_parent_path(doc_ref)
         raise NotImplementedError("TODO: doc or coll?")
 
     def add_doc(self, doc_path, info=None):
@@ -151,27 +151,19 @@ class BaseStructure(object):
         self, query, limit=None, offset=None, start_at=None, end_at=None
     ):
         # TODO: apply limit, offset, start_at, end_at
-        for doc in query.stream():
-            # info = doc.to_dict()
-            # info.update(doc.__dict__)
-            # info['create_time'] = doc.create_time
-            # info['update_time'] = doc.update_time
-            # yield info
-            yield doc
+        yield from query.stream()
 
     def list_coll_refs(self, coll_ref, page_size=None):
         return list(self.ilist_coll_refs(coll_ref, page_size=page_size))
 
     def ilist_coll_refs(self, coll_ref, page_size=None):
-        for doc_ref in coll_ref.list_documents(page_size=page_size):
-            yield doc_ref
+        yield from coll_ref.list_documents(page_size=page_size)
 
     def list_doc_colls(self, doc_ref, page_size=None):
         return list(self.ilist_doc_colls(doc_ref, page_size=page_size))
 
     def ilist_doc_colls(self, doc_ref, page_size=None):
-        for coll_ref in doc_ref.collections(page_size=page_size):
-            yield coll_ref
+        yield from doc_ref.collections(page_size=page_size)
 
     def list_root(self):
         return list(self.client.collections())
@@ -213,7 +205,7 @@ class FileStructure(BaseStructure):
     with_path = False
 
     def __init__(self, client):
-        super(FileStructure, self).__init__(client)
+        super().__init__(client)
         self.count = 0
 
     def convert_path_to_ref(self, path):
@@ -426,15 +418,13 @@ class FileStructure(BaseStructure):
     def ilist_dir_docs(self, path):
         dir_ref = self.get_dir_ref(path)
         query = self.get_dir_query(dir_ref)
-        for doc in query.stream():
-            yield doc
+        yield from query.stream()
 
     # note: this returns docs for model
     def ilist_file_chunks(self, path):
         file_ref = self.get_file_ref(path)
         query = self.get_chunks_query(file_ref)
-        for doc in query.stream():
-            yield doc
+        yield from query.stream()
 
     # the following methods aren't really the best way to walk through a hierarchy - better to get all docs at once
     def list_dirs(self, dir_path):
@@ -516,7 +506,7 @@ class TestStructure(FileStructure):
         filename = dirname.replace("dir", "file")
         data = b"x" * 1024
         for i in range(1, 10):
-            name = "%s.%s.txt" % (filename, i)
+            name = f"{filename}.{i}.txt"
             path = os.path.join(parent, name)
             print("  " * depth, path)
             self.make_file(path, data)
@@ -524,7 +514,7 @@ class TestStructure(FileStructure):
         if depth > 1:
             return
         for i in range(1, 10):
-            name = "%s.%s" % (dirname, i)
+            name = f"{dirname}.{i}"
             path = os.path.join(parent, name)
             print("  " * depth, path)
             self.make_dir(path)
@@ -549,7 +539,7 @@ class TestStructure(FileStructure):
         dirname = os.path.basename(parent).replace("test", "dir")
         filename = dirname.replace("dir", "file")
         for i in range(1, 10):
-            name = "%s.%s.txt" % (filename, i)
+            name = f"{filename}.{i}.txt"
             path = os.path.join(parent, name)
             print("  " * depth, path)
             self.clean_file(path)
@@ -557,7 +547,7 @@ class TestStructure(FileStructure):
         if depth > 1:
             return
         for i in range(1, 10):
-            name = "%s.%s" % (dirname, i)
+            name = f"{dirname}.{i}"
             path = os.path.join(parent, name)
             print("  " * depth, path)
             self.clean_tree(path, depth + 1)
@@ -579,7 +569,7 @@ class TreeStructure(TestStructure):
     with_path = False
 
     def __init__(self, client, files="files"):
-        super(TreeStructure, self).__init__(client)
+        super().__init__(client)
         self.root = files + "/"
         self.count = 0
 
@@ -655,7 +645,7 @@ class FlatStructure(TestStructure):
     with_path = False
 
     def __init__(self, client, paths="paths", chunks="chunks"):
-        super(FlatStructure, self).__init__(client)
+        super().__init__(client)
         self.paths = paths
         self.chunks = chunks
 
@@ -735,7 +725,7 @@ class HashStructure(FlatStructure):  # WIP
     with_path = True
 
     def __init__(self, client, paths="hashes", chunks="pieces"):
-        super(HashStructure, self).__init__(client, paths, chunks)
+        super().__init__(client, paths, chunks)
         # self.paths = paths
         # self.chunks = chunks
 

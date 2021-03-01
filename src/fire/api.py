@@ -3,16 +3,16 @@
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
 import logging
-import time
 import os.path
 import pickle
+import time
 
-from flask import Flask, render_template, request, jsonify
-from flask.views import MethodView
 import flask.json
+from flask import Flask, jsonify, request
+from flask.views import MethodView
 
 from . import db
-from .config import PAGE_SIZE, LIST_CONFIG, get_list_config
+from .config import LIST_CONFIG, PAGE_SIZE, get_list_config
 
 
 def create_app(debug=True, base_url="/api/v1/fire"):
@@ -92,11 +92,11 @@ class MyJSONEncoder(flask.json.JSONEncoder):
         if isinstance(obj, bytes):
             # TODO: we should use base64 encoding here
             return repr(obj)
-        return super(MyJSONEncoder, self).default(obj)
+        return super().default(obj)
 
 
 def fire_api():
-    with open(os.path.join(os.path.dirname(__file__), "openapi.json"), "r") as fp:
+    with open(os.path.join(os.path.dirname(__file__), "openapi.json")) as fp:
         info = flask.json.load(fp)
         return info
 
@@ -107,7 +107,7 @@ def item_to_path(ref):
         return ref.path
     # coll_ref - collection urls always end with / here
     if ref.parent:
-        return "%s/%s/" % (ref.parent.path, ref.id)
+        return f"{ref.parent.path}/{ref.id}/"
     return "%s/" % ref.id
 
 
@@ -146,7 +146,7 @@ def item_to_dict(doc, truncate=False):
             array_list = []
         for attr in truncate_list:
             if attr in info and isinstance(info[attr], bytes) and len(info[attr]) > 20:
-                info[attr] = "%s... (%s bytes)" % (info[attr][:20], len(info[attr]))
+                info[attr] = "{}... ({} bytes)".format(info[attr][:20], len(info[attr]))
         for attr in array_list:
             if attr in info and isinstance(info[attr], list) and len(info[attr]) > 1:
                 info[attr] = [info[attr][0], "... (%s items)" % len(info[attr])]
@@ -446,13 +446,13 @@ def ilist_get(name, page=1, sort=None, fields=None, truncate=True, filters=None)
 
 def list_post(name, info):
     """Create new document in collection"""
-    coll_ref = db.get_coll_ref(name)
+    db.get_coll_ref(name)
     raise NotImplementedError("Create new document in collection")
 
 
 def list_delete(name):
     """Delete collection (and all its documents)"""
-    coll_ref = db.get_coll_ref(name)
+    db.get_coll_ref(name)
     raise NotImplementedError("Delete collection (and all its documents)")
 
 
@@ -631,7 +631,7 @@ def item_patch(parent, item, info):
 
 def item_delete(parent, item):
     """Delete document (and all its subcollections)"""
-    doc_ref = item_get_ref(parent, item)
+    item_get_ref(parent, item)
     # doc = doc_ref.get(fields)
     # if not doc.exists:
     #     raise ValueError("Invalid Document %r" % doc_ref.path)

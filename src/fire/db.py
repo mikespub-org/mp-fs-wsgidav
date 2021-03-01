@@ -3,18 +3,12 @@
 # Licensed under the MIT license: https://opensource.org/licenses/mit-license.php
 #
 import os.path
-import logging
 
 # from future.utils import with_metaclass
 from google.cloud import firestore
 
 # from .cache import NamespacedCache
 # from .tree import get_structure
-from google.cloud.firestore import (
-    CollectionReference,
-    DocumentReference,
-    DocumentSnapshot,
-)
 
 GOOGLE_APPLICATION_CREDENTIALS = None
 

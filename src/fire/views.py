@@ -2,14 +2,11 @@
 # Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
-import logging
 import time
 
 from flask import Flask, render_template, request
 
-from . import db
-from . import api
-
+from . import api, db
 
 BASE_URL = "/fire"
 

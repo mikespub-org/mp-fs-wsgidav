@@ -1,9 +1,10 @@
 # https://docs.pyfilesystem.org/en/latest/implementers.html#testing-filesystems
-from .firestore_fs import FirestoreFS, WrapFirestoreFS
 import unittest
 
 import pytest
 from fs.test import FSTestCases
+
+from .firestore_fs import FirestoreFS
 
 # Create the test playground if needed
 # fire_fs = FirestoreFS(root_path="/_playground_", use_cache=False)
