@@ -6,7 +6,6 @@
 #
 # See also https://github.com/mar10/wsgidav/issues/109
 #
-from __future__ import absolute_import
 
 # import pickle
 import logging
@@ -90,7 +89,7 @@ def verify_user_session(session):
         auth_user.put()
     if auth_user.roles and not session.roles:
         logging.debug(
-            "Update AuthSession(%s).roles: %s" % (session.session_id, auth_user.roles)
+            f"Update AuthSession({session.session_id}).roles: {auth_user.roles}"
         )
         session.roles = auth_user.roles
         session.put()
@@ -142,7 +141,7 @@ class AuthorizedUser(db.CachedModel):
     _auto_now = None
 
     def _init_entity(self, **kwargs):
-        super(AuthorizedUser, self)._init_entity(**kwargs)
+        super()._init_entity(**kwargs)
         template = {
             "email": "",
             "auth_domain": "",

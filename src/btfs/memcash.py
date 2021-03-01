@@ -2,7 +2,6 @@ import logging
 import os
 import random
 import time
-from builtins import map, str
 
 from data.cache import memcache3
 
@@ -112,7 +111,7 @@ def cash(ttl=60, key=None, ver=CURRENT_VERSION_ID, pre="", off=False):
     """
 
     ttl = int(ttl)
-    keytmpl = "cash(v=%s,k=%s:%%s)" % (ver, pre)
+    keytmpl = f"cash(v={ver},k={pre}:%s)"
 
     def decorator(wrapped):
         if off:
@@ -131,7 +130,7 @@ def cash(ttl=60, key=None, ver=CURRENT_VERSION_ID, pre="", off=False):
             if count:
                 make_key = lambda *a, **k: kee % a[:count]
             else:
-                make_key = lambda *a, **k: "%s(%s)" % (kee, ",".join(map(str, a)))
+                make_key = lambda *a, **k: "{}({})".format(kee, ",".join(map(str, a)))
 
         def wrapper(*args, **kwargs):
             now = int(time.time())

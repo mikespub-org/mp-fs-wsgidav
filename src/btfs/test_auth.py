@@ -1,11 +1,8 @@
-# -*- coding: iso-8859-1 -*-
-
 # (c) 2010 Martin Wendt; see CloudDAV http://clouddav.googlecode.com/
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
 """
 """
-from __future__ import absolute_import, print_function
 
 import logging
 
@@ -109,7 +106,9 @@ def test_auth():
 
 def profile_test():
     # This is the main function for profiling
-    import cProfile, pstats, io
+    import cProfile
+    import io
+    import pstats
 
     prof = cProfile.Profile()
     prof = prof.runctx("test_auth()", globals(), locals())

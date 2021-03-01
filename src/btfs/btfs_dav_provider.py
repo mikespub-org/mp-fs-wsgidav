@@ -10,7 +10,6 @@ from data.datastore_dav import DatastoreDAVProvider, DatastoreDAVResource
 
 from . import sessions
 
-
 __docformat__ = "reStructuredText en"
 
 # _logger = util.get_module_logger(__name__)
@@ -53,7 +52,7 @@ class BTFSResource(DatastoreDAVResource):
     # called by wsgidav.request_server for do_GET and do_HEAD methods
     def finalize_headers(self, environ, response_headers):
         sessions.finalize_headers(environ, response_headers)
-        return super(BTFSResource, self).finalize_headers(environ, response_headers)
+        return super().finalize_headers(environ, response_headers)
 
 
 # ===============================================================================

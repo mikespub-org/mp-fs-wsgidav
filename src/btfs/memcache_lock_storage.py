@@ -20,11 +20,9 @@ See `Developers info`_ for more information about the WsgiDAV architecture.
 
 .. _`Developers info`: http://docs.wsgidav.googlecode.com/hg/html/develop.html
 """
-from __future__ import absolute_import
 
 import logging
 import time
-from builtins import object
 
 from wsgidav import util
 from wsgidav.lock_manager import (
@@ -47,7 +45,7 @@ __docformat__ = "reStructuredText"
 # ===============================================================================
 
 
-class LockStorageMemcache(object):
+class LockStorageMemcache:
     """
     An in-memory lock manager implementation using a Google's Memcache.
 
@@ -78,15 +76,12 @@ class LockStorageMemcache(object):
 
         May be implemented to initialize a storage.
         """
-        pass
 
     def close(self):
         """Called on shutdown."""
-        pass
 
     def cleanup(self):
         """Purge expired locks (optional)."""
-        pass
 
     def get(self, token):
         """Return a lock dictionary for a token.
@@ -101,7 +96,7 @@ class LockStorageMemcache(object):
             return None
         expire = float(lock["expire"])
         if expire >= 0 and expire < time.time():
-            _logger.debug("Lock timed-out(%s): %s" % (expire, lock_string(lock)))
+            _logger.debug("Lock timed-out({}): {}".format(expire, lock_string(lock)))
             self._deleteLock(lock)
             return None
         return lock
@@ -147,7 +142,7 @@ class LockStorageMemcache(object):
         res = cached_lock.set_multi(mapping)
         if len(res) > 0:
             raise RuntimeError("Could not store lock")
-        logging.info("lock.create(%r): %s\n\t%s" % (org_path, lock, lockRoots))
+        logging.info(f"lock.create({org_path!r}): {lock}\n\t{lockRoots}")
         return lock
 
     def refresh(self, token, timeout):
@@ -181,9 +176,9 @@ class LockStorageMemcache(object):
             cached_lock.set("*", lockRoots)
         except Exception as e:
             logging.warning(
-                "_deleteLock(%s): %s failed to fix root list: %s" % (token, lock, e)
+                f"_deleteLock({token}): {lock} failed to fix root list: {e}"
             )
-        logging.info("_deleteLock(%r): %s\n\t%s" % (token, lock, lockRoots))
+        logging.info(f"_deleteLock({token!r}): {lock}\n\t{lockRoots}")
         # Remove the lock
         cached_lock.delete(token)
         return True

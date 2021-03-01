@@ -17,7 +17,6 @@
 
 """The User Python datastore class to be used as a datastore data type."""
 import os
-from builtins import object, str
 
 from past.builtins import cmp
 
@@ -35,28 +34,28 @@ class UserNotFoundError(Error):
     """No email argument was specified, and no user is logged in."""
 
 
-class User(object):
+class User:
     """Provides the email address, nickname, and ID for a user.
 
-  A nickname is a human-readable string that uniquely identifies a Google user,
-  akin to a username. For some users, this nickname is an email address, but for
-  other users, a different nickname is used.
+    A nickname is a human-readable string that uniquely identifies a Google user,
+    akin to a username. For some users, this nickname is an email address, but for
+    other users, a different nickname is used.
 
-  A user is a Google Accounts user.
-  """
+    A user is a Google Accounts user.
+    """
 
     __user_id = None
 
     def __init__(self, email=None, _auth_domain=None, _user_id=None, _strict_mode=True):
         """Constructor.
 
-    Args:
-      email: An optional string of the user's email address. It defaults to
-          the current user's email address.
+        Args:
+          email: An optional string of the user's email address. It defaults to
+              the current user's email address.
 
-    Raises:
-      UserNotFoundError: If the user is not logged in and `email` is empty
-    """
+        Raises:
+          UserNotFoundError: If the user is not logged in and `email` is empty
+        """
 
         if _auth_domain is None:
             _auth_domain = os.environ.get("AUTH_DOMAIN")
@@ -81,13 +80,13 @@ class User(object):
     def nickname(self):
         """Returns the user's nickname.
 
-    The nickname will be a unique, human readable identifier for this user with
-    respect to this application. It will be an email address for some users,
-    and part of the email address for some users.
+        The nickname will be a unique, human readable identifier for this user with
+        respect to this application. It will be an email address for some users,
+        and part of the email address for some users.
 
-    Returns:
-      The nickname of the user as a string.
-    """
+        Returns:
+          The nickname of the user as a string.
+        """
         if (
             self.__email
             and self.__auth_domain
@@ -105,19 +104,19 @@ class User(object):
     def user_id(self):
         """Obtains the user ID of the user.
 
-    Returns:
-      A permanent unique identifying string or `None`. If the email address was
-      set explicitly, this will return `None`.
-    """
+        Returns:
+          A permanent unique identifying string or `None`. If the email address was
+          set explicitly, this will return `None`.
+        """
         return self.__user_id
 
     def auth_domain(self):
         """Obtains the user's authentication domain.
 
-    Returns:
-      A string containing the authentication domain. This method is internal and
-      should not be used by client applications.
-    """
+        Returns:
+          A string containing the authentication domain. This method is internal and
+          should not be used by client applications.
+        """
         return self.__auth_domain
 
     def to_dict(self):
@@ -153,14 +152,14 @@ class User(object):
 def create_login_url(dest_url=None, _auth_domain=None):
     """Computes the login URL for redirection.
 
-  Args:
-    dest_url: String that is the desired final destination URL for the user
-        once login is complete. If `dest_url` does not specify a host, the host
-        from the current request is used.
+    Args:
+      dest_url: String that is the desired final destination URL for the user
+          once login is complete. If `dest_url` does not specify a host, the host
+          from the current request is used.
 
-  Returns:
-       Login URL as a string. The login URL will use Google Accounts.
-  """
+    Returns:
+         Login URL as a string. The login URL will use Google Accounts.
+    """
     if dest_url:
         return LOGIN_URL + "?continue=%s" % dest_url
     return LOGIN_URL
@@ -169,16 +168,16 @@ def create_login_url(dest_url=None, _auth_domain=None):
 def create_logout_url(dest_url, _auth_domain=None):
     """Computes the logout URL and specified destination URL for the request.
 
-  This function works for Google Accounts applications.
+    This function works for Google Accounts applications.
 
-  Args:
-    dest_url: String that is the desired final destination URL for the user
-        after the user has logged out. If `dest_url` does not specify a host,
-        the host from the current request is used.
+    Args:
+      dest_url: String that is the desired final destination URL for the user
+          after the user has logged out. If `dest_url` does not specify a host,
+          the host from the current request is used.
 
-  Returns:
-    Logout URL as a string.
-  """
+    Returns:
+      Logout URL as a string.
+    """
     if dest_url:
         return LOGOUT_URL + "?continue=%s" % dest_url
     return LOGOUT_URL
@@ -187,9 +186,9 @@ def create_logout_url(dest_url, _auth_domain=None):
 def get_current_user():
     """Retrieves information associated with the user that is making a request.
 
-  Returns:
+    Returns:
 
-  """
+    """
     try:
         return User()
     except UserNotFoundError:
@@ -199,12 +198,12 @@ def get_current_user():
 def is_current_user_admin():
     """Specifies whether the user making a request is an application admin.
 
-  Because administrator status is not persisted in the datastore,
-  `is_current_user_admin()` is a separate function rather than a member function
-  of the `User` class. The status only exists for the user making the current
-  request.
+    Because administrator status is not persisted in the datastore,
+    `is_current_user_admin()` is a separate function rather than a member function
+    of the `User` class. The status only exists for the user making the current
+    request.
 
-  Returns:
-    `True` if the user is an administrator; all other user types return `False`.
-  """
+    Returns:
+      `True` if the user is an administrator; all other user types return `False`.
+    """
     return (os.environ.get("USER_IS_ADMIN", "0")) == "1"

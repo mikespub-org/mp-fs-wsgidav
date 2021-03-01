@@ -34,7 +34,6 @@ See `Developers info`_ for more information about the WsgiDAV architecture.
 
 .. _`Developers info`: http://docs.wsgidav.googlecode.com/hg/html/develop.html
 """
-from __future__ import absolute_import, print_function
 
 # import http.cookiejar
 import logging
@@ -43,13 +42,12 @@ import logging
 import urllib.error
 import urllib.parse
 import urllib.request
-from builtins import object
 
 from future import standard_library
 from wsgidav.dc.base_dc import BaseDomainController
 
-from .auth import find_auth_user
 from . import users
+from .auth import find_auth_user
 
 standard_library.install_aliases()
 
@@ -59,7 +57,7 @@ __docformat__ = "reStructuredText"
 # ===============================================================================
 # xAppAuth
 # ===============================================================================
-class xAppAuth(object):
+class xAppAuth:
     """
     Author: Dale Lane; Modified by 'youngfe' on this page:
     http://dalelane.co.uk/blog/?p=303
@@ -99,8 +97,8 @@ class xAppAuth(object):
                 if e.code == 403:
                     # '403 Forbidden': unknown user or wrong password
                     # We still can get error details from the response body
-                    logging.error("HTTPError %s: %r, %r" % (e, e.message, e.strerror))
-                    self.lastError = (e.code, e.msg, "%s/%s" % (e.message, e.strerror))
+                    logging.error(f"HTTPError {e}: {e.message!r}, {e.strerror!r}")
+                    self.lastError = (e.code, e.msg, f"{e.message}/{e.strerror}")
                 raise e
             auth_resp_body = auth_resp.read()
             # auth response includes several fields - we're interested in
@@ -147,7 +145,7 @@ class GoogleDomainController(BaseDomainController):
 
     # def __init__(self, userMap=None):
     def __init__(self, wsgidav_app, config):
-        super(GoogleDomainController, self).__init__(wsgidav_app, config)
+        super().__init__(wsgidav_app, config)
         # dc_conf = config.get("google_dc", {})
 
         # self.appName = appName
@@ -180,7 +178,7 @@ class GoogleDomainController(BaseDomainController):
     def requireAuthentication(self, realmname, environ):
         """Return True if this realm requires authentication or False if it is
         available for general access."""
-        logging.debug("requireAuthentication(%r)" % (realmname,))
+        logging.debug(f"requireAuthentication({realmname!r})")
         # If '*' is in the list of allowed accounts, allow anonymous access
         if find_auth_user("*"):
             logging.debug("Granting access to everyone (*)")
@@ -217,7 +215,9 @@ class GoogleDomainController(BaseDomainController):
 
         Used for basic authentication.
         """
-        logging.debug("authDomainUser(%r, %r, %r)" % (realmname, username, "***"))
+        logging.debug(
+            "authDomainUser({!r}, {!r}, {!r})".format(realmname, username, "***")
+        )
         # headers = [ "%s: %r" % e for e in environ.items() ]
         # logging.debug("headers:\n\t" + "\n\t".join(headers))
 
@@ -225,7 +225,7 @@ class GoogleDomainController(BaseDomainController):
         # permission, allow access
         # Note: this is not reliable, since a WebDAV client may not be recognized.
         google_user = users.get_current_user()
-        logging.debug("User %s is googleapp user %s" % (username, google_user))
+        logging.debug(f"User {username} is googleapp user {google_user}")
         if users.is_current_user_admin():
             logging.debug(
                 "User %s is authorized as GAE admin %s for %s"
@@ -237,11 +237,9 @@ class GoogleDomainController(BaseDomainController):
         # of allowed accounts
         auth_user = find_auth_user(username)
         if not auth_user:
-            logging.info("User %s is not configured to have access" % (username,))
+            logging.info(f"User {username} is not configured to have access")
             return False
-        logging.debug(
-            "User %s is configured (canWrite: %s)" % (username, auth_user.canWrite)
-        )
+        logging.debug(f"User {username} is configured (canWrite: {auth_user.canWrite})")
 
         # Check if user name / password that was passed with the request is a
         # (globally) registered, valid account.
@@ -251,9 +249,9 @@ class GoogleDomainController(BaseDomainController):
         user = xAppAuth(username, password, appName=environ.get("APPLICATION_ID"))
         try:
             authToken = user.getAuthtoken()
-            logging.debug("User %s is authorized: %s" % (username, authToken))
+            logging.debug(f"User {username} is authorized: {authToken}")
         except urllib.error.HTTPError as _:
-            logging.info("User %s is not authorized: %s" % (username, user.lastError))
+            logging.info(f"User {username} is not authorized: {user.lastError}")
             authToken = None
         return bool(authToken)
 

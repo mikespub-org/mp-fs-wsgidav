@@ -13,6 +13,7 @@ import uuid
 from functools import wraps
 
 from data import db
+
 from .auth import get_user_claims, verify_user_session
 
 # TODO: make configurable
@@ -74,7 +75,7 @@ def get_current_session(environ):
             session.claims = dict(claims)
             session.put()
         elif claims:
-            """ Example of anonymous claim:
+            """Example of anonymous claim:
             {
                 "provider_id": "anonymous",
                 "iss": "https://securetoken.google.com/MY_PROJECT_ID",
@@ -129,7 +130,7 @@ def make_session_id_value(session_id):
         EXPIRE_DAYS * 24 * 60 * 60
     )  # set to EXPIRE_DAYS days here (id_token expires in 1 hour)
     path = "/"
-    value = "%s=%s; Max-Age=%s; Path=%s" % (key, val, max_age, path)
+    value = f"{key}={val}; Max-Age={max_age}; Path={path}"
     return value
 
 
@@ -167,7 +168,7 @@ class AuthSession(db.CachedModel):
     _auto_now = ["update_time"]
 
     def _init_entity(self, **kwargs):
-        super(AuthSession, self)._init_entity(**kwargs)
+        super()._init_entity(**kwargs)
         now = datetime.datetime.now(datetime.timezone.utc)
         template = {
             "session_id": "",
@@ -238,7 +239,7 @@ class AuthSession(db.CachedModel):
 
 
 def flask_authorize(role, do_redirect=False):
-    """ Decorator to authorize access to Flask view functions based on user roles.
+    """Decorator to authorize access to Flask view functions based on user roles.
 
     The authorization is based on the highest role the current user has:
         admin > editor > reader > browser > none
@@ -258,7 +259,7 @@ def flask_authorize(role, do_redirect=False):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            from flask import request, redirect
+            from flask import redirect, request
 
             session = get_current_session(request.environ)
             # always provide access to admin role
