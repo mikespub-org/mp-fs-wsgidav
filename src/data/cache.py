@@ -10,9 +10,8 @@ Implement cache mechanism.
 """
 import logging
 import threading
-from builtins import object
 
-from cachelib import MemcachedCache, RedisCache, SimpleCache
+from cachelib import MemcachedCache, SimpleCache
 
 try:
     memcache3 = MemcachedCache()
@@ -173,7 +172,7 @@ CACHED_NONE = "{cached-none}"
 # ===============================================================================
 # NamespacedCache
 # ===============================================================================
-class NamespacedCache(object):
+class NamespacedCache:
     def __init__(self, namespace):
         if hasattr(threading, "get_ident"):
             id = threading.get_ident()
@@ -193,7 +192,7 @@ class NamespacedCache(object):
 
     def _add_namespace(self, key):
         if self.namespace is not None:
-            key = "%s:%s" % (self.namespace, key)
+            key = f"{self.namespace}:{key}"
         return key
 
     def get(self, key):
@@ -203,16 +202,16 @@ class NamespacedCache(object):
         result = memcache3.get(key)
         if result is not None:
             memcache3._stats["hits"] += 1
-            logging.debug("Cache HIT: %r.%r" % (self.namespace, key))
+            logging.debug(f"Cache HIT: {self.namespace!r}.{key!r}")
         else:
             memcache3._stats["misses"] += 1
-            logging.debug("Cache MISS: %r.%r" % (self.namespace, key))
+            logging.debug(f"Cache MISS: {self.namespace!r}.{key!r}")
         return result
 
     def set(self, key, value, time=0):
         if self.stop_cache:
             return
-        logging.debug("Cache add: %r.%r = %r" % (self.namespace, key, value))
+        logging.debug(f"Cache add: {self.namespace!r}.{key!r} = {value!r}")
         key = self._add_namespace(key)
         memcache3._stats["set"] += 1
         return memcache3.set(key, value, timeout=time)
@@ -222,7 +221,7 @@ class NamespacedCache(object):
             return []
         new_mapping = {}
         for key, value in list(mapping.items()):
-            logging.debug("Cache add multi: %r.%r = %r" % (self.namespace, key, value))
+            logging.debug(f"Cache add multi: {self.namespace!r}.{key!r} = {value!r}")
             if key_prefix:
                 key = key_prefix + key
             key = self._add_namespace(key)
@@ -237,7 +236,7 @@ class NamespacedCache(object):
     def delete(self, key):
         if self.stop_cache:
             return
-        logging.debug("Cache delete: %r.%r" % (self.namespace, key))
+        logging.debug(f"Cache delete: {self.namespace!r}.{key!r}")
         key = self._add_namespace(key)
         memcache3._stats["delete"] += 1
         return memcache3.delete(key)

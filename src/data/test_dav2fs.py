@@ -1,10 +1,11 @@
 # https://docs.pyfilesystem.org/en/latest/implementers.html#testing-filesystems
-from mapper.fs_from_dav_provider import DAVProvider2FS
-from data.datastore_dav import DatastoreDAVProvider
 import unittest
 
 import pytest
 from fs.test import FSTestCases
+
+from data.datastore_dav import DatastoreDAVProvider
+from mapper.fs_from_dav_provider import DAVProvider2FS
 
 # Create the test playground if needed
 dav_provider = DatastoreDAVProvider()

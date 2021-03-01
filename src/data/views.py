@@ -2,15 +2,12 @@
 # Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
-import logging
 import time
 
 from flask import Flask, render_template, request
 
 # from btfs import sessions
-from . import db
 from . import api
-
 
 BASE_URL = "/data"
 
@@ -74,7 +71,7 @@ def item_link(key):
 
 # @app.template_filter()
 def show_link(key):
-    return '<a href="%s/%s">%s</a>' % (base_url, item_link(key), key.id_or_name)
+    return '<a href="{}/{}">{}</a>'.format(base_url, item_link(key), key.id_or_name)
 
 
 # @app.template_filter()
@@ -88,7 +85,7 @@ def show_date(timestamp, fmt="%Y-%m-%d %H:%M:%S"):
 
 # @app.template_filter()
 def show_image(val):
-    return '<a href="%s"><img src="%s" border="0"></a>' % (val, val)
+    return f'<a href="{val}"><img src="{val}" border="0"></a>'
 
 
 # @app.template_global()

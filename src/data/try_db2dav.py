@@ -6,6 +6,7 @@
 
 def create_app(source_fs, config=None):
     from wsgidav.wsgidav_app import WsgiDAVApp
+
     from mapper.dav_provider_from_fs import FS2DAVProvider
 
     dav_provider = FS2DAVProvider(source_fs)
@@ -20,10 +21,9 @@ def create_app(source_fs, config=None):
 
 
 def run_wsgi_app(app, port=8080):
-    from wsgiref.simple_server import make_server
-
     # https://stackoverflow.com/questions/3889054/allow-hop-by-hop-headers-in-django-proxy-middleware
     import wsgiref.util
+    from wsgiref.simple_server import make_server
 
     # apparently WsgiDAV sends Connection: close when you want to download an entity (hop-by-hop header)
     wsgiref.util._hoppish = {
@@ -41,7 +41,7 @@ def run_wsgi_app(app, port=8080):
         print("Serving HTTP on port %s..." % port)
         try:
             httpd.serve_forever()
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             print("Goodbye...")
 
 

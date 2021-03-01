@@ -16,7 +16,7 @@ def make_tree(parent, depth=0):
     filename = dirname.replace("dir", "file")
     data = b"x" * 1024
     for i in range(1, 10):
-        name = "%s.%s.txt" % (filename, i)
+        name = f"{filename}.{i}.txt"
         path = os.path.join(parent, name)
         print("  " * depth, path)
         f1 = data_fs.btopen(path, "w")
@@ -27,7 +27,7 @@ def make_tree(parent, depth=0):
     if depth > 1:
         return
     for i in range(1, 10):
-        name = "%s.%s" % (dirname, i)
+        name = f"{dirname}.{i}"
         path = os.path.join(parent, name)
         print("  " * depth, path)
         data_fs.mkdir(path)
@@ -73,7 +73,9 @@ def test():
 
 def profile_test():
     # This is the main function for profiling
-    import cProfile, pstats, io
+    import cProfile
+    import io
+    import pstats
 
     prof = cProfile.Profile()
     prof = prof.runctx("test()", globals(), locals())

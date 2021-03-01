@@ -18,22 +18,19 @@ Example using DatastoreDAVProvider() as DAV provider in WsgiDAV:
     >>> # run_wsgi_app(app)
 
 """
-from __future__ import absolute_import
 
 import hashlib
 import logging
 import mimetypes
-from builtins import str
 
 from future import standard_library
 from wsgidav import util
 from wsgidav.dav_error import HTTP_FORBIDDEN, DAVError
 from wsgidav.dav_provider import DAVProvider, _DAVResource
 
-from .model import Dir, File, Path
-
 # from . import sessions
 from . import fs as data_fs
+from .model import Dir, Path
 
 standard_library.install_aliases()
 
@@ -62,8 +59,8 @@ class DatastoreDAVResource(_DAVResource):
         if not self.path_entity:
             raise ValueError("Path not found: %r" % path)
         is_collection = type(self.path_entity) is Dir
-        logging.debug("%s(%r): %r" % (type(self).__name__, path, is_collection))
-        super(DatastoreDAVResource, self).__init__(path, is_collection, environ)
+        logging.debug("{}({!r}): {!r}".format(type(self).__name__, path, is_collection))
+        super().__init__(path, is_collection, environ)
         # check access based on user roles in environ
         self._get_user_roles(environ)
         self.statresults = data_fs.stat(self.path_entity)
@@ -314,7 +311,7 @@ class DatastoreDAVResource(_DAVResource):
         See _DAVResource.get_property_names()
         """
         # Let base class implementation add supported live and dead properties
-        propNameList = super(DatastoreDAVResource, self).get_property_names(is_allprop)
+        propNameList = super().get_property_names(is_allprop)
         # Add custom live properties (report on 'allprop' and 'propnames')
         # propNameList.extend(type(self)._supported_props)
         return propNameList
@@ -331,7 +328,7 @@ class DatastoreDAVResource(_DAVResource):
             if ns in self._namespaces and localname in self._data:
                 return self._data[localname]
         # Let base class implementation report live and dead properties
-        return super(DatastoreDAVResource, self).get_property_value(name)
+        return super().get_property_value(name)
 
     # def set_property_value(self, name, value, dry_run=False):
     #     """Set or remove property value.
@@ -377,7 +374,7 @@ class DatastoreDAVProvider(DAVProvider):
     resource_class = DatastoreDAVResource
 
     def __init__(self, *args, **kwargs):
-        super(DatastoreDAVProvider, self).__init__()
+        super().__init__()
         # TODO: make provider configurable
         self._readonly = kwargs.pop("readonly", False)
         # TODO: support firestore in native mode
@@ -405,7 +402,7 @@ class DatastoreDAVProvider(DAVProvider):
             logging.debug(e)
             logging.exception("get_resource_inst(%r) failed" % path)
             res = None
-        logging.debug("get_resource_inst(%r): %s" % (path, res))
+        logging.debug(f"get_resource_inst({path!r}): {res}")
         return res
 
     def __repr__(self):
@@ -440,7 +437,7 @@ def run_wsgi_app(app, port=8080):
         print("Serving HTTP on port %s..." % port)
         try:
             httpd.serve_forever()
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             print("Goodbye...")
 
 

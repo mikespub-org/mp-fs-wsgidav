@@ -8,11 +8,11 @@ import os.path
 
 from future.utils import with_metaclass
 from google.cloud import datastore
-from google.cloud.datastore import Key
+
+from .cache import NamespacedCache
 
 # from google.cloud.datastore import Entity
 
-from .cache import NamespacedCache
 
 GOOGLE_APPLICATION_CREDENTIALS = None
 
@@ -96,8 +96,8 @@ def get_query(kind, **kwargs):
 
 def list_entities(kind, limit=1000, offset=0, **kwargs):
     # TODO: use cursors in fetch() below if needed
-    start_cursor = kwargs.pop("start_cursor", None)
-    end_cursor = kwargs.pop("end_cursor", None)
+    kwargs.pop("start_cursor", None)
+    kwargs.pop("end_cursor", None)
     query = get_query(kind=kind, **kwargs)
     # result = {}
     # for entity in query.fetch(limit, offset):
@@ -108,17 +108,16 @@ def list_entities(kind, limit=1000, offset=0, **kwargs):
 
 def ilist_entities(kind, limit=1000, offset=0, **kwargs):
     # TODO: use cursors in fetch() below if needed
-    start_cursor = kwargs.pop("start_cursor", None)
-    end_cursor = kwargs.pop("end_cursor", None)
+    kwargs.pop("start_cursor", None)
+    kwargs.pop("end_cursor", None)
     query = get_query(kind=kind, **kwargs)
-    for entity in query.fetch(limit, offset):
-        yield entity
+    yield from query.fetch(limit, offset)
 
 
 def list_entity_keys(kind, limit=1000, offset=0, **kwargs):
     # TODO: use cursors in fetch() below if needed
-    start_cursor = kwargs.pop("start_cursor", None)
-    end_cursor = kwargs.pop("end_cursor", None)
+    kwargs.pop("start_cursor", None)
+    kwargs.pop("end_cursor", None)
     query = get_query(kind=kind, **kwargs)
     query.keys_only()
     # result = [entity.key.id_or_name for entity in query.fetch(limit, offset)]
@@ -128,8 +127,8 @@ def list_entity_keys(kind, limit=1000, offset=0, **kwargs):
 
 def ilist_entity_keys(kind, limit=1000, offset=0, **kwargs):
     # TODO: use cursors in fetch() below if needed
-    start_cursor = kwargs.pop("start_cursor", None)
-    end_cursor = kwargs.pop("end_cursor", None)
+    kwargs.pop("start_cursor", None)
+    kwargs.pop("end_cursor", None)
     query = get_query(kind=kind, **kwargs)
     query.keys_only()
     for entity in query.fetch(limit, offset):
@@ -202,7 +201,7 @@ _class_map = {}
 # Register Model classes so we can convert an entity to the right class again
 class ModelType(type):
     def __init__(cls, name, bases, dct):
-        super(ModelType, cls).__init__(name, bases, dct)
+        super().__init__(name, bases, dct)
         # print("Getting properties for %s" % cls._kind)
         # cls._properties = get_properties_for_kind(cls._kind)
         _class_map[cls.__name__] = cls
@@ -232,7 +231,7 @@ class Model(with_metaclass(ModelType, object)):
     def _init_entity(self, **kwargs):
         parent = kwargs.pop("parent", None)
         key_name = kwargs.pop("key_name", None)
-        _app = kwargs.pop("_app", None)
+        kwargs.pop("_app", None)
         # CHECKME: this is expected to be the model.key() already
         if parent:
             if key_name:
@@ -250,13 +249,13 @@ class Model(with_metaclass(ModelType, object)):
         if not key.startswith("_") and self._entity:
             self._entity[key] = value
             return
-        super(Model, self).__setattr__(key, value)
+        super().__setattr__(key, value)
 
     def __getattribute__(self, key):
         # if key != "_entity" and self._entity and key in self._entity:
         if not key.startswith("_") and self._entity and key in self._entity:
             return self._entity[key]
-        return super(Model, self).__getattribute__(key)
+        return super().__getattribute__(key)
 
     def key(self):
         # if self._entity and hasattr(self._entity, "key"):
@@ -387,7 +386,7 @@ class CachedModel(Model):
     def put(self):
         if not self.is_saved():
             self.set_key()
-        super(CachedModel, self).put()
+        super().put()
         cache_key = self._kind + "." + str(self.get_key_name())
         self.cache.set(cache_key, self)
         return
@@ -395,7 +394,7 @@ class CachedModel(Model):
     def delete(self):
         cache_key = self._kind + "." + str(self.get_key_name())
         self.cache.delete(cache_key)
-        return super(CachedModel, self).delete()
+        return super().delete()
 
     # https://stackoverflow.com/questions/4566769/can-i-memoize-a-python-generator/10726355
     def iget_content(self):
@@ -403,8 +402,7 @@ class CachedModel(Model):
         result = self.cache.get_list(cache_key)
         if result:
             logging.debug("CachedModel.iget_content: HIT %r" % result)
-            for item in result:
-                yield item
+            yield from result
             return
         result = []
         for entity in ilist_entities(self._kind):
@@ -430,11 +428,11 @@ class CachedModel(Model):
         result = cls.cache.get(cache_key)
         if result:
             return result
-        result = super(CachedModel, cls).get(key)
+        result = super().get(key)
         if result:
             if result.get_key_name() != key_name:
                 logging.warning(
-                    "Key name mismatch: %s != %s" % (result.get_key_name(), key_name)
+                    f"Key name mismatch: {result.get_key_name()} != {key_name}"
                 )
             cls.cache.set(cache_key, result)
         return result
@@ -446,7 +444,7 @@ class CachedModel(Model):
         result = cls.cache.get(cache_key)
         if result:
             return result
-        result = super(CachedModel, cls).get_by_property(prop_name, value, **kwargs)
+        result = super().get_by_property(prop_name, value, **kwargs)
         if result:
             cls.cache.set(cache_key, result)
         return result
@@ -465,7 +463,7 @@ class PolyModel(Model):
                     break
                 parents.append(parent.__name__)
             kwargs[_CLASS_KEY_PROPERTY] = list(reversed(parents))
-        super(PolyModel, self)._init_entity(**kwargs)
+        super()._init_entity(**kwargs)
 
     @classmethod
     def from_entity(cls, entity):
@@ -479,7 +477,7 @@ class PolyModel(Model):
 
     @classmethod
     def query(cls, **kwargs):
-        query = super(PolyModel, cls).query(**kwargs)
+        query = super().query(**kwargs)
         if cls._kind != cls.class_name():
             # logging.debug('Extra filter for class = %s' % cls.class_name())
             query.add_filter(_CLASS_KEY_PROPERTY, "=", cls.class_name())
@@ -501,11 +499,11 @@ class MakeModel(CachedModel):
             self._cached_key = _from_entity.key
         else:
             self._cached_key = None
-        super(MakeModel, self).__init__(_from_entity=_from_entity, **kwargs)
+        super().__init__(_from_entity=_from_entity, **kwargs)
 
     def key(self):
         if self._cached_key is False:
-            self._cached_key = super(MakeModel, self).key()
+            self._cached_key = super().key()
         return self._cached_key
 
     def set_key(self):

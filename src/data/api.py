@@ -3,16 +3,16 @@
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
 import logging
-import time
 import os.path
 import pickle
+import time
 
-from flask import Flask, render_template, request, jsonify
-from flask.views import MethodView
 import flask.json
+from flask import Flask, jsonify, request
+from flask.views import MethodView
 
 from . import db
-from .config import PAGE_SIZE, KNOWN_MODELS, LIST_CONFIG, get_list_config
+from .config import KNOWN_MODELS, LIST_CONFIG, PAGE_SIZE, get_list_config
 
 
 def create_app(debug=True, base_url="/api/v1/data"):
@@ -65,11 +65,11 @@ class MyJSONEncoder(flask.json.JSONEncoder):
         if isinstance(obj, bytes):
             # TODO: we should use base64 encoding here
             return repr(obj)
-        return super(MyJSONEncoder, self).default(obj)
+        return super().default(obj)
 
 
 def data_api():
-    with open(os.path.join(os.path.dirname(__file__), "openapi.json"), "r") as fp:
+    with open(os.path.join(os.path.dirname(__file__), "openapi.json")) as fp:
         info = flask.json.load(fp)
         return info
 
@@ -77,7 +77,7 @@ def data_api():
 def item_to_path(key):
     if key.kind in ("Path", "Dir", "File"):
         # drop the first / of the id_or_name = path
-        return "%s/%s" % (key.kind, key.id_or_name[1:])
+        return "{}/{}".format(key.kind, key.id_or_name[1:])
     # elif key.kind in ("Chunk") and key.parent:
     elif (
         key.kind in LIST_CONFIG
@@ -85,13 +85,13 @@ def item_to_path(key):
         and key.parent
     ):
         # add the :parent:path
-        return "%s/%s:%s:%s" % (
+        return "{}/{}:{}:{}".format(
             key.kind,
             key.id_or_name,
             key.parent.kind,
             key.parent.id_or_name,
         )
-    return "%s/%s" % (key.kind, key.id_or_name)
+    return f"{key.kind}/{key.id_or_name}"
 
 
 def item_to_dict(entity, truncate=False):
@@ -108,7 +108,7 @@ def item_to_dict(entity, truncate=False):
             truncate_list = list(info.keys())
         for attr in truncate_list:
             if attr in info and isinstance(info[attr], bytes) and len(info[attr]) > 20:
-                info[attr] = "%s... (%s bytes)" % (info[attr][:20], len(info[attr]))
+                info[attr] = "{}... ({} bytes)".format(info[attr][:20], len(info[attr]))
     return info
 
 
@@ -127,7 +127,7 @@ def instance_to_dict(instance, truncate=False):
             truncate_list = list(info.keys())
         for attr in truncate_list:
             if attr in info and isinstance(info[attr], bytes) and len(info[attr]) > 20:
-                info[attr] = "%s... (%s bytes)" % (info[attr][:20], len(info[attr]))
+                info[attr] = "{}... ({} bytes)".format(info[attr][:20], len(info[attr]))
     return info
 
 
@@ -592,7 +592,7 @@ def item_patch(parent, item, info):
 
 def item_delete(parent, item):
     """Delete entity"""
-    key = item_get_key(parent, item)
+    item_get_key(parent, item)
     # entity = db.get_entity(key)
     # if not entity:
     #     raise ValueError("Invalid Entity %r" % key)

@@ -18,28 +18,25 @@ Example opening via a FS URL "datastore_db://"
 
 For more information on PyFilesystem2, see https://docs.pyfilesystem.org/
 """
-from fs import errors
-from fs.base import FS
-from fs.info import Info
-from fs.path import split, join, basename
-from fs.wrapfs import WrapFS
-from fs.opener import open_fs
-
-# for opener
-from fs.opener import Opener
-from fs.opener import registry
-
-from functools import partial
-import time
 import datetime
+import io
 import itertools
 import json
 import logging
+import time
+from functools import partial
+
+from fs import errors
+from fs.base import FS
+from fs.info import Info
+from fs.iotools import make_stream
+
+# for opener
+from fs.opener import Opener, open_fs, registry
+from fs.wrapfs import WrapFS
 
 # use the db module here
 from . import db
-import io
-from fs.iotools import RawWrapper, make_stream
 
 # from .model import Path as PathModel
 # TODO: replace with more advanced IO class - see e.g. _MemoryFile in fs.memoryfs
@@ -66,7 +63,7 @@ log = logging.getLogger(__name__)
 class DatastoreDB(FS):
     def __init__(self, limit=1000):
         # self._meta = {}
-        super(DatastoreDB, self).__init__()
+        super().__init__()
         self._limit = limit
         # Initialize Datastore database if needed
         # db.initdb(self)
@@ -182,7 +179,7 @@ class DatastoreDB(FS):
         path,  # type: Text
         mode="r",  # type: Text
         buffering=-1,  # type: int
-        **options  # type: Any
+        **options,  # type: Any
     ):
         # type: (...) -> BinaryIO
         """Open a binary file-like object.
@@ -458,7 +455,7 @@ class DatastoreDB(FS):
         """
         if not self._closed:
             db.close()
-        return super(DatastoreDB, self).close()
+        return super().close()
 
     # ---------------------------------------------------------------- #
     # Internal methods                                                 #
@@ -565,7 +562,7 @@ class DatastoreDB(FS):
             parts = [*key.flat_path]
             # skip the current kind at the end
             id_or_name = parts.pop()
-            kind = parts.pop()
+            parts.pop()
             name = str(id_or_name)
             while len(parts) > 0:
                 # Parent:id_or_name
@@ -650,7 +647,7 @@ class WrapDatastoreDB(WrapFS):
         self._temp_fs = open_fs(self._temp_fs_url)
         log.info(self._temp_fs)
         # self._meta = {}
-        super(WrapDatastoreDB, self).__init__(self._temp_fs)
+        super().__init__(self._temp_fs)
 
 
 @registry.install
@@ -693,8 +690,8 @@ def main(kind=None, id=None, *args):
 
 
 if __name__ == "__main__":
-    from pprint import pformat, pprint
     import sys
+    from pprint import pprint
 
     if len(sys.argv) > 1:
         result = main(*sys.argv[1:])

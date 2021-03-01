@@ -6,16 +6,13 @@
 # The original source for this module was taken from gaedav:
 # (c) 2009 Haoyu Bai (http://gaedav.google.com/).
 
-from __future__ import absolute_import
 
 import datetime
 import hashlib
 import logging
 import os.path
-from builtins import object, range
 
 from . import db
-
 from .cache import NamespacedCache
 
 cached_resource = NamespacedCache("resource")
@@ -24,10 +21,8 @@ DO_EXPENSIVE_CHECKS = False
 # DO_EXPENSIVE_CHECKS = True
 
 
-class UnmappedPath(object):
+class UnmappedPath:
     """Dummy object to cache lookups for non-existent URLs."""
-
-    pass
 
 
 # TODO: may apply the technique described here:
@@ -52,7 +47,7 @@ class Path(db.PolyModel):
     cache = cached_resource
 
     def _init_entity(self, **kwargs):
-        super(Path, self)._init_entity(**kwargs)
+        super()._init_entity(**kwargs)
         now = datetime.datetime.now(datetime.timezone.utc)
         template = {
             "path": "",
@@ -89,7 +84,7 @@ class Path(db.PolyModel):
         return db.Model.delete(self)
 
     def __repr__(self):
-        return "%s('%s')" % (type(self).class_name(), self.path)
+        return "{}('{}')".format(type(self).class_name(), self.path)
 
     def isdir(self):
         return type(self) is Dir
@@ -157,7 +152,7 @@ class Path(db.PolyModel):
         # if not isinstance(result, unicode):
         #     result = result.decode('utf-8')
         if p != result:
-            logging.debug("Path.normalize(%r): %r." % (p, result))
+            logging.debug(f"Path.normalize({p!r}): {result!r}.")
         return result
 
     @classmethod
@@ -188,7 +183,7 @@ class Path(db.PolyModel):
 
     @classmethod
     def retrieve(cls, path):
-        logging.debug("Path.retrieve(%s, %r)" % (cls.__name__, path))
+        logging.debug(f"Path.retrieve({cls.__name__}, {path!r})")
         assert cls is Path
         path = cls.normalize(path)
         assert path.startswith("/")
@@ -215,7 +210,7 @@ class Path(db.PolyModel):
     def new(cls, path):
         # Make sure, we don't instantiate <Path> objects
         assert cls in (Dir, File)
-        logging.debug("%s.new(%r)" % (cls.__name__, path))
+        logging.debug(f"{cls.__name__}.new({path!r})")
         path = cls.normalize(path)
         # here we use Dir.retrieve because the parent must be a Dir.
         # parent_path = Dir.retrieve(cls.get_parent_path(path))
@@ -319,7 +314,7 @@ class Dir(Path):
     # cache = cached_dir
 
     def _init_entity(self, **kwargs):
-        super(Dir, self)._init_entity(**kwargs)
+        super()._init_entity(**kwargs)
         self._entity.setdefault("parent_path", None)
 
     def get_content(self):
@@ -372,14 +367,14 @@ class Dir(Path):
             yield c.basename(c.path)
 
     def delete(self, recursive=False):
-        logging.debug("Dir.delete(%s): %r" % (recursive, self.path))
+        logging.debug(f"Dir.delete({recursive}): {self.path!r}")
         if not recursive:
             # TODO: faster lookup (for __key__)
             for p in self.iget_content():
                 raise RuntimeError("Dir must be empty")
         else:
             for p in self.get_content():
-                logging.debug("Dir.delete(%s): %r, p=%r" % (recursive, self.path, p))
+                logging.debug(f"Dir.delete({recursive}): {self.path!r}, p={p!r}")
                 if type(p) is Dir:
                     p.delete(recursive)
                 elif type(p) is File:
@@ -419,7 +414,7 @@ class File(Path):
     # cache = cached_file
 
     def _init_entity(self, **kwargs):
-        super(File, self)._init_entity(**kwargs)
+        super()._init_entity(**kwargs)
         self._entity.setdefault("parent_path", None)
 
     def put(self):
@@ -576,7 +571,7 @@ class Chunk(db.Model):
     _auto_now = None
 
     def _init_entity(self, **kwargs):
-        super(Chunk, self)._init_entity(**kwargs)
+        super()._init_entity(**kwargs)
         template = {
             #'file': None,
             "offset": 0,

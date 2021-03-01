@@ -2,12 +2,12 @@
 # Copyright (c) 2019-2020 Mike's Pub, see https://github.com/mikespub-org
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
+import json
+import os.path
+
 # from btfs import sessions
 # from btfs.auth import AuthorizedUser
 from .model import Chunk, Dir, File, Path
-import os.path
-import json
-
 
 PAGE_SIZE = 10
 KNOWN_MODELS = {
@@ -22,7 +22,7 @@ LIST_CONFIG = {}
 config_file = os.path.join(os.path.dirname(__file__), "config.json")
 # with open(config_file, "w") as fp:
 #     json.dump(LIST_CONFIG, fp, indent=2)
-with open(config_file, "r") as fp:
+with open(config_file) as fp:
     LIST_CONFIG = json.load(fp)
 
 

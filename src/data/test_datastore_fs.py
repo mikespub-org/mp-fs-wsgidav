@@ -1,9 +1,10 @@
 # https://docs.pyfilesystem.org/en/latest/implementers.html#testing-filesystems
-from .datastore_fs import DatastoreFS, WrapDatastoreFS
 import unittest
 
 import pytest
 from fs.test import FSTestCases
+
+from .datastore_fs import DatastoreFS
 
 # Create the test playground if needed
 # data_fs = DatastoreFS(root_path="/_playground_", use_cache=False)
