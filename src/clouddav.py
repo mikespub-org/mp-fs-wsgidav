@@ -5,7 +5,6 @@
 
 import os
 
-from future import standard_library
 from wsgidav.wsgidav_app import WsgiDAVApp
 
 from btfs.btfs_dav_provider import BTFSResourceProvider
@@ -14,7 +13,6 @@ from btfs.btfs_dav_provider import BTFSResourceProvider
 from btfs.firebase_dc import FirebaseDomainController
 from btfs.memcache_lock_storage import LockStorageMemcache
 
-standard_library.install_aliases()
 # logging.getLogger().setLevel(logging.DEBUG)
 
 __version__ = "0.5.0a1"

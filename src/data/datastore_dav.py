@@ -23,7 +23,6 @@ import hashlib
 import logging
 import mimetypes
 
-from future import standard_library
 from wsgidav import util
 from wsgidav.dav_error import HTTP_FORBIDDEN, DAVError
 from wsgidav.dav_provider import DAVProvider, _DAVResource
@@ -32,7 +31,6 @@ from wsgidav.dav_provider import DAVProvider, _DAVResource
 from . import fs as data_fs
 from .model import Dir, Path
 
-standard_library.install_aliases()
 
 
 __docformat__ = "reStructuredText en"

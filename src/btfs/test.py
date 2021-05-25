@@ -7,14 +7,12 @@ on Googles datastore (Bigtable).
 
 import logging
 
-from future import standard_library
 from wsgidav.lock_manager import LockManager, lock_string
 
 from btfs.btfs_dav_provider import BTFSResourceProvider
 from btfs.memcache_lock_storage import LockStorageMemcache
 from data import fs as data_fs
 
-standard_library.install_aliases()
 
 
 def test():

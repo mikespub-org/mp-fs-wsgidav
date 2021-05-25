@@ -4,7 +4,6 @@
 #
 import os.path
 
-# from future.utils import with_metaclass
 from google.cloud import firestore
 
 # from .cache import NamespacedCache

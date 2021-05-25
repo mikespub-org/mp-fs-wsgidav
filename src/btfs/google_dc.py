@@ -43,13 +43,11 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from future import standard_library
 from wsgidav.dc.base_dc import BaseDomainController
 
 from . import users
 from .auth import find_auth_user
 
-standard_library.install_aliases()
 
 __docformat__ = "reStructuredText"
 

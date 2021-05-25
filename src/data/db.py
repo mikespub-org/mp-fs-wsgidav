@@ -6,7 +6,7 @@ import datetime
 import logging
 import os.path
 
-from future.utils import with_metaclass
+# from future.utils import with_metaclass
 from google.cloud import datastore
 
 from .cache import NamespacedCache
@@ -208,7 +208,8 @@ class ModelType(type):
 
 
 # https://python-future.org/compatible_idioms.html#metaclasses
-class Model(with_metaclass(ModelType, object)):
+# class Model(with_metaclass(ModelType, object)):
+class Model(metaclass=ModelType):
     # __metaclass__ = ModelType
     # _client = get_client()
     _kind = "DummyModel"

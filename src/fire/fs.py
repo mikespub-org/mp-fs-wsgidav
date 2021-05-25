@@ -12,11 +12,9 @@ import io
 import logging
 import time
 
-from future import standard_library
 
 from .model import Dir, File, Path
 
-standard_library.install_aliases()
 # from btfs import memcash
 
 
