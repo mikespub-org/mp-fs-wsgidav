@@ -120,7 +120,7 @@ class FS2FileResource(DAVNonCollection):
         self.remove_all_locks(True)
 
     def copy_move_single(self, dest_path, is_move):
-        """See DAVResource.copy_move_single() """
+        """See DAVResource.copy_move_single()"""
         if self.provider.readonly:
             raise DAVError(HTTP_FORBIDDEN)
         assert not util.is_equal_or_child_uri(self.path, dest_path)
@@ -151,7 +151,7 @@ class FS2FileResource(DAVNonCollection):
         return True
 
     def move_recursive(self, dest_path):
-        """See DAVResource.move_recursive() """
+        """See DAVResource.move_recursive()"""
         if self.provider.readonly:
             raise DAVError(HTTP_FORBIDDEN)
         assert not util.is_equal_or_child_uri(self.path, dest_path)
@@ -310,7 +310,7 @@ class FS2FolderResource(DAVCollection):
         self.remove_all_locks(True)
 
     def copy_move_single(self, dest_path, is_move):
-        """See DAVResource.copy_move_single() """
+        """See DAVResource.copy_move_single()"""
         if self.provider.readonly:
             raise DAVError(HTTP_FORBIDDEN)
         assert not util.is_equal_or_child_uri(self.path, dest_path)
@@ -347,7 +347,7 @@ class FS2FolderResource(DAVCollection):
         return True
 
     def move_recursive(self, dest_path):
-        """See DAVResource.move_recursive() """
+        """See DAVResource.move_recursive()"""
         if self.provider.readonly:
             raise DAVError(HTTP_FORBIDDEN)
         assert not util.is_equal_or_child_uri(self.path, dest_path)

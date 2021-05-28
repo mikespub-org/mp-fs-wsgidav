@@ -7,8 +7,6 @@
 import logging
 
 
-
-
 def test_auth():
 
     from . import users

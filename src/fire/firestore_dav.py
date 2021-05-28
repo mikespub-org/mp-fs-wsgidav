@@ -32,7 +32,6 @@ from . import fs as fire_fs
 from .model import Dir, Path
 
 
-
 __docformat__ = "reStructuredText en"
 
 # _logger = util.get_module_logger(__name__)
@@ -258,7 +257,7 @@ class FirestoreDAVResource(_DAVResource):
         self.remove_all_locks(True)
 
     def copy_move_single(self, dest_path, is_move):
-        """See _DAVResource.copy_move_single() """
+        """See _DAVResource.copy_move_single()"""
         assert not util.is_equal_or_child_uri(self.path, dest_path)
         self._check_write_access()
         if self.is_collection:

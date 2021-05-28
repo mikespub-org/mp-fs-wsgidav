@@ -14,7 +14,6 @@ from btfs.memcache_lock_storage import LockStorageMemcache
 from data import fs as data_fs
 
 
-
 def test():
     logging.info("test.test()")
 
