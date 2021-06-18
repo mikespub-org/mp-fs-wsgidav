@@ -18,7 +18,7 @@
 """The User Python datastore class to be used as a datastore data type."""
 import os
 
-from past.builtins import cmp
+# from past.builtins import cmp
 
 # TODO: make configurable
 AUTH_URL = "/auth/"
@@ -144,6 +144,7 @@ class User:
     def __cmp__(self, other):
         if not isinstance(other, User):
             return NotImplemented
+        cmp = lambda x, y: (x > y) - (x < y)
         return cmp(
             (self.__email, self.__auth_domain), (other.__email, other.__auth_domain)
         )
