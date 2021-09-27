@@ -1,5 +1,5 @@
-cachelib>=0.1.1
-google-cloud-firestore>=2.1.1
+cachelib>=0.3.0
+google-cloud-firestore>=2.3.3
 # Flask>=2.0.1
 # fs>=2.4.13
 # wsgidav>=3.1.0
