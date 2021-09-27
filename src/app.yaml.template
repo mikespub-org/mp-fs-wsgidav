@@ -20,9 +20,9 @@ env_variables:
   # Default role for anonymous visitors ("none", "browser" or "reader" typically)
   FIREBASE_ANON_ROLE: 'browser'
   # Current version of the Firebase JavaScript SDK for use in templates/auth_token.html
-  FIREBASEJS_SDK_VERSION: '8.2.9'
+  FIREBASEJS_SDK_VERSION: '9.1.0'
   # Current version of the FirebaseUI JavaScript library for use in templates/auth_token.html
-  FIREBASEJS_UI_VERSION: '4.7.3'
+  FIREBASEJS_UI_VERSION: '5.0.0'
   # For local testing behind a reverse proxy
   # PROXY_PREFIX: ''
   # For local admin testing using trusted_auth_header
