@@ -71,7 +71,7 @@ def item_link(key):
 
 # @app.template_filter()
 def show_link(key):
-    return '<a href="{}/{}">{}</a>'.format(base_url, item_link(key), key.id_or_name)
+    return f'<a href="{base_url}/{item_link(key)}">{key.id_or_name}</a>'
 
 
 # @app.template_filter()

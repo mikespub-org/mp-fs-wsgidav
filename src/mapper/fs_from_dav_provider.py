@@ -785,7 +785,7 @@ class DAVProvider2FS(FS):
         return self.provider.get_resource_inst(_path, self.environ)
 
     def __repr__(self):
-        return "{}({})".format(self.__class__.__name__, repr(self.provider))
+        return f"{self.__class__.__name__}({repr(self.provider)})"
 
     def _reset_path(self, path, confirm=False):
         if not confirm:

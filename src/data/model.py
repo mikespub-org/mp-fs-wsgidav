@@ -84,7 +84,7 @@ class Path(db.PolyModel):
         return db.Model.delete(self)
 
     def __repr__(self):
-        return "{}('{}')".format(type(self).class_name(), self.path)
+        return f"{type(self).class_name()}('{self.path}')"
 
     def isdir(self):
         return type(self) is Dir

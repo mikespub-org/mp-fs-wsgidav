@@ -132,7 +132,7 @@ class Path(DocModel):
         return
 
     def __repr__(self):
-        return "{}('{}')".format(type(self).class_name(), self.path)
+        return f"{type(self).class_name()}('{self.path}')"
 
     def isdir(self):
         return type(self) is Dir

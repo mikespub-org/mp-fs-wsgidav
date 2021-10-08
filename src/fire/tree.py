@@ -33,7 +33,7 @@ class BaseStructure:
         if client is None:
             # from .base import BaseClient
             client = BaseClient()
-        logging.debug("Starting {}({})".format(type(self).__name__, client))
+        logging.debug(f"Starting {type(self).__name__}({client})")
         self.client = client
 
     def convert_path_to_ref(self, path):

@@ -77,7 +77,7 @@ def data_api():
 def item_to_path(key):
     if key.kind in ("Path", "Dir", "File"):
         # drop the first / of the id_or_name = path
-        return "{}/{}".format(key.kind, key.id_or_name[1:])
+        return f"{key.kind}/{key.id_or_name[1:]}"
     # elif key.kind in ("Chunk") and key.parent:
     elif (
         key.kind in LIST_CONFIG
@@ -108,7 +108,7 @@ def item_to_dict(entity, truncate=False):
             truncate_list = list(info.keys())
         for attr in truncate_list:
             if attr in info and isinstance(info[attr], bytes) and len(info[attr]) > 20:
-                info[attr] = "{}... ({} bytes)".format(info[attr][:20], len(info[attr]))
+                info[attr] = f"{info[attr][:20]}... ({len(info[attr])} bytes)"
     return info
 
 
@@ -127,7 +127,7 @@ def instance_to_dict(instance, truncate=False):
             truncate_list = list(info.keys())
         for attr in truncate_list:
             if attr in info and isinstance(info[attr], bytes) and len(info[attr]) > 20:
-                info[attr] = "{}... ({} bytes)".format(info[attr][:20], len(info[attr]))
+                info[attr] = f"{info[attr][:20]}... ({len(info[attr])} bytes)"
     return info
 
 

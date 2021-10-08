@@ -56,7 +56,7 @@ class DatastoreDAVResource(_DAVResource):
         if not self.path_entity:
             raise ValueError("Path not found: %r" % path)
         is_collection = type(self.path_entity) is Dir
-        logging.debug("{}({!r}): {!r}".format(type(self).__name__, path, is_collection))
+        logging.debug(f"{type(self).__name__}({path!r}): {is_collection!r}")
         super().__init__(path, is_collection, environ)
         # check access based on user roles in environ
         self._get_user_roles(environ)

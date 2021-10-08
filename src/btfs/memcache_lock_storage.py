@@ -96,7 +96,7 @@ class LockStorageMemcache:
             return None
         expire = float(lock["expire"])
         if expire >= 0 and expire < time.time():
-            _logger.debug("Lock timed-out({}): {}".format(expire, lock_string(lock)))
+            _logger.debug(f"Lock timed-out({expire}): {lock_string(lock)}")
             self._deleteLock(lock)
             return None
         return lock

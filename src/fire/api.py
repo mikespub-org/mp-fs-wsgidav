@@ -146,7 +146,7 @@ def item_to_dict(doc, truncate=False):
             array_list = []
         for attr in truncate_list:
             if attr in info and isinstance(info[attr], bytes) and len(info[attr]) > 20:
-                info[attr] = "{}... ({} bytes)".format(info[attr][:20], len(info[attr]))
+                info[attr] = f"{info[attr][:20]}... ({len(info[attr])} bytes)"
         for attr in array_list:
             if attr in info and isinstance(info[attr], list) and len(info[attr]) > 1:
                 info[attr] = [info[attr][0], "... (%s items)" % len(info[attr])]
