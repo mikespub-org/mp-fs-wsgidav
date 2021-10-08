@@ -1,12 +1,12 @@
 # For python 3.7: simply have this file ready for deployment
 wsgidav>=3.1.1
-Flask>=2.0.1
-cachelib>=0.3.0
-google-auth>=2.1.0
+Flask>=2.0.2
+cachelib>=0.4.1
+google-auth>=2.3.0
 requests>=2.26.0
 CacheControl>=0.12.6
 google-cloud-datastore>=2.1.6
 # fs>=2.4.13
-# google-cloud-firestore>=2.1.1
-# firebase-admin>=5.0.0
+# google-cloud-firestore>=2.3.4
+# firebase-admin>=5.0.3
 google-cloud-profiler>=3.0.5
