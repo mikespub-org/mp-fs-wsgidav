@@ -2,11 +2,11 @@
 wsgidav>=3.1.1
 Flask>=2.0.2
 cachelib>=0.4.1
-google-auth>=2.3.0
+google-auth>=2.3.3
 requests>=2.26.0
-CacheControl>=0.12.6
-google-cloud-datastore>=2.1.6
+CacheControl>=0.12.10
+google-cloud-datastore>=2.4.0
 # fs>=2.4.13
 # google-cloud-firestore>=2.3.4
 # firebase-admin>=5.0.3
-google-cloud-profiler>=3.0.5
+google-cloud-profiler>=3.0.6

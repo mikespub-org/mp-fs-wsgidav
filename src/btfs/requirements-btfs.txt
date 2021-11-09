@@ -1,6 +1,6 @@
 cachelib>=0.4.1
-google-auth>=2.3.0
+google-auth>=2.3.3
 requests>=2.26.0
-CacheControl>=0.12.6
+CacheControl>=0.12.10
 # Flask>=2.0.2
 # wsgidav>=3.1.1
