@@ -4,6 +4,8 @@ Flask>=2.0.2
 cachelib>=0.4.1
 google-auth>=2.3.3
 requests>=2.26.0
+# force upgrade to avoid incompatible dependency with pyparsing
+packaging>=21.3
 CacheControl>=0.12.10
 google-cloud-datastore>=2.4.0
 # fs>=2.4.14
