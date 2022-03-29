@@ -1,14 +1,14 @@
 # For python 3.7: simply have this file ready for deployment
 wsgidav>=4.0.1
-Flask>=2.0.3
+Flask>=2.1.0
 cachelib>=0.6.0
-google-auth>=2.6.0
+google-auth>=2.6.2
 requests>=2.27.1
 # force upgrade to avoid incompatible dependency with pyparsing
 packaging>=21.3
 CacheControl>=0.12.10
-google-cloud-datastore>=2.4.0
+google-cloud-datastore>=2.5.1
 # fs>=2.4.15
-# google-cloud-firestore>=2.3.4
+# google-cloud-firestore>=2.4.0
 # firebase-admin>=5.2.0
 google-cloud-profiler>=3.0.7

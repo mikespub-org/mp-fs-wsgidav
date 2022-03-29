@@ -1,6 +1,6 @@
 cachelib>=0.6.0
-google-cloud-firestore>=2.3.4
-# Flask>=2.0.3
+google-cloud-firestore>=2.4.0
+# Flask>=2.1.0
 # fs>=2.4.15
 # wsgidav>=4.0.1
-# pytest>=7.0.1
+# pytest>=7.1.1
