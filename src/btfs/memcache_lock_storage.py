@@ -25,7 +25,7 @@ import logging
 import time
 
 from wsgidav import util
-from wsgidav.lock_manager import (
+from wsgidav.lock_man.lock_manager import (
     generate_lock_token,
     lock_string,
     normalize_lock_root,

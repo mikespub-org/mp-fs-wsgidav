@@ -27,9 +27,11 @@ def get_config():
     config = {
         "provider_mapping": {"/": provider},
         "verbose": 3,
-        "enable_loggers": ["http_authenticator"],
+        "logging": {
+             "enable_loggers": ["http_authenticator"],
+        },
         "property_manager": False,
-        "lock_manager": lockstorage,
+        "lock_storage": lockstorage,
         # Use Basic Authentication and don't fall back to Digest Authentication,
         # because our domain controller doesn't have no access to the user's
         # passwords.

@@ -3,7 +3,7 @@ import re
 
 output = "## Table of Contents ##\n"
 
-with open("README.md", "r") as fp:
+with open("README.md") as fp:
     find = re.compile(r"^(##+)\s+(.+?)\s+#+$")
     for line in fp:
         m = find.match(line)

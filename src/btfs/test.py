@@ -7,7 +7,7 @@ on Googles datastore (Bigtable).
 
 import logging
 
-from wsgidav.lock_manager import LockManager, lock_string
+from wsgidav.lock_man.lock_manager import LockManager, lock_string
 
 from btfs.btfs_dav_provider import BTFSResourceProvider
 from btfs.memcache_lock_storage import LockStorageMemcache
