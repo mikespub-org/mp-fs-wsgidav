@@ -2,8 +2,12 @@
 #       enter a Firebase project ID for MY_PROJECT_ID below
 #       enter a Firebase API key for MY_API_KEY below
 
-runtime: python38
+runtime: python39
 #entrypoint: gunicorn -b :$PORT main:app
+#env: standard
+#instance_class: F1
+automatic_scaling:
+  max_instances: 1
 
 # Environment variables
 
@@ -20,11 +24,12 @@ env_variables:
   # Default role for anonymous visitors ("none", "browser" or "reader" typically)
   FIREBASE_ANON_ROLE: 'browser'
   # Current version of the Firebase JavaScript SDK for use in templates/auth_token.html
-  FIREBASEJS_SDK_VERSION: '9.5.0'
+  FIREBASEJS_SDK_VERSION: '9.6.10'
   # Current version of the FirebaseUI JavaScript library for use in templates/auth_token.html
-  FIREBASEJS_UI_VERSION: '6.0.0'
+  FIREBASEJS_UI_VERSION: '6.0.1'
   # For local testing behind a reverse proxy
   # PROXY_PREFIX: ''
+  # PROXY_PREFIX: '/test'
   # For local admin testing using trusted_auth_header
   # USER_EMAIL: 'test@example.com'
   # No longer relevant for python 3
