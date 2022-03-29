@@ -29,7 +29,7 @@ def create_app():
         "verbose": 1,
         # "enable_loggers": [],
         "property_manager": True,  # True: use property_manager.PropertyManager
-        "lock_manager": True,  # True: use lock_manager.LockManager
+        "lock_storage": True,  # True: use lock_manager.LockManager
     }
     # app = WsgiDAVApp(config)
     return WsgiDAVApp(config)

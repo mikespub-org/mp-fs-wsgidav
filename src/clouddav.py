@@ -13,9 +13,20 @@ from btfs.btfs_dav_provider import BTFSResourceProvider
 from btfs.firebase_dc import FirebaseDomainController
 from btfs.memcache_lock_storage import LockStorageMemcache
 
-# logging.getLogger().setLevel(logging.DEBUG)
+# https://wsgidav.readthedocs.io/en/latest/user_guide_configure.html#middleware-stack
+# from wsgidav.dir_browser import WsgiDavDirBrowser
+# from wsgidav.mw.debug_filter import WsgiDavDebugFilter
+# from wsgidav.error_printer import ErrorPrinter
+# from wsgidav.http_authenticator import HTTPAuthenticator
+# from wsgidav.request_resolver import RequestResolver
 
-__version__ = "0.5.0a1"
+# https://wsgidav.readthedocs.io/en/latest/user_guide_lib.html#logging
+# import logging
+# logger = logging.getLogger("wsgidav")
+# logger.propagate = True
+# logger.setLevel(logging.DEBUG)
+
+__version__ = "0.6.0"
 
 
 def get_config():
@@ -28,10 +39,18 @@ def get_config():
         "provider_mapping": {"/": provider},
         "verbose": 3,
         "logging": {
-             "enable_loggers": ["http_authenticator"],
+            "enable_loggers": ["http_authenticator"],
         },
-        "property_manager": False,
-        "lock_storage": lockstorage,
+        "property_manager": False,  # True: use property_manager.PropertyManager
+        "lock_storage": lockstorage,  # True: use LockManager(lock_storage.LockStorageDict)
+        # "middleware_stack": [
+        #     WsgiDavDebugFilter,
+        #     # Cors,
+        #     ErrorPrinter,
+        #     HTTPAuthenticator,
+        #     WsgiDavDirBrowser,  # configured under dir_browser option (see below)
+        #     RequestResolver,  # this must be the last middleware item
+        # ],
         # Use Basic Authentication and don't fall back to Digest Authentication,
         # because our domain controller doesn't have no access to the user's
         # passwords.

@@ -31,7 +31,6 @@ from wsgidav.dav_provider import DAVProvider, _DAVResource
 from . import fs as fire_fs
 from .model import Dir, Path
 
-
 __docformat__ = "reStructuredText en"
 
 # _logger = util.get_module_logger(__name__)
@@ -143,6 +142,9 @@ class FirestoreDAVResource(_DAVResource):
     def get_last_modified(self):
         return self.statresults.st_mtime
 
+    def support_etag(self):
+        return True
+
     def support_ranges(self):
         return True
 
@@ -192,7 +194,7 @@ class FirestoreDAVResource(_DAVResource):
         See _DAVResource.create_empty_resource()
         """
         assert self.is_collection
-        assert not "/" in name
+        assert "/" not in name
         self._check_write_access()
         path = util.join_uri(self.path, name)
         f = fire_fs.btopen(path, "wb")

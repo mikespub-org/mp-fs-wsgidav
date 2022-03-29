@@ -81,11 +81,11 @@ def test():
     print("*** provider tests passed ***")
 
     lock = provider.lock_manager.acquire(
-        rootpath + "/folder1",
-        "write",
-        "exclusive",
-        "infinity",
-        b"test_owner",
+        url=rootpath + "/folder1",
+        lock_type="write",
+        lock_scope="exclusive",
+        lock_depth="infinity",
+        lock_owner=b"test_owner",
         timeout=100,
         principal="martin",
         token_list=[],
