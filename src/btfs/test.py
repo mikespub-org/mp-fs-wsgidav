@@ -71,7 +71,7 @@ def test():
     f.close()
     # copy
     res = provider.get_resource_inst(rootpath + "/folder1/file2.txt", environ)
-    res.copy_move_single(rootpath + "/folder1/file2_copy.txt", False)
+    res.copy_move_single(rootpath + "/folder1/file2_copy.txt", is_move=False)
 
     res = provider.get_resource_inst(rootpath + "/folder1/file2_copy.txt", environ)
     f = res.get_content()

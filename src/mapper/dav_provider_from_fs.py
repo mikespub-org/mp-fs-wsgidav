@@ -98,7 +98,7 @@ class FS2FileResource(DAVNonCollection):
         assert not self.is_collection
         return self.provider.source_fs.openbin(self.path, "rb")
 
-    def begin_write(self, content_type=None):
+    def begin_write(self, *, content_type=None):
         """Open content as a stream for writing.
 
         See DAVResource.begin_write()
@@ -116,10 +116,10 @@ class FS2FileResource(DAVNonCollection):
         if self.provider.readonly:
             raise DAVError(HTTP_FORBIDDEN)
         self.provider.source_fs.remove(self.path)
-        self.remove_all_properties(True)
-        self.remove_all_locks(True)
+        self.remove_all_properties(recursive=True)
+        self.remove_all_locks(recursive=True)
 
-    def copy_move_single(self, dest_path, is_move):
+    def copy_move_single(self, dest_path, *, is_move):
         """See DAVResource.copy_move_single()"""
         if self.provider.readonly:
             raise DAVError(HTTP_FORBIDDEN)
@@ -168,7 +168,7 @@ class FS2FileResource(DAVNonCollection):
                 environ=self.environ,
             )
 
-    def set_last_modified(self, dest_path, time_stamp, dry_run):
+    def set_last_modified(self, dest_path, time_stamp, *, dry_run):
         """Set last modified time for destPath to timeStamp on epoch-format"""
         # Translate time from RFC 1123 to seconds since epoch format
         if not self.info.is_writeable("details", "modified"):
@@ -306,10 +306,10 @@ class FS2FolderResource(DAVCollection):
             raise DAVError(HTTP_FORBIDDEN)
         self.provider.source_fs.removedir(self.path)
         # self.provider.source_fs.removetree(self.path)
-        self.remove_all_properties(True)
-        self.remove_all_locks(True)
+        self.remove_all_properties(recursive=True)
+        self.remove_all_locks(recursive=True)
 
-    def copy_move_single(self, dest_path, is_move):
+    def copy_move_single(self, dest_path, *, is_move):
         """See DAVResource.copy_move_single()"""
         if self.provider.readonly:
             raise DAVError(HTTP_FORBIDDEN)
@@ -364,7 +364,7 @@ class FS2FolderResource(DAVCollection):
                 environ=self.environ,
             )
 
-    def set_last_modified(self, dest_path, time_stamp, dry_run):
+    def set_last_modified(self, dest_path, time_stamp, *, dry_run):
         """Set last modified time for destPath to timeStamp on epoch-format"""
         # Translate time from RFC 1123 to seconds since epoch format
         if not self.info.is_writeable("details", "modified"):
@@ -380,7 +380,7 @@ class FS2FolderResource(DAVCollection):
 # FS2DAVProvider
 # ========================================================================
 class FS2DAVProvider(DAVProvider):
-    def __init__(self, source_fs, readonly=False):
+    def __init__(self, source_fs, *, readonly=False):
         if not source_fs or not isinstance(source_fs, fs.base.FS):
             raise ValueError(f"Invalid source fs: {source_fs}")
 

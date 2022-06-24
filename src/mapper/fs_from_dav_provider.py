@@ -371,7 +371,7 @@ class DAVProvider2FS(FS):
                     if modified_time:
                         dt = epoch_to_datetime(modified_time)
                         rfc1123_time = dt.strftime("%a, %d %b %Y %H:%M:%S GMT")
-                        _res.set_last_modified(_res.path, rfc1123_time, False)
+                        _res.set_last_modified(_res.path, rfc1123_time, dry_run=False)
 
             if "properties" in info:
                 prop_names = _res.get_property_names(True)
@@ -559,7 +559,7 @@ class DAVProvider2FS(FS):
             iter_info = itertools.islice(iter_info, start, end)
         return iter_info
 
-    def copy(self, src_path, dst_path, overwrite=False):
+    def copy(self, src_path, dst_path, overwrite=False, preserve_time=False):
         # type: (Text, Text, bool) -> None
         """Copy file contents from ``src_path`` to ``dst_path``.
 
@@ -593,9 +593,9 @@ class DAVProvider2FS(FS):
             if _src_res.is_collection:
                 raise errors.FileExpected(src_path)
 
-            _src_res.copy_move_single(_dst_path, False)
+            _src_res.copy_move_single(_dst_path, is_move=False)
 
-    def move(self, src_path, dst_path, overwrite=False):
+    def move(self, src_path, dst_path, overwrite=False, preserve_time=False):
         # type: (Text, Text, bool) -> None
         """Move a file from ``src_path`` to ``dst_path``.
 
@@ -636,7 +636,7 @@ class DAVProvider2FS(FS):
                 _src_res.move_recursive(_dst_path)
             else:
                 # CHECKME: this doesn't actually seem to delete _src_res in DAV Provider
-                _src_res.copy_move_single(_dst_path, True)
+                _src_res.copy_move_single(_dst_path, is_move=True)
                 try:
                     _src_res.delete()
                 except:
@@ -728,7 +728,7 @@ class DAVProvider2FS(FS):
             try:
                 dt = epoch_to_datetime(st_mtime)
                 rfc1123_time = dt.strftime("%a, %d %b %Y %H:%M:%S GMT")
-                _res.set_last_modified(_res.path, rfc1123_time, True)
+                _res.set_last_modified(_res.path, rfc1123_time, dry_run=True)
                 write.append("modified")
             except Exception:
                 pass

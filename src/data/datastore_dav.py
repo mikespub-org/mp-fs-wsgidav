@@ -223,7 +223,7 @@ class DatastoreDAVResource(_DAVResource):
         # return data_fs.btopen(self.path, "rb")
         return data_fs.btopen(self.path_entity, "rb")
 
-    def begin_write(self, content_type=None):
+    def begin_write(self, *, content_type=None):
         """Open content as a stream for writing.
 
         See _DAVResource.begin_write()
@@ -255,10 +255,10 @@ class DatastoreDAVResource(_DAVResource):
         else:
             # data_fs.unlink(self.path)
             data_fs.unlink(self.path_entity)
-        self.remove_all_properties(True)
-        self.remove_all_locks(True)
+        self.remove_all_properties(recursive=True)
+        self.remove_all_locks(recursive=True)
 
-    def copy_move_single(self, dest_path, is_move):
+    def copy_move_single(self, dest_path, *, is_move):
         """See _DAVResource.copy_move_single()"""
         assert not util.is_equal_or_child_uri(self.path, dest_path)
         self._check_write_access()
