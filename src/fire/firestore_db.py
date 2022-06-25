@@ -57,6 +57,16 @@ log = logging.getLogger(__name__)
 
 
 class FirestoreDB(FS):
+    _meta = {
+        "case_insensitive": False,
+        "invalid_path_chars": "\0",
+        "network": True,
+        "read_only": True,
+        "supports_rename": False,
+        "thread_safe": False,
+        "unicode_paths": True,
+        "virtual": True,
+    }
     _has_colls = {}
 
     def __init__(self, root_path=None, limit=1000):

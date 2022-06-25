@@ -39,7 +39,7 @@ class TestFirestoreFS(FSTestCases, unittest.TestCase):
             pytest.xfail(
                 "Test file-like objects work as expected - for self.fs.open('bin', 'wb')"
             )
-        if test_name in ("test_removetree"):
+        if test_name in ("test_removetree", "test_removetree_root"):
             # self.fs.removetree("foo")  # fs.errors.DirectoryNotEmpty: directory '/foo/a/b/c/d' is not empty
             # if len(_res.listdir()) > 0:
             pytest.xfail(

@@ -49,6 +49,17 @@ log = logging.getLogger(__name__)
 
 
 class DAVProvider2FS(FS):
+    _meta = {
+        "case_insensitive": False,
+        "invalid_path_chars": "\0",
+        "network": True,
+        "read_only": False,
+        "supports_rename": False,
+        "thread_safe": False,
+        "unicode_paths": True,
+        "virtual": False,
+    }
+
     def __init__(self, dav_provider, dav_config=None):
         # self._meta = {}
         super().__init__()
@@ -232,12 +243,14 @@ class DAVProvider2FS(FS):
                         raise errors.FileExpected(path)
 
                     stream = io.BufferedWriter(_res.begin_write())
-                    io_object = RawWrapper(stream, mode=mode, name=path)
+                    io_object = RawWrapper(
+                        stream, mode=_mode.to_platform_bin(), name=path
+                    )
                     return io_object
 
                 _res = _dir_res.create_empty_resource(file_name)
                 stream = io.BufferedWriter(_res.begin_write())
-                io_object = RawWrapper(stream, mode=mode, name=path)
+                io_object = RawWrapper(stream, mode=_mode.to_platform_bin(), name=path)
                 return io_object
 
             if file_name not in _dir_res.get_member_names():
@@ -256,11 +269,11 @@ class DAVProvider2FS(FS):
 
             if _mode.reading:
                 stream = io.BufferedReader(_res.get_content())
-                io_object = RawWrapper(stream, mode=mode, name=path)
+                io_object = RawWrapper(stream, mode=_mode.to_platform_bin(), name=path)
                 return io_object
 
             stream = io.BufferedWriter(_res.begin_write())
-            io_object = RawWrapper(stream, mode=mode, name=path)
+            io_object = RawWrapper(stream, mode=_mode.to_platform_bin(), name=path)
             return io_object
 
     def remove(self, path):

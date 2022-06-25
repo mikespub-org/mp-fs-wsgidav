@@ -60,6 +60,17 @@ log = logging.getLogger(__name__)
 
 
 class DatastoreFS(FS):
+    _meta = {
+        "case_insensitive": False,
+        "invalid_path_chars": "\0",
+        "network": True,
+        "read_only": False,
+        "supports_rename": False,
+        "thread_safe": False,
+        "unicode_paths": True,
+        "virtual": False,
+    }
+
     def __init__(self, root_path=None, use_cache=True):
         # self._meta = {}
         super().__init__()
@@ -252,9 +263,9 @@ class DatastoreFS(FS):
                     if not _res or not _res.isfile():
                         raise errors.FileExpected(path)
 
-                    return self._btopen(_res, mode)
+                    return self._btopen(_res, _mode.to_platform_bin())
 
-                return self._btopen(self._prep_path(_path), mode)
+                return self._btopen(self._prep_path(_path), _mode.to_platform_bin())
 
             if file_name not in _dir_res.listdir():
                 raise errors.ResourceNotFound(path)
@@ -263,7 +274,7 @@ class DatastoreFS(FS):
             if not _res or not _res.isfile():
                 raise errors.FileExpected(path)
 
-            return self._btopen(_res, mode)
+            return self._btopen(_res, _mode.to_platform_bin())
 
     def remove(self, path):
         # type: (Text) -> None
@@ -552,7 +563,7 @@ class DatastoreFS(FS):
             iter_info = itertools.islice(iter_info, start, end)
         return iter_info
 
-    def copy(self, src_path, dst_path, overwrite=False):
+    def copy(self, src_path, dst_path, overwrite=False, preserve_time=False):
         # type: (Text, Text, bool) -> None
         """Copy file contents from ``src_path`` to ``dst_path``.
 
@@ -588,7 +599,7 @@ class DatastoreFS(FS):
 
             data_fs.copyfile(_src_res, self._prep_path(_dst_path))
 
-    def move(self, src_path, dst_path, overwrite=False):
+    def move(self, src_path, dst_path, overwrite=False, preserve_time=False):
         # type: (Text, Text, bool) -> None
         """Move a file from ``src_path`` to ``dst_path``.
 
@@ -609,7 +620,7 @@ class DatastoreFS(FS):
 
         """
         # TODO: update parent key of chunk entities instead of copy & delete?
-        self.copy(src_path, dst_path, overwrite)
+        self.copy(src_path, dst_path, overwrite, preserve_time)
         self.remove(src_path)
 
     def create(self, path, wipe=False):

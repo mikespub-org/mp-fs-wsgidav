@@ -61,6 +61,17 @@ log = logging.getLogger(__name__)
 
 
 class DatastoreDB(FS):
+    _meta = {
+        "case_insensitive": False,
+        "invalid_path_chars": "\0",
+        "network": True,
+        "read_only": True,
+        "supports_rename": False,
+        "thread_safe": False,
+        "unicode_paths": True,
+        "virtual": True,
+    }
+
     def __init__(self, limit=1000):
         # self._meta = {}
         super().__init__()
