@@ -27,6 +27,8 @@ class TestDAVProvider2FS(FSTestCases, unittest.TestCase):
             pytest.xfail("Appending is not supported")
         if test_name in ("test_bin_files", "test_files", "test_open_files"):
             pytest.xfail("Updating is not supported")
+        if test_name in ("test_setinfo"):
+            pytest.xfail("Modified time is in seconds (int) instead of (float)")
         if test_name in ("test_invalid_chars"):
             pytest.xfail("TODO: get list of invalid characters from the DAV Provider")
         # Return an instance of your FS object here
