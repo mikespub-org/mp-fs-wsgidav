@@ -207,4 +207,4 @@ def is_current_user_admin():
     Returns:
       `True` if the user is an administrator; all other user types return `False`.
     """
-    return (os.environ.get("USER_IS_ADMIN", "0")) == "1"
+    return os.environ.get("USER_IS_ADMIN", "0") == "1"

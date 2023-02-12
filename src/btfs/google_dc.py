@@ -48,7 +48,6 @@ from wsgidav.dc.base_dc import BaseDomainController
 from . import users
 from .auth import find_auth_user
 
-
 __docformat__ = "reStructuredText"
 
 
@@ -115,7 +114,7 @@ class xAppAuth:
         return (
             "http://"
             + AppName
-            + ".appspot.com/_ah/login?%s" % (urllib.parse.urlencode(serv_args))
+            + ".appspot.com/_ah/login?%s" % urllib.parse.urlencode(serv_args)
         )
 
     get_auth_url = getAuthUrl

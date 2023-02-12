@@ -12,7 +12,7 @@ from werkzeug.utils import import_string
 from werkzeug.wsgi import get_path_info
 
 # Import for local testing
-# import set_env
+# import set_env  # noqa
 # Import default app here + preset TRUSTED_AUTH_HEADER in environ for non-wsgidav applications too
 from clouddav import app as default_app
 
@@ -112,7 +112,7 @@ def run_wsgi_app(app, port=8080):
         print("Serving HTTP on port %s..." % port)
         try:
             httpd.serve_forever()
-        except KeyboardInterrupt:
+        except KeyboardInterrupt as e:
             print("Goodbye...")
 
 

@@ -12,7 +12,6 @@ import io
 import logging
 import time
 
-
 from .model import Dir, File, Path
 
 # from btfs import memcash
