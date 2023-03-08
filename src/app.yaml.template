@@ -2,7 +2,7 @@
 #       enter a Firebase project ID for MY_PROJECT_ID below
 #       enter a Firebase API key for MY_API_KEY below
 
-runtime: python310
+runtime: python311
 #entrypoint: gunicorn -b :$PORT main:app
 #env: standard
 #instance_class: F1
