@@ -169,7 +169,7 @@ class AuthSession(db.CachedModel):
 
     def _init_entity(self, **kwargs):
         super()._init_entity(**kwargs)
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         template = {
             "session_id": "",
             "agent": "",
@@ -225,7 +225,7 @@ class AuthSession(db.CachedModel):
     def gc(cls, days=EXPIRE_DAYS, limit=500, offset=0, **kwargs):
         query = cls.query(**kwargs)
         query.keys_only()
-        expired = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+        expired = datetime.datetime.now(datetime.UTC) - datetime.timedelta(
             days=days
         )
         query.add_filter("update_time", "<", expired)

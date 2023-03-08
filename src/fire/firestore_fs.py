@@ -381,11 +381,11 @@ class FirestoreFS(FS):
                         modified_time = accessed_time
                     if created_time:
                         _res.create_time = datetime.datetime.fromtimestamp(
-                            created_time, datetime.timezone.utc
+                            created_time, datetime.UTC
                         )
                     if modified_time:
                         _res.modify_time = datetime.datetime.fromtimestamp(
-                            modified_time, datetime.timezone.utc
+                            modified_time, datetime.UTC
                         )
                     # CHECKME: no way to change create/update times for documents unless we add them as fields
                     # _res.put()

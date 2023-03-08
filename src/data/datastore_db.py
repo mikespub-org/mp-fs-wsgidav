@@ -478,7 +478,7 @@ class DatastoreDB(FS):
         def epoch(dt):
             # return time.mktime(dt.utctimetuple())
             return (
-                dt - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+                dt - datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
             ) / datetime.timedelta(seconds=1)
 
         # st_size = _res.size

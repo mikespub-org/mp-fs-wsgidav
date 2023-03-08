@@ -380,11 +380,11 @@ class DatastoreFS(FS):
                         modified_time = accessed_time
                     if created_time:
                         _res.create_time = datetime.datetime.fromtimestamp(
-                            created_time, datetime.timezone.utc
+                            created_time, datetime.UTC
                         )
                     if modified_time:
                         _res.modify_time = datetime.datetime.fromtimestamp(
-                            modified_time, datetime.timezone.utc
+                            modified_time, datetime.UTC
                         )
                     _res.put()
 
@@ -838,7 +838,7 @@ class DatastoreFS(FS):
         def epoch(dt):
             # return time.mktime(dt.utctimetuple())
             return (
-                dt - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+                dt - datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
             ) / datetime.timedelta(seconds=1)
 
         st_size = _res.size

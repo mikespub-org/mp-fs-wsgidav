@@ -276,7 +276,7 @@ class Model(metaclass=ModelType):
     def put(self, *args, **kwargs):
         if self._auto_now:
             for attr in self._auto_now:
-                self._entity[attr] = datetime.datetime.now(datetime.timezone.utc)
+                self._entity[attr] = datetime.datetime.now(datetime.UTC)
         return get_client().put(self._entity)
 
     def delete(self):

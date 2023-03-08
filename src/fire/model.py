@@ -92,7 +92,7 @@ class Path(DocModel):
 
     def _init_entity(self, **kwargs):
         super()._init_entity(**kwargs)
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         template = {
             "path": "",
             "size": 0,
