@@ -7,7 +7,7 @@ import os.path
 import pickle
 import time
 
-import flask.json
+import json
 from flask import Flask, jsonify, request
 from flask.views import MethodView
 
@@ -54,7 +54,7 @@ def configure_app(app, base_url="/api/v1/data", authorize_wrap=None):
     app.json_encoder = MyJSONEncoder
 
 
-class MyJSONEncoder(flask.json.JSONEncoder):
+class MyJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         # if isinstance(obj, db.Entity):
         #     return item_to_dict(obj)
@@ -70,7 +70,7 @@ class MyJSONEncoder(flask.json.JSONEncoder):
 
 def data_api():
     with open(os.path.join(os.path.dirname(__file__), "openapi.json")) as fp:
-        info = flask.json.load(fp)
+        info = json.load(fp)
         return info
 
 

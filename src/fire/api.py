@@ -7,7 +7,7 @@ import os.path
 import pickle
 import time
 
-import flask.json
+import json
 from flask import Flask, jsonify, request
 from flask.views import MethodView
 
@@ -72,7 +72,7 @@ def pb2epoch(pb):
 #     return datetime.datetime.fromtimestamp(timestamp, datetime.timezone.utc)
 
 
-class MyJSONEncoder(flask.json.JSONEncoder):
+class MyJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         # if isinstance(obj, db.DocumentSnapshot):
         #     return item_to_dict(obj)
@@ -97,7 +97,7 @@ class MyJSONEncoder(flask.json.JSONEncoder):
 
 def fire_api():
     with open(os.path.join(os.path.dirname(__file__), "openapi.json")) as fp:
-        info = flask.json.load(fp)
+        info = json.load(fp)
         return info
 
 
