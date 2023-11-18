@@ -84,6 +84,10 @@ class FS2FileResource(DAVNonCollection):
     def get_last_modified(self):
         return fs.time.datetime_to_epoch(self.info.modified)
 
+    # TODO: check if this is a symlink
+    def is_link(self):
+        return False
+
     def support_etag(self):
         return True
 
@@ -219,6 +223,10 @@ class FS2FolderResource(DAVCollection):
 
     def get_last_modified(self):
         return fs.time.datetime_to_epoch(self.info.modified)
+
+    # TODO: check if this is a symlink
+    def is_link(self):
+        return False
 
     def get_member_names(self):
         """Return list of direct collection member names (utf-8 encoded).

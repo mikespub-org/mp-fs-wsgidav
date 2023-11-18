@@ -142,6 +142,9 @@ class FirestoreDAVResource(_DAVResource):
     def get_last_modified(self):
         return self.statresults.st_mtime
 
+    def is_link(self):
+        return False
+
     def support_etag(self):
         return True
 
