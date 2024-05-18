@@ -1,5 +1,5 @@
 # For python 3.7: simply have this file ready for deployment
-wsgidav>=4.3.2
+wsgidav>=4.3.3
 Flask>=3.0.3
 cachelib>=0.13.0
 google-auth>=2.29.0
