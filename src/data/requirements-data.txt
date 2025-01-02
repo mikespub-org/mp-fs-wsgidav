@@ -1,5 +1,5 @@
 cachelib>=0.13.0
-google-cloud-datastore>=2.20.1
+google-cloud-datastore>=2.20.2
 # Flask>=3.0.0
 # fs>=2.4.16
 # wsgidav>=4.3.0
